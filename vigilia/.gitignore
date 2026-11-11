@@ -1,0 +1,10 @@
+# Caché del editor/importador de Godot (se regenera con `godot --headless --import`).
+.godot/
+*.tmp
+# Builds exportados
+build/
+export/
+# Capturas temporales de pruebas
+tests/output/
+# Ejecutables exportados
+dist/

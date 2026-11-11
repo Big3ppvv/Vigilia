@@ -1,0 +1,82 @@
+{
+	"version": 1,
+	"statuses": [
+		{
+			"id": "poison",
+			"name": "Veneno",
+			"color": "#8fbf3a",
+			"stacking": "stack",
+			"max_stacks": 10,
+			"tick": 0.5,
+			"dps_per_stack": 1.0,
+			"tags": ["poison", "dot"],
+			"resist_stat": "res_poison"
+		},
+		{
+			"id": "burn",
+			"name": "Quemadura",
+			"color": "#ff8c3a",
+			"stacking": "refresh",
+			"max_stacks": 1,
+			"tick": 0.33,
+			"dps_per_stack": 4.0,
+			"tags": ["fire", "dot"],
+			"resist_stat": "res_fire"
+		},
+		{
+			"id": "bleed",
+			"name": "Sangrado",
+			"color": "#b3243b",
+			"stacking": "stack",
+			"max_stacks": 6,
+			"tick": 0.5,
+			"dps_per_stack": 1.2,
+			"moving_bonus": 1.0,
+			"tags": ["bleed", "dot"],
+			"resist_stat": "res_bleed"
+		},
+		{
+			"id": "chill",
+			"name": "Escarcha",
+			"color": "#8fd3ff",
+			"stacking": "refresh",
+			"max_stacks": 1,
+			"speed_mult": 0.6,
+			"action_speed_mult": 0.7,
+			"tags": ["ice"],
+			"resist_stat": "res_ice"
+		},
+		{
+			"id": "stun",
+			"name": "Aturdimiento",
+			"color": "#fff6a0",
+			"stacking": "refresh",
+			"max_stacks": 1,
+			"speed_mult": 0.0,
+			"action_speed_mult": 0.0,
+			"tags": ["control"]
+		},
+		{
+			"id": "waxed",
+			"name": "Encerado",
+			"color": "#e8d9a8",
+			"stacking": "refresh",
+			"max_stacks": 1,
+			"speed_mult": 0.72,
+			"tags": ["wax"]
+		}
+	],
+	"reactions": [
+		{
+			"id": "thermal_shock",
+			"name": "Choque térmico",
+			"a": "chill",
+			"b": "burn",
+			"consume": ["chill", "burn"],
+			"damage": 14.0,
+			"radius": 72.0,
+			"tags": ["ice", "fire", "reaction"],
+			"color": "#ffffff"
+		}
+	]
+}

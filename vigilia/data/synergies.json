@@ -1,0 +1,66 @@
+{
+	"version": 1,
+	"_comment": "Sinergias de CONJUNTO (transformaciones y combinaciones con reglas propias). Las interacciones emergentes entre efectos NO se declaran aquí: surgen solas del motor de eventos (ver docs/SYNERGIES.md).",
+	"synergies": [
+		{
+			"id": "moth_swarm",
+			"name": "Enjambre",
+			"type": "transformation",
+			"desc": "Tres reliquias de polilla: dos polillas lunares te orbitan y bloquean disparos; tus astillas aletean. +10% cadencia.",
+			"secret": false,
+			"requires": {"tags": {"moth": 3}},
+			"grants": {
+				"familiars": {"kind": "moth", "count": 2},
+				"projectile": {"wave_amp": 14, "wave_freq": 9},
+				"stats": [{"stat": "fire_rate", "op": "pct", "value": 0.1}]
+			}
+		},
+		{
+			"id": "transfusion",
+			"name": "Transfusión",
+			"type": "transformation",
+			"desc": "Dos pactos de sangre: tu cuerpo aprende a cerrarse solo (+2 vida por minuto).",
+			"secret": false,
+			"requires": {"tags": {"blood": 2}},
+			"grants": {
+				"stats": [{"stat": "regen", "op": "flat", "value": 2.0}]
+			}
+		},
+		{
+			"id": "drowned_wick",
+			"name": "Mecha Ahogada",
+			"type": "negative",
+			"desc": "La escarcha humedece la pólvora: tus explosiones tienen -30% de radio, pero escarchan.",
+			"secret": true,
+			"requires": {"items_all": ["candle_frost", "candle_powder"]},
+			"grants": {
+				"mechanics": {"explosion_radius_mult": 0.7},
+				"effects": [
+					{
+						"trigger": "hit",
+						"filter": {"tags_any": ["explosion"]},
+						"action": "apply_status",
+						"params": {"status": "chill", "stacks": 1, "duration": 1.5}
+					}
+				]
+			}
+		},
+		{
+			"id": "resonant_belfry",
+			"name": "Campanario Resonante",
+			"type": "combo",
+			"desc": "El eco de la campana rota vive en tus astillas: cada rebote libera una onda expansiva.",
+			"secret": true,
+			"requires": {"items_all": ["belfry_echo", "broken_bell"]},
+			"grants": {
+				"effects": [
+					{
+						"trigger": "bounce",
+						"action": "explode",
+						"params": {"radius": 38, "damage_mult": 0.4, "base": "source", "tags": ["explosion", "sonic"], "color": "#d9a441"}
+					}
+				]
+			}
+		}
+	]
+}

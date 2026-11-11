@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <!-- Icono original de VIGILIA: la Espina con su ojo lúcido. -->
+  <rect width="128" height="128" rx="20" fill="#0b0710"/>
+  <circle cx="64" cy="68" r="44" fill="#1c1420"/>
+  <path d="M64 10 L80 56 L118 64 L80 74 L64 118 L48 74 L10 64 L48 56 Z" fill="#15101a" stroke="#5a4048" stroke-width="3"/>
+  <ellipse cx="64" cy="64" rx="20" ry="12" fill="#2a1d24"/>
+  <circle cx="64" cy="64" r="9" fill="#ffd27a"/>
+  <circle cx="64" cy="64" r="4" fill="#0b0710"/>
+  <circle cx="67" cy="61" r="2" fill="#fff1c1"/>
+</svg>

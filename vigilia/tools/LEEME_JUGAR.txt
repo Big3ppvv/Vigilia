@@ -1,0 +1,28 @@
+VIGILIA — La Espina del Durmiente  (versión 0.1.0, Fase 1)
+=========================================================
+
+CÓMO JUGAR
+- Windows: descomprime el zip y haz doble clic en VIGILIA.exe.
+  El ejecutable no está firmado: si Windows SmartScreen muestra un aviso,
+  pulsa "Más información" -> "Ejecutar de todas formas".
+- Linux: descomprime, y en una terminal:  chmod +x VIGILIA.x86_64 && ./VIGILIA.x86_64
+
+No necesita instalar nada (ni Godot). Requiere una tarjeta gráfica con OpenGL 3.3.
+
+CONTROLES (se pueden cambiar en Ajustes -> Controles)
+  Moverse ............ WASD
+  Apuntar y disparar . Flechas, o ratón + clic izquierdo
+  Esquivar ........... Espacio   (rozar una bala al esquivar = "Lucidez": 3 críticos)
+  Tomar / comprar .... E
+  Objeto activo ...... Q
+  Bomba .............. F   (las explosiones abren muros agrietados: salas secretas)
+  Inventario y mapa .. Tab
+  Pausa .............. Esc
+
+OBJETIVO
+Atraviesa los dos pisos del Umbral de Cera, derrota al Campanero Mayor y a
+Madre Cirio, y abre el Párpado. Combina reliquias: sus efectos se encadenan.
+Ojo: al bajar de piso, el Sueño se adapta al daño que más usaste.
+
+Los ajustes y el historial se guardan en:
+  Windows: %APPDATA%\vigilia\     Linux: ~/.local/share/vigilia/

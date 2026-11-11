@@ -1,0 +1,53 @@
+{
+	"version": 1,
+	"room_clear": {
+		"chance": 0.42,
+		"luck_bonus": 0.03,
+		"table": [
+			{"kind": "coin", "weight": 40},
+			{"kind": "heart", "weight": 18},
+			{"kind": "key", "weight": 12},
+			{"kind": "bomb", "weight": 12},
+			{"kind": "wax", "weight": 7},
+			{"kind": "coin3", "weight": 8}
+		]
+	},
+	"enemy_drop": {
+		"chance": 0.05,
+		"luck_bonus": 0.005,
+		"table": [
+			{"kind": "coin", "weight": 70},
+			{"kind": "heart", "weight": 20},
+			{"kind": "wax", "weight": 10}
+		]
+	},
+	"champion_drop": {
+		"chance": 1.0,
+		"table": [
+			{"kind": "coin3", "weight": 30},
+			{"kind": "heart", "weight": 25},
+			{"kind": "key", "weight": 20},
+			{"kind": "bomb", "weight": 15},
+			{"kind": "wax", "weight": 10}
+		]
+	},
+	"secret_pickup": {
+		"chance": 1.0,
+		"table": [
+			{"kind": "coin3", "weight": 35},
+			{"kind": "key", "weight": 25},
+			{"kind": "bomb", "weight": 25},
+			{"kind": "wax", "weight": 15}
+		]
+	},
+	"rarity_weights": {"common": 1.0, "uncommon": 0.65, "rare": 0.28, "cursed": 0.35, "legendary": 0.05},
+	"luck_rarity_bonus": {"rare": 0.08, "legendary": 0.04},
+	"item_prices": {"common": 10, "uncommon": 14, "rare": 18, "cursed": 8, "legendary": 25},
+	"shop_consumables": [
+		{"kind": "heart", "price": 3},
+		{"kind": "key", "price": 5},
+		{"kind": "bomb", "price": 5},
+		{"kind": "wax", "price": 4}
+	],
+	"fallback_item": "black_bead"
+}

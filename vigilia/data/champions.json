@@ -1,0 +1,11 @@
+{
+	"version": 1,
+	"_comment": "Variantes campeonas: alteran el COMPORTAMIENTO (behavior), no solo el color o las estadísticas.",
+	"champions": [
+		{"id": "ardent", "name": "Ardiente", "color": "#ff8c3a", "hp_mult": 1.25, "immune": ["burn"], "behavior": "fire_trail", "params": {"interval": 0.45, "radius": 20, "ttl": 2.6}, "weight": 1.0},
+		{"id": "twin", "name": "Gemelo", "color": "#c0a0ff", "hp_mult": 1.1, "behavior": "split_on_death", "params": {"count": 2, "hp_mult": 0.45, "scale": 0.72}, "weight": 1.0},
+		{"id": "veiled", "name": "Velado", "color": "#9aa0b8", "hp_mult": 1.15, "behavior": "veil", "params": {"reveal_range": 170, "alpha": 0.12}, "weight": 0.8},
+		{"id": "watcher", "name": "Vigía", "color": "#ffe066", "hp_mult": 1.2, "behavior": "retaliate", "params": {"count": 4, "cooldown": 1.2, "speed": 220}, "weight": 1.0},
+		{"id": "colossal", "name": "Colosal", "color": "#e05050", "hp_mult": 2.2, "scale": 1.4, "speed_mult": 0.8, "knockback_resist": 1.0, "contact_damage_add": 1, "behavior": "", "params": {}, "weight": 0.7}
+	]
+}

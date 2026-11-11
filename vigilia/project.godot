@@ -1,0 +1,53 @@
+; Engine configuration file.
+; VIGILIA — La Espina del Durmiente.
+; Las acciones de entrada se registran en tiempo de ejecución desde
+; res://src/autoload/settings_manager.gd para permitir el remapeo persistente.
+
+config_version=5
+
+[application]
+
+config/name="VIGILIA"
+config/description="VIGILIA — La Espina del Durmiente. Roguelite 2D top-down de acción y construcción de builds."
+config/version="0.1.0-fase1"
+run/main_scene="res://scenes/main_menu.tscn"
+config/use_custom_user_dir=true
+config/custom_user_dir_name="vigilia"
+config/features=PackedStringArray("4.7", "GL Compatibility")
+config/icon="res://icon.svg"
+
+[autoload]
+
+EventBus="*res://src/autoload/event_bus.gd"
+ContentDB="*res://src/autoload/content_db.gd"
+Settings="*res://src/autoload/settings_manager.gd"
+SaveManager="*res://src/autoload/save_manager.gd"
+Audio="*res://src/autoload/audio_manager.gd"
+GameManager="*res://src/autoload/game_manager.gd"
+
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=720
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[layer_names]
+
+2d_physics/layer_1="walls"
+2d_physics/layer_2="obstacles"
+2d_physics/layer_3="player"
+2d_physics/layer_4="enemies"
+2d_physics/layer_5="allies"
+
+[physics]
+
+common/physics_ticks_per_second=60
+2d/default_gravity=0.0
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+environment/defaults/default_clear_color=Color(0.039, 0.027, 0.055, 1)

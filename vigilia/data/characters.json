@@ -1,0 +1,37 @@
+{
+	"version": 1,
+	"characters": [
+		{
+			"id": "espina",
+			"name": "La Espina",
+			"title": "Astilla de vigilia",
+			"desc": "Una astilla de lucidez clavada en el sueño de un dios. Ágil, precisa y frágil.",
+			"stats": {
+				"max_health": 6,
+				"damage": 3.5,
+				"fire_rate": 3.0,
+				"move_speed": 250,
+				"range": 460,
+				"shot_speed": 560,
+				"crit_chance": 0.05
+			},
+			"start_hp": 6,
+			"start_wax": 0,
+			"start_items": [],
+			"start_active": "broken_bell",
+			"start_active_charged": true,
+			"start_resources": {"coins": 0, "keys": 1, "bombs": 1},
+			"mechanic": {
+				"name": "Lucidez",
+				"desc": "Esquivar rozando un proyectil enemigo concede 3 críticos garantizados."
+			},
+			"graze_crits": 3,
+			"weakness": {
+				"name": "Astilla quebradiza",
+				"desc": "Sus astillas pierden hasta un 40% de daño en el último tercio del alcance."
+			},
+			"projectile": {"falloff": 0.4},
+			"colors": {"body": "#15101a", "edge": "#6a4b58", "eye": "#ffd27a"}
+		}
+	]
+}

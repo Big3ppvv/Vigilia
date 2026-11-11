@@ -1,0 +1,69 @@
+{
+	"version": 1,
+	"_comment": "La dificultad escala por COMPOSICIÓN (nuevos enemigos, overrides de comportamiento, campeones, densidad), no solo por vida.",
+	"floors": [
+		{
+			"id": "umbral_1",
+			"name": "Umbral de Cera I",
+			"biome": "wax",
+			"music": "floor",
+			"rooms": [8, 10],
+			"treasure": 1,
+			"shop": 1,
+			"secret": true,
+			"branch_chance": 0.55,
+			"loop_chance": 0.18,
+			"max_loops": 2,
+			"min_boss_distance": 3,
+			"boss": "bell_warden",
+			"boss_reward": "choice2",
+			"treasure_locked": false,
+			"enemy_hp_mult": 1.0,
+			"enemy_speed_mult": 1.0,
+			"champion_chance": 0.06,
+			"difficulty_weights": [[1, 0.65], [2, 0.3], [3, 0.05]],
+			"enemy_pool": [
+				{"id": "wick", "weight": 3.0},
+				{"id": "drip", "weight": 2.0},
+				{"id": "mourner", "weight": 2.0},
+				{"id": "moth", "weight": 1.2},
+				{"id": "bellringer", "weight": 0.8}
+			],
+			"enemy_overrides": {}
+		},
+		{
+			"id": "umbral_2",
+			"name": "Umbral de Cera II",
+			"biome": "wax",
+			"music": "floor",
+			"rooms": [10, 12],
+			"treasure": 1,
+			"shop": 1,
+			"secret": true,
+			"branch_chance": 0.5,
+			"loop_chance": 0.22,
+			"max_loops": 2,
+			"min_boss_distance": 4,
+			"boss": "mother_candle",
+			"boss_reward": "single",
+			"treasure_locked": true,
+			"enemy_hp_mult": 1.15,
+			"enemy_speed_mult": 1.06,
+			"champion_chance": 0.15,
+			"difficulty_weights": [[1, 0.3], [2, 0.5], [3, 0.2]],
+			"enemy_pool": [
+				{"id": "wick", "weight": 2.0},
+				{"id": "drip", "weight": 1.6},
+				{"id": "mourner", "weight": 2.0},
+				{"id": "moth", "weight": 1.5},
+				{"id": "bellringer", "weight": 1.0},
+				{"id": "reliquary", "weight": 1.6}
+			],
+			"enemy_overrides": {
+				"mourner": {"burst": 3},
+				"drip": {"land_ring": 4},
+				"wick": {"lunge_windup": 0.36}
+			}
+		}
+	]
+}

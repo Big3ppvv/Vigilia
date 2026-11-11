@@ -1,0 +1,31 @@
+{
+	"version": 1,
+	"title": "VIGILIA",
+	"subtitle": "La Espina del Durmiente",
+	"premise": "Algo inmenso duerme, y su sueño es un mundo. Tú eres la única cosa despierta dentro de él: una espina de lucidez que el sueño intenta arrullar hasta disolverla.",
+	"tutorial": "WASD moverse · Ratón o flechas disparar · Espacio esquivar · E interactuar · Q objeto activo · F bomba · Tab inventario",
+	"floor_intros": [
+		"Aquí la cera recuerda lo que la carne olvidó.",
+		"Más abajo, las velas arden hacia dentro."
+	],
+	"epitaphs": [
+		"La cera recuerda tu forma. El sueño, no.",
+		"Te arrullaron. Por un instante, fue dulce.",
+		"Alguien, muy lejos, deja de apretar una mano.",
+		"El Durmiente se gira en su lecho. Ni siquiera te notó.",
+		"Una espina menos. El sueño cicatriza."
+	],
+	"victory": [
+		"El Párpado tiembla. Al otro lado, algo contiene la respiración. ¿Era esto despertar, o solo otra capa del sueño?"
+	],
+	"secret_inscriptions": [
+		"«No despiertes a quien sueña contigo: dejarías de existir.»",
+		"«Las velas no lloran. Recuerdan.»",
+		"«Hubo una ventana. Hubo una silla junto a la cama. Hubo una voz que contaba hasta diez.»",
+		"«El Arrullo no es cruel. Solo quiere que descanses.»"
+	],
+	"bosses": {
+		"bell_warden": "Toca a muerto por cada espina que cruza el Umbral. Nadie le dijo que el campanario está vacío.",
+		"mother_candle": "Gotea sobre sus hijos para que no tengan frío. Cree que la luz es una forma de amor."
+	}
+}
