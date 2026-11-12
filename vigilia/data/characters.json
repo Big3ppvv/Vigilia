@@ -1,11 +1,11 @@
 {
-	"version": 1,
+	"version": 2,
 	"characters": [
 		{
 			"id": "espina",
 			"name": "La Espina",
-			"title": "Astilla de vigilia",
-			"desc": "Una astilla de lucidez clavada en el sueño de un dios. Ágil, precisa y frágil.",
+			"title": "La última llama",
+			"desc": "Lo que queda despierto de ti, encendido junto a una cama. Ágil, precisa y frágil.",
 			"stats": {
 				"max_health": 6,
 				"damage": 3.5,
@@ -20,18 +20,23 @@
 			"start_items": [],
 			"start_active": "broken_bell",
 			"start_active_charged": true,
-			"start_resources": {"coins": 0, "keys": 1, "bombs": 1},
 			"mechanic": {
 				"name": "Lucidez",
-				"desc": "Esquivar rozando un proyectil enemigo concede 3 críticos garantizados."
+				"desc": "Esquivar rozando un disparo enemigo concede 3 críticos garantizados."
 			},
 			"graze_crits": 3,
 			"weakness": {
-				"name": "Astilla quebradiza",
-				"desc": "Sus astillas pierden hasta un 40% de daño en el último tercio del alcance."
+				"name": "Llama corta",
+				"desc": "Sus brasas pierden hasta un 40% de daño en el último tercio del alcance."
 			},
-			"projectile": {"falloff": 0.4},
-			"colors": {"body": "#15101a", "edge": "#6a4b58", "eye": "#ffd27a"}
+			"projectile": {
+				"falloff": 0.4
+			},
+			"colors": {
+				"flame": "#ffb347",
+				"core": "#fff1c1",
+				"eye": "#ffd27a"
+			}
 		}
 	]
 }

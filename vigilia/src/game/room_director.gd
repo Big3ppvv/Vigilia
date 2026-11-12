@@ -1,8 +1,15 @@
 class_name RoomDirector
 extends Node
 ## Gestiona la sala actual dentro del piso: carga/descarga, persistencia del
-## estado (consumibles en el suelo, pedestales, rocas rotas), cierre de puertas
-## en combate, detección de sala despejada, transiciones y puertas con llave.
+## estado (consumibles en el suelo, pedestales, cera rota, velas), cierre de
+## puertas en combate, transiciones y el DESPERTAR de la sala.
+##
+## Una sala de combate despierta de dos maneras:
+##   - por la luz: el jugador enciende todas sus velas votivas y las sombras que
+##     quedan se disipan (sin bajas ni botín de ellas);
+##   - por la fuerza: no queda ninguna sombra y las velas se encienden solas.
+## En ambos casos la luz vuelve a la sala, se abren las puertas y llega la
+## recompensa. CandleLighting y el HUD escuchan EventBus.room_awakened.
 
 signal room_changed(rd: RoomData)
 signal room_cleared(rd: RoomData)
@@ -16,7 +23,7 @@ var floor_index := 0
 var combat_active := false
 var transitioning := false
 var fade: ColorRect
-var _locked_msg_cd := 0.0
+var votives: Array[VotiveCandle] = []
 
 
 func load_floor(l: FloorLayout, fi: int) -> void:
@@ -36,7 +43,7 @@ func enter_room(coord: Vector2i, entry_dir: int) -> void:
 		view = null
 	current = layout.get_room(coord)
 	view = RoomView.new()
-	view.setup(current, floor_index, _lore_for(current))
+	view.setup(current, floor_index, _lore_for(current), game.floor_def)
 	view.secret_revealed.connect(_on_secret_revealed)
 	game.room_layer.add_child(view)
 	world.room = view
@@ -44,6 +51,7 @@ func enter_room(coord: Vector2i, entry_dir: int) -> void:
 	var pl := world.player
 	pl.global_position = pos
 	pl.velocity = Vector2.ZERO
+	pl.kindling_target = null
 	for f in world.familiars:
 		if is_instance_valid(f):
 			f.global_position = pos
@@ -55,6 +63,7 @@ func enter_room(coord: Vector2i, entry_dir: int) -> void:
 		if not bool(door["hidden"]):
 			layout.get_room(door["to"]).known = true
 	_spawn_room_contents()
+	_spawn_votives()
 	if current.is_combat() and not current.cleared:
 		view.set_doors_open(false)
 		combat_active = true
@@ -64,6 +73,7 @@ func enter_room(coord: Vector2i, entry_dir: int) -> void:
 		combat_active = false
 	world.engine.emit("room_enter", {"depth": 0, "room_type": current.type, "tags": PackedStringArray(["room_enter"])})
 	EventBus.room_entered.emit(current)
+	_emit_votives()
 	room_changed.emit(current)
 
 
@@ -91,6 +101,8 @@ func _clear_room_entities() -> void:
 		if n == world.player or n.is_in_group("familiars"):
 			continue
 		n.queue_free()
+	votives.clear()
+	world.votives.clear()
 	world.enemies.clear()
 	world.allies.clear()
 	world.projectiles.clear_all()
@@ -110,7 +122,7 @@ func _spawn_room_contents() -> void:
 	for ped in current.pedestals:
 		if bool(ped.get("taken", false)):
 			continue
-		if not bool(ped.get("consumable", false)) and str(ped.get("item_id", "")) == "":
+		if str(ped.get("item_id", "")) == "":
 			continue
 		var node := ItemPedestal.new()
 		node.position = ped["pos"] if ped.has("pos") else RoomGrid.tile_center(ped["tile"]) + Vector2(0, 14)
@@ -118,6 +130,19 @@ func _spawn_room_contents() -> void:
 		game.entity_layer.add_child(node)
 	if current.type == "boss" and current.cleared and bool(current.flags.get("exit_open", false)):
 		game.spawn_exit_portal()
+
+
+func _spawn_votives() -> void:
+	for v in current.votives:
+		if current.cleared:
+			v["lit"] = true
+		var node := VotiveCandle.new()
+		node.position = RoomGrid.tile_center(v["tile"]) + Vector2(0, 12)
+		node.setup(world, v)
+		node.lit_changed.connect(_on_votive_changed)
+		game.entity_layer.add_child(node)
+		votives.append(node)
+		world.votives.append(node)
 
 
 func _spawn_enemies() -> void:
@@ -130,27 +155,53 @@ func _spawn_enemies() -> void:
 		if e != null and e.is_boss:
 			game.on_boss_spawned(e)
 		i += 1
-	Audio.play("spawn", -4.0)
+	Audio.play("spawn", -6.0)
 
 
-func _physics_process(delta: float) -> void:
-	_locked_msg_cd = maxf(0.0, _locked_msg_cd - delta)
+func lit_votives() -> int:
+	var n := 0
+	for v in votives:
+		if is_instance_valid(v) and v.lit:
+			n += 1
+	return n
+
+
+func _emit_votives() -> void:
+	EventBus.votives_changed.emit(lit_votives(), votives.size())
+
+
+func _on_votive_changed(_candle: VotiveCandle, _lit: bool) -> void:
+	_emit_votives()
+
+
+func _physics_process(_delta: float) -> void:
 	if layout == null or view == null or transitioning or world.player == null or not world.player.alive:
 		return
-	if combat_active and world.live_enemy_count() == 0:
-		_on_room_cleared()
+	if combat_active:
+		if world.live_enemy_count() == 0:
+			_on_room_cleared(false)
+		elif not votives.is_empty() and lit_votives() == votives.size():
+			_awaken_by_light()
 	_check_doors()
 
 
-func _on_room_cleared() -> void:
+## Todas las velas arden: las sombras no soportan la luz y se deshacen.
+func _awaken_by_light() -> void:
+	for e in world.enemies.duplicate():
+		if is_instance_valid(e) and e.alive and not e.is_boss:
+			e.dissolve()
+	world.projectiles.clear_team(Team.ENEMY, true)
+	world.run.rooms_by_light += 1
+	_on_room_cleared(true)
+
+
+func _on_room_cleared(by_light: bool) -> void:
 	combat_active = false
 	current.cleared = true
 	view.set_doors_open(true)
-	Audio.play("door")
-	# Pulso de "sala despejada": cierre visible del bucle de la sala.
-	var pp := world.player.global_position
-	world.fx.ring(pp, 110.0, Palette.WAX, 0.55, 3.0)
-	world.fx.ring(pp, 190.0, Color(Palette.WAX, 0.6), 0.8, 2.0)
+	for v in votives:
+		if is_instance_valid(v) and not v.lit:
+			v.ignite(false)
 	world.run.rooms_cleared += 1
 	world.player.inventory.add_charge(1)
 	if current.type == "boss":
@@ -159,8 +210,11 @@ func _on_room_cleared() -> void:
 		var kind: String = game.loot.roll_pickup("room_clear", world.drop_rng, world.player_luck())
 		if kind != "":
 			world.spawn_pickup(kind, view.grid.nearest_walkable_pos(RoomView.center()))
-	world.engine.emit("room_clear", {"depth": 0, "room_type": current.type, "tags": PackedStringArray(["room_clear"])})
+	world.engine.emit("room_clear", {"depth": 0, "room_type": current.type, "by_light": by_light, "tags": PackedStringArray(["room_clear"])})
+	Audio.play("awaken" if by_light else "door")
+	EventBus.room_awakened.emit(current, by_light)
 	EventBus.room_cleared.emit(current)
+	_emit_votives()
 	room_cleared.emit(current)
 
 
@@ -169,20 +223,7 @@ func _check_doors() -> void:
 	var pp := pl.global_position
 	for d in current.doors:
 		var door: Dictionary = current.doors[d]
-		if bool(door["hidden"]):
-			continue
-		if bool(door.get("locked", false)):
-			if doors_open() and pp.distance_to(RoomView.door_edge_center(d)) < 60.0:
-				if pl.keys > 0:
-					pl.add_resources(0, -1, 0)
-					view.unlock_door(d)
-					Audio.play("door", 0.0, 1.3)
-					EventBus.toast.emit("La cerradura de hueso cede", Palette.GOLD)
-				elif _locked_msg_cd <= 0.0:
-					_locked_msg_cd = 2.0
-					EventBus.toast.emit("Necesitas una llave", Palette.UI_DIM)
-			continue
-		if not view.door_is_passable(d):
+		if bool(door["hidden"]) or not view.door_is_passable(d):
 			continue
 		var beyond := false
 		match d:
@@ -209,9 +250,9 @@ func transition(d: int) -> void:
 	transitioning = true
 	world.player.controllable = false
 	var target_coord: Vector2i = current.doors[d]["to"]
-	await fade_to(1.0, 0.12)
+	await fade_to(1.0, 0.14)
 	enter_room(target_coord, FloorLayout.opposite(d))
-	await fade_to(0.0, 0.14)
+	await fade_to(0.0, 0.18)
 	if world.player != null and world.player.alive:
 		world.player.controllable = true
 	transitioning = false
@@ -231,5 +272,5 @@ func _on_secret_revealed(dir: int) -> void:
 	if sec != null:
 		sec.known = true
 	Audio.play("secret")
-	EventBus.toast.emit("Un pasaje oculto se abre en la cera", Palette.UI_ACCENT)
+	EventBus.toast.emit("La cera se abre: había un pasaje", Palette.UI_ACCENT)
 	room_changed.emit(current)

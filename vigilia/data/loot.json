@@ -1,53 +1,26 @@
 {
-	"version": 1,
+	"version": 2,
+	"_comment": "Sin monedas, llaves ni bombas. 'heart' = ascua (devuelve 1 de llama), 'wax' = cera (escudo). Los recuerdos de la Cabecera cuestan llama MÁXIMA (altar_costs).",
 	"room_clear": {
-		"chance": 0.6,
+		"chance": 0.45,
 		"luck_bonus": 0.03,
-		"table": [
-			{"kind": "coin", "weight": 36},
-			{"kind": "heart", "weight": 18},
-			{"kind": "key", "weight": 12},
-			{"kind": "bomb", "weight": 12},
-			{"kind": "wax", "weight": 7},
-			{"kind": "coin3", "weight": 16}
-		]
+		"table": [{"kind": "heart", "weight": 55}, {"kind": "wax", "weight": 45}]
 	},
 	"enemy_drop": {
-		"chance": 0.12,
-		"luck_bonus": 0.005,
-		"table": [
-			{"kind": "coin", "weight": 86},
-			{"kind": "heart", "weight": 9},
-			{"kind": "wax", "weight": 5}
-		]
+		"chance": 0.04,
+		"luck_bonus": 0.004,
+		"table": [{"kind": "heart", "weight": 70}, {"kind": "wax", "weight": 30}]
 	},
 	"champion_drop": {
 		"chance": 1.0,
-		"table": [
-			{"kind": "coin3", "weight": 30},
-			{"kind": "heart", "weight": 25},
-			{"kind": "key", "weight": 20},
-			{"kind": "bomb", "weight": 15},
-			{"kind": "wax", "weight": 10}
-		]
+		"table": [{"kind": "heart", "weight": 60}, {"kind": "wax", "weight": 40}]
 	},
 	"secret_pickup": {
 		"chance": 1.0,
-		"table": [
-			{"kind": "coin3", "weight": 35},
-			{"kind": "key", "weight": 25},
-			{"kind": "bomb", "weight": 25},
-			{"kind": "wax", "weight": 15}
-		]
+		"table": [{"kind": "heart", "weight": 55}, {"kind": "wax", "weight": 45}]
 	},
 	"rarity_weights": {"common": 1.0, "uncommon": 0.65, "rare": 0.28, "cursed": 0.35, "legendary": 0.05},
 	"luck_rarity_bonus": {"rare": 0.08, "legendary": 0.04},
-	"item_prices": {"common": 8, "uncommon": 11, "rare": 15, "cursed": 6, "legendary": 20},
-	"shop_consumables": [
-		{"kind": "heart", "price": 3},
-		{"kind": "key", "price": 5},
-		{"kind": "bomb", "price": 5},
-		{"kind": "wax", "price": 4}
-	],
+	"altar_costs": {"common": 1, "uncommon": 1, "rare": 1, "cursed": 0, "legendary": 2},
 	"fallback_item": "black_bead"
 }

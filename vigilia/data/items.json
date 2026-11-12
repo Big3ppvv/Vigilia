@@ -1,15 +1,15 @@
 {
-	"version": 1,
+	"version": 2,
 	"items": [
 		{
 			"id": "split_splinter",
-			"name": "Astilla Bífida",
-			"desc": "Tus astillas se parten en tres al impactar. Los fragmentos no vuelven a partirse.",
-			"flavor": "Lo que se rompe, se multiplica.",
+			"name": "Cerilla partida",
+			"desc": "Tus brasas se parten en tres al impactar. Los fragmentos no vuelven a partirse.",
+			"flavor": "La partiste para que durara el doble. Ardió el doble de rápido.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["projectile", "split", "thorn"],
-			"pools": {"treasure": 1.0, "boss": 0.6, "shop": 0.5},
+			"pools": {"treasure": 1.0, "boss": 0.6, "altar": 0.5},
 			"stats": [{"stat": "damage", "op": "mult", "value": 0.92}],
 			"effects": [
 				{
@@ -23,13 +23,13 @@
 		},
 		{
 			"id": "candle_powder",
-			"name": "Pólvora de Cirio",
-			"desc": "Tus astillas estallan al impactar (55% de su daño). Tus explosiones no te hieren.",
-			"flavor": "Cera, mecha y una paciencia que se acabó.",
+			"name": "Vela de broma",
+			"desc": "Tus brasas estallan al impactar (55% de su daño). Tus explosiones no te hieren.",
+			"flavor": "De las de cumpleaños, que vuelven a encenderse por más que soples. Te reías tanto.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["explosion", "powder"],
-			"pools": {"treasure": 1.0, "boss": 0.8, "shop": 0.5},
+			"pools": {"treasure": 1.0, "boss": 0.8, "altar": 0.5},
 			"effects": [
 				{
 					"trigger": ["hit", "impact"],
@@ -42,29 +42,28 @@
 		},
 		{
 			"id": "votive_bile",
-			"name": "Hiel Votiva",
-			"desc": "Tus explosiones envenenan (2 cargas). +2 bombas.",
-			"flavor": "Ofrenda amarga para un santo que no escucha.",
+			"name": "Jarabe amargo",
+			"desc": "Tus explosiones envenenan (2 cargas).",
+			"flavor": "Una cucharada antes de dormir. Sabía a castigo y te lo daban con cariño.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["poison", "explosion"],
-			"pools": {"treasure": 1.0, "shop": 0.7, "secret": 0.6},
+			"pools": {"treasure": 1.0, "secret": 0.6, "altar": 0.7},
 			"effects": [
 				{
 					"trigger": "hit",
 					"filter": {"tags_any": ["explosion"]},
 					"action": "apply_status",
 					"params": {"status": "poison", "stacks": 2, "duration": 4.0}
-				},
-				{"trigger": "acquire", "action": "add_resource", "params": {"bombs": 2}}
+				}
 			],
 			"icon": {"glyph": "flask", "c1": "#8fbf3a", "c2": "#3a4a20"}
 		},
 		{
 			"id": "rancid_communion",
-			"name": "Comunión Rancia",
-			"desc": "Los enemigos que mueren envenenados pueden alzarse como Ánimas aliadas (60%, máx. 4).",
-			"flavor": "Comparte el pan con los muertos y te seguirán.",
+			"name": "Recordatorio de difuntos",
+			"desc": "Las sombras que mueren envenenadas pueden alzarse como Ánimas aliadas (60%, máx. 4).",
+			"flavor": "Lleva la cara de alguien que también durmió mucho tiempo. Ahora vela contigo.",
 			"type": "passive",
 			"rarity": "rare",
 			"tags": ["poison", "summon", "undead"],
@@ -82,77 +81,77 @@
 		},
 		{
 			"id": "moth_eye",
-			"name": "Ojo de Polilla",
-			"desc": "Tus astillas buscan a sus presas. +10% alcance.",
+			"name": "Ojo de polilla",
+			"desc": "Tus brasas buscan a sus presas. +10% alcance.",
 			"flavor": "Siempre hacia la luz. Siempre hacia ti.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["projectile", "homing", "moth"],
-			"pools": {"treasure": 1.0, "boss": 0.6, "shop": 0.6},
-			"stats": [
-				{"stat": "homing", "op": "flat", "value": 0.55},
-				{"stat": "range", "op": "pct", "value": 0.1}
-			],
+			"pools": {"treasure": 1.0, "boss": 0.6, "altar": 0.6},
+			"stats": [{"stat": "homing", "op": "flat", "value": 0.55}, {"stat": "range", "op": "pct", "value": 0.1}],
 			"icon": {"glyph": "eye", "c1": "#d8d0ff", "c2": "#6a5acd"}
 		},
 		{
 			"id": "moth_wing",
-			"name": "Ala de Polilla",
+			"name": "Ala de polilla",
 			"desc": "+12% velocidad. La esquiva se recarga un 20% antes.",
-			"flavor": "Polvo que pesa menos que el miedo.",
+			"flavor": "Entró por la ventana la primera noche. Nadie tuvo valor de echarla.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["moth", "speed"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
-			"stats": [
-				{"stat": "move_speed", "op": "pct", "value": 0.12},
-				{"stat": "dodge_cooldown", "op": "pct", "value": -0.2}
-			],
+			"pools": {"treasure": 1.0, "altar": 1.0},
+			"stats": [{"stat": "move_speed", "op": "pct", "value": 0.12}, {"stat": "dodge_cooldown", "op": "pct", "value": -0.2}],
 			"icon": {"glyph": "wing", "c1": "#d8d0ff", "c2": "#8a7f9a"}
 		},
 		{
 			"id": "wing_dust",
-			"name": "Polvo de Alas",
-			"desc": "Al esquivar liberas un anillo de 8 escamas cortantes.",
+			"name": "Polvo de alas",
+			"desc": "Al esquivar sueltas un anillo de 8 escamas cortantes.",
 			"flavor": "Cada aleteo deja cicatrices en el aire.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["moth", "dodge"],
-			"pools": {"treasure": 1.0, "shop": 0.8},
+			"pools": {"treasure": 1.0, "altar": 0.8},
 			"effects": [
 				{
 					"trigger": "dodge",
 					"action": "spawn_projectiles",
-					"params": {"pattern": "ring", "count": 8, "damage_mult": 0.6, "speed_mult": 0.75, "size_mult": 0.8, "range_mult": 0.6, "tags": ["projectile", "dust"], "color": "#d8d0ff"}
+					"params": {
+						"pattern": "ring",
+						"count": 8,
+						"damage_mult": 0.6,
+						"speed_mult": 0.75,
+						"size_mult": 0.8,
+						"range_mult": 0.6,
+						"tags": ["projectile", "dust"],
+						"color": "#d8d0ff"
+					}
 				}
 			],
 			"icon": {"glyph": "dust", "c1": "#d8d0ff", "c2": "#8a7f9a"}
 		},
 		{
 			"id": "black_bead",
-			"name": "Cuenta de Rosario Negro",
-			"desc": "+2 vida máxima y +0.5 daño. Te cura 2.",
-			"flavor": "Una oración por cada vez que no despertaste.",
+			"name": "Rosario de la abuela",
+			"desc": "+2 llama máxima y +0.5 daño. Recuperas 2 de llama.",
+			"flavor": "Lo dejó en la mesita. Reza bajito cuando cree que nadie la oye.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["health"],
-			"pools": {"treasure": 1.0, "shop": 1.0, "boss": 1.0},
-			"stats": [
-				{"stat": "max_health", "op": "flat", "value": 2},
-				{"stat": "damage", "op": "flat", "value": 0.5}
-			],
+			"pools": {"treasure": 1.0, "boss": 1.0, "altar": 1.0},
+			"stats": [{"stat": "max_health", "op": "flat", "value": 2}, {"stat": "damage", "op": "flat", "value": 0.5}],
 			"effects": [{"trigger": "acquire", "action": "heal", "params": {"amount": 2}}],
 			"icon": {"glyph": "bead", "c1": "#2a1d24", "c2": "#b3243b"}
 		},
 		{
 			"id": "amber_lens",
-			"name": "Lente de Ámbar",
-			"desc": "Astillas más grandes (+45%) y dañinas (+25%), pero más lentas (-15%).",
-			"flavor": "Atrapó una luz antigua y no la soltó.",
+			"name": "Gafas de leer",
+			"desc": "Brasas más grandes (+45%) y dañinas (+25%), pero más lentas (-15%).",
+			"flavor": "Las de quien te lee cada noche. Siempre se las olvida en tu mesita.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["projectile", "size"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"stats": [
 				{"stat": "shot_size", "op": "pct", "value": 0.45},
 				{"stat": "damage", "op": "pct", "value": 0.25},
@@ -162,9 +161,9 @@
 		},
 		{
 			"id": "tallow_pact",
-			"name": "Pacto de Sebo",
-			"desc": "Cada 8.º disparo, si tienes más de 1 de vida, sangras 1 y lanzas una astilla de sangre (x4 daño, perfora 5).",
-			"flavor": "Toda luz se paga con grasa.",
+			"name": "Aguja de suero",
+			"desc": "Cada 8.º disparo, si te queda más de 1 de llama, pierdes 1 y lanzas una brasa de sangre (x4 daño, atraviesa 5).",
+			"flavor": "Te la cambian cada tres días. Ya no te quejas.",
 			"type": "passive",
 			"rarity": "cursed",
 			"tags": ["blood", "sacrifice"],
@@ -176,7 +175,17 @@
 					"every": 8,
 					"actions": [
 						{"action": "self_damage", "params": {"amount": 1}},
-						{"action": "empower_projectile", "params": {"damage_mult": 4.0, "size_mult": 2.2, "pierce_add": 5, "color": "#b3243b", "tags_add": ["blood"], "knockback_mult": 2.5}}
+						{
+							"action": "empower_projectile",
+							"params": {
+								"damage_mult": 4.0,
+								"size_mult": 2.2,
+								"pierce_add": 5,
+								"color": "#b3243b",
+								"tags_add": ["blood"],
+								"knockback_mult": 2.5
+							}
+						}
 					]
 				}
 			],
@@ -184,8 +193,8 @@
 		},
 		{
 			"id": "singing_wound",
-			"name": "Herida que Canta",
-			"desc": "Al recibir daño liberas un anillo de 10 astillas y ganas +30% cadencia 4 s (acumula x3).",
+			"name": "Herida que canta",
+			"desc": "Al recibir daño sueltas un anillo de 10 brasas y disparas un 30% más rápido durante 4 s (acumula x3).",
 			"flavor": "No duele. Suena.",
 			"type": "passive",
 			"rarity": "uncommon",
@@ -195,8 +204,21 @@
 				{
 					"trigger": "hurt",
 					"actions": [
-						{"action": "spawn_projectiles", "params": {"pattern": "ring", "count": 10, "damage_mult": 1.0, "speed_mult": 0.9, "tags": ["projectile", "ring"], "color": "#ff7a8a"}},
-						{"action": "temp_stat", "params": {"stat": "fire_rate", "op": "pct", "value": 0.3, "duration": 4.0, "max_stacks": 3, "key": "singing_wound"}}
+						{
+							"action": "spawn_projectiles",
+							"params": {
+								"pattern": "ring",
+								"count": 10,
+								"damage_mult": 1.0,
+								"speed_mult": 0.9,
+								"tags": ["projectile", "ring"],
+								"color": "#ff7a8a"
+							}
+						},
+						{
+							"action": "temp_stat",
+							"params": {"stat": "fire_rate", "op": "pct", "value": 0.3, "duration": 4.0, "max_stacks": 3, "key": "singing_wound"}
+						}
 					]
 				}
 			],
@@ -204,13 +226,13 @@
 		},
 		{
 			"id": "black_milk_tooth",
-			"name": "Diente de Leche Negra",
+			"name": "Diente de leche",
 			"desc": "+10% prob. de crítico. Tus críticos causan Sangrado.",
-			"flavor": "Se cayó solo. Nadie lo puso bajo la almohada.",
+			"flavor": "Lo guardaron en una caja de cerillas. Todavía está ahí, en un cajón.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["crit", "bleed"],
-			"pools": {"treasure": 1.0, "shop": 0.6},
+			"pools": {"treasure": 1.0, "altar": 0.6},
 			"stats": [{"stat": "crit_chance", "op": "flat", "value": 0.1}],
 			"effects": [
 				{
@@ -224,13 +246,13 @@
 		},
 		{
 			"id": "live_ember",
-			"name": "Brasa Viva",
-			"desc": "22% de prob. de Quemar. Los enemigos que mueren ardiendo estallan.",
+			"name": "Brasa viva",
+			"desc": "22% de prob. de Quemar. Las sombras que mueren ardiendo estallan.",
 			"flavor": "Sigue latiendo aunque la saques del fuego.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["fire", "explosion"],
-			"pools": {"treasure": 1.0, "boss": 0.8, "shop": 0.5},
+			"pools": {"treasure": 1.0, "boss": 0.8, "altar": 0.5},
 			"effects": [
 				{
 					"trigger": "hit",
@@ -250,13 +272,13 @@
 		},
 		{
 			"id": "candle_frost",
-			"name": "Escarcha de Vela",
+			"name": "Bolsa de hielo",
 			"desc": "30% de prob. de Escarchar (ralentiza movimiento y acciones). Escarcha + Quemadura = Choque térmico.",
-			"flavor": "Una vela que ardió hacia dentro hasta helarse.",
+			"flavor": "Te la ponían en la frente cuando la fiebre no bajaba.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["ice"],
-			"pools": {"treasure": 1.0, "shop": 0.7},
+			"pools": {"treasure": 1.0, "altar": 0.7},
 			"effects": [
 				{
 					"trigger": "hit",
@@ -270,44 +292,38 @@
 		},
 		{
 			"id": "wick_crown",
-			"name": "Corona de Mecha",
-			"desc": "+1 astilla por disparo, pero -20% daño.",
-			"flavor": "Quien la lleva arde por dos extremos.",
+			"name": "Corona de mecha",
+			"desc": "+1 brasa por disparo, pero -20% daño.",
+			"flavor": "Quien la lleva arde por los dos extremos.",
 			"type": "passive",
 			"rarity": "rare",
 			"tags": ["projectile", "multishot", "wick"],
 			"pools": {"treasure": 0.8, "boss": 1.0},
-			"stats": [
-				{"stat": "projectile_count", "op": "flat", "value": 1},
-				{"stat": "damage", "op": "mult", "value": 0.8}
-			],
+			"stats": [{"stat": "projectile_count", "op": "flat", "value": 1}, {"stat": "damage", "op": "mult", "value": 0.8}],
 			"icon": {"glyph": "crown", "c1": "#d9a441", "c2": "#ffb347"}
 		},
 		{
 			"id": "belfry_echo",
-			"name": "Eco del Campanario",
-			"desc": "Tus astillas rebotan 2 veces en las paredes; cada rebote +15% daño. +15% alcance.",
-			"flavor": "Ninguna campana suena una sola vez.",
+			"name": "Timbre de llamada",
+			"desc": "Tus brasas rebotan 2 veces en las paredes; cada rebote +15% daño. +15% alcance.",
+			"flavor": "Lo pulsaste una vez, al principio. Todavía resuena por el pasillo.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["projectile", "bounce", "bell"],
-			"pools": {"treasure": 1.0, "shop": 0.6},
-			"stats": [
-				{"stat": "bounces", "op": "flat", "value": 2},
-				{"stat": "range", "op": "pct", "value": 0.15}
-			],
+			"pools": {"treasure": 1.0, "altar": 0.6},
+			"stats": [{"stat": "bounces", "op": "flat", "value": 2}, {"stat": "range", "op": "pct", "value": 0.15}],
 			"projectile": {"bounce_damage_mult": 1.15},
 			"icon": {"glyph": "bell", "c1": "#a8743a", "c2": "#d9a441"}
 		},
 		{
 			"id": "wax_hunger",
-			"name": "Hambre de Cera",
-			"desc": "+1 cera (escudo). Al despejar una sala, 50% de obtener 1 cera.",
+			"name": "Hambre de cera",
+			"desc": "+1 cera (escudo). Al despertar una sala, 50% de obtener 1 cera.",
 			"flavor": "La cera se pega a quien la necesita.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["wax", "defense"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"effects": [
 				{"trigger": "room_clear", "chance": 0.5, "action": "add_wax", "params": {"amount": 1}},
 				{"trigger": "acquire", "action": "add_wax", "params": {"amount": 1}}
@@ -315,27 +331,14 @@
 			"icon": {"glyph": "candle", "c1": "#e8d9a8", "c2": "#b59e6a"}
 		},
 		{
-			"id": "bitten_coin",
-			"name": "Óbolo Mordido",
-			"desc": "+3% daño por cada óbolo que guardes (máx. +45%). +3 óbolos.",
-			"flavor": "Alguien comprobó que era auténtico. Con los dientes.",
-			"type": "passive",
-			"rarity": "uncommon",
-			"tags": ["greed"],
-			"pools": {"treasure": 0.8, "shop": 1.0, "secret": 0.8},
-			"stats": [{"stat": "damage", "op": "pct", "value": 0.03, "per": "coins", "cap": 0.45}],
-			"effects": [{"trigger": "acquire", "action": "add_resource", "params": {"coins": 3}}],
-			"icon": {"glyph": "coin", "c1": "#d9a441", "c2": "#6e5c3a"}
-		},
-		{
 			"id": "vein_map",
-			"name": "Mapa de Venas",
-			"desc": "Revela el piso (incluidas salas secretas). El próximo piso tendrá una sala del tesoro extra. +1 suerte.",
-			"flavor": "El cuerpo del sueño, dibujado por dentro.",
+			"name": "Radiografía",
+			"desc": "Revela el piso entero, también lo oculto. El próximo piso tendrá un tesoro más. +1 suerte.",
+			"flavor": "Tu pecho a contraluz. Por dentro, el sueño tiene la misma forma.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["map", "generation"],
-			"pools": {"treasure": 0.9, "shop": 1.0, "secret": 0.6},
+			"pools": {"treasure": 0.9, "secret": 0.6, "altar": 1.0},
 			"stats": [{"stat": "luck", "op": "flat", "value": 1}],
 			"effects": [
 				{"trigger": "acquire", "action": "reveal_map", "params": {"secrets": true}},
@@ -345,9 +348,9 @@
 		},
 		{
 			"id": "finger_reliquary",
-			"name": "Relicario de Dedos",
-			"desc": "Cada 12 enemigos abatidos, +0.25 de daño permanente.",
-			"flavor": "Cada dedo señala a alguien que ya no está.",
+			"name": "Libro de visitas",
+			"desc": "Cada 12 sombras abatidas, +0.25 de daño permanente.",
+			"flavor": "Cada línea es alguien que vino a verte. Quedan pocas páginas.",
 			"type": "passive",
 			"rarity": "rare",
 			"tags": ["evolve"],
@@ -358,7 +361,10 @@
 					"every": 12,
 					"actions": [
 						{"action": "permanent_stat", "params": {"stat": "damage", "op": "flat", "value": 0.25}},
-						{"action": "message", "params": {"text": "El relicario crece (+0.25 daño)", "color": "#d9a441"}}
+						{
+							"action": "message",
+							"params": {"text": "El relicario crece (+0.25 daño)", "color": "#d9a441"}
+						}
 					]
 				}
 			],
@@ -366,13 +372,13 @@
 		},
 		{
 			"id": "ash_rosary",
-			"name": "Rosario de Ceniza",
-			"desc": "Cada 5.º disparo es una brasa: +30% daño, más grande y Quema al impactar.",
-			"flavor": "Cinco cuentas, cinco nombres, cinco hogueras.",
+			"name": "Caja de cerillas",
+			"desc": "Cada 5.º disparo es una cerilla: +30% daño, más grande, y Quema al impactar.",
+			"flavor": "Quedan cinco. Las cuentas cada noche, por si acaso.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["fire", "projectile"],
-			"pools": {"treasure": 1.0, "shop": 0.7, "boss": 0.5},
+			"pools": {"treasure": 1.0, "boss": 0.5, "altar": 0.7},
 			"effects": [
 				{
 					"trigger": "projectile_spawn",
@@ -392,8 +398,8 @@
 		},
 		{
 			"id": "pyre_heart",
-			"name": "Corazón de Pira",
-			"desc": "Los enemigos que mueren ardiendo sueltan un anillo de 6 brasas que Queman.",
+			"name": "Corazón de pira",
+			"desc": "Las sombras que mueren ardiendo sueltan un anillo de 6 brasas que Queman.",
 			"flavor": "Late más fuerte cuanto más arde lo que lo rodea.",
 			"type": "passive",
 			"rarity": "uncommon",
@@ -404,38 +410,59 @@
 					"trigger": "kill",
 					"filter": {"target_status_any": ["burn"]},
 					"action": "spawn_projectiles",
-					"params": {"pattern": "ring", "origin": "event", "count": 6, "damage_mult": 0.6, "speed_mult": 0.7, "size_mult": 0.9, "range_mult": 0.45, "tags": ["projectile", "fire"], "statuses": [{"id": "burn", "stacks": 1, "duration": 2.5}], "color": "#ff8c3a"}
+					"params": {
+						"pattern": "ring",
+						"origin": "event",
+						"count": 6,
+						"damage_mult": 0.6,
+						"speed_mult": 0.7,
+						"size_mult": 0.9,
+						"range_mult": 0.45,
+						"tags": ["projectile", "fire"],
+						"statuses": [{"id": "burn", "stacks": 1, "duration": 2.5}],
+						"color": "#ff8c3a"
+					}
 				}
 			],
 			"icon": {"glyph": "ember", "c1": "#ff5a3c", "c2": "#ffd27a"}
 		},
 		{
 			"id": "ember_step",
-			"name": "Paso de Brasa",
+			"name": "Paso de brasa",
 			"desc": "Al esquivar dejas un anillo de 6 brasas que Queman.",
 			"flavor": "Donde pisa, la cera se acuerda del fuego.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["fire", "dodge"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"effects": [
 				{
 					"trigger": "dodge",
 					"action": "spawn_projectiles",
-					"params": {"pattern": "ring", "count": 6, "damage_mult": 0.5, "speed_mult": 0.55, "size_mult": 0.9, "range_mult": 0.35, "tags": ["projectile", "fire"], "statuses": [{"id": "burn", "stacks": 1, "duration": 2.5}], "color": "#ff8c3a"}
+					"params": {
+						"pattern": "ring",
+						"count": 6,
+						"damage_mult": 0.5,
+						"speed_mult": 0.55,
+						"size_mult": 0.9,
+						"range_mult": 0.35,
+						"tags": ["projectile", "fire"],
+						"statuses": [{"id": "burn", "stacks": 1, "duration": 2.5}],
+						"color": "#ff8c3a"
+					}
 				}
 			],
 			"icon": {"glyph": "wing", "c1": "#ff8c3a", "c2": "#6e5c3a"}
 		},
 		{
 			"id": "grave_salt",
-			"name": "Sal de Exequias",
-			"desc": "Tus explosiones tienen un 50% de prob. de Quemar. +1 bomba.",
+			"name": "Sal de exequias",
+			"desc": "Tus explosiones tienen un 50% de prob. de Quemar.",
 			"flavor": "Se echa sobre la tumba para que nada vuelva. Arde igual.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["explosion", "fire"],
-			"pools": {"treasure": 1.0, "shop": 0.8, "secret": 0.6},
+			"pools": {"treasure": 1.0, "secret": 0.6, "altar": 0.8},
 			"effects": [
 				{
 					"trigger": "hit",
@@ -443,20 +470,19 @@
 					"chance": 0.5,
 					"action": "apply_status",
 					"params": {"status": "burn", "stacks": 1, "duration": 3.0}
-				},
-				{"trigger": "acquire", "action": "add_resource", "params": {"bombs": 1}}
+				}
 			],
 			"icon": {"glyph": "flask", "c1": "#efe6d8", "c2": "#ff5a3c"}
 		},
 		{
 			"id": "powder_thimble",
-			"name": "Dedal de Pólvora",
-			"desc": "Los enemigos que abates tienen un 20% de prob. de estallar.",
+			"name": "Dedal de pólvora",
+			"desc": "Las sombras que abates tienen un 20% de prob. de estallar.",
 			"flavor": "Cosía mortajas. Ahora las enciende.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["explosion"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"effects": [
 				{
 					"trigger": "kill",
@@ -469,13 +495,13 @@
 		},
 		{
 			"id": "bitter_host",
-			"name": "Hostia Amarga",
-			"desc": "Tus astillas tienen un 25% de prob. de Envenenar (2 cargas).",
-			"flavor": "Se deshace en la lengua. Lo demás tarda más.",
+			"name": "Pastilla amarga",
+			"desc": "Tus brasas tienen un 25% de prob. de Envenenar (2 cargas).",
+			"flavor": "Te la daban machacada en una cuchara con azúcar. No engañaba a nadie.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["poison", "projectile"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"effects": [
 				{
 					"trigger": "hit",
@@ -489,8 +515,8 @@
 		},
 		{
 			"id": "mourning_veil",
-			"name": "Velo de Plañidera",
-			"desc": "Los enemigos que mueren envenenados sueltan 6 gotas que Envenenan: el luto se contagia.",
+			"name": "Velo de plañidera",
+			"desc": "Las sombras que mueren envenenadas sueltan 6 gotas que Envenenan: el luto se contagia.",
 			"flavor": "Llorar también se contagia.",
 			"type": "passive",
 			"rarity": "rare",
@@ -501,20 +527,31 @@
 					"trigger": "kill",
 					"filter": {"target_status_any": ["poison"]},
 					"action": "spawn_projectiles",
-					"params": {"pattern": "ring", "origin": "event", "count": 6, "damage_mult": 0.35, "speed_mult": 0.6, "size_mult": 0.8, "range_mult": 0.5, "tags": ["projectile", "poison"], "statuses": [{"id": "poison", "stacks": 2, "duration": 4.0}], "color": "#8fbf3a"}
+					"params": {
+						"pattern": "ring",
+						"origin": "event",
+						"count": 6,
+						"damage_mult": 0.35,
+						"speed_mult": 0.6,
+						"size_mult": 0.8,
+						"range_mult": 0.5,
+						"tags": ["projectile", "poison"],
+						"statuses": [{"id": "poison", "stacks": 2, "duration": 4.0}],
+						"color": "#8fbf3a"
+					}
 				}
 			],
 			"icon": {"glyph": "chalice", "c1": "#8fbf3a", "c2": "#2a1d24"}
 		},
 		{
 			"id": "frost_tear",
-			"name": "Lágrima Helada",
-			"desc": "25% de prob. de Escarchar. Golpear a un enemigo escarchado desata un rayo helado que salta a 2 enemigos.",
+			"name": "Lágrima helada",
+			"desc": "25% de prob. de Escarchar. Golpear a una sombra escarchada desata un rayo helado que salta a 2 más.",
 			"flavor": "Se congeló antes de llegar a la mejilla.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["ice", "projectile"],
-			"pools": {"treasure": 1.0, "shop": 0.7, "boss": 0.6},
+			"pools": {"treasure": 1.0, "boss": 0.6, "altar": 0.7},
 			"effects": [
 				{
 					"trigger": "hit",
@@ -534,13 +571,13 @@
 		},
 		{
 			"id": "rime_lens",
-			"name": "Lente de Escarcha",
-			"desc": "+1 perforación. 15% de prob. de Escarchar.",
-			"flavor": "A través de ella, todo parece quieto.",
+			"name": "Ventana empañada",
+			"desc": "Tus brasas atraviesan a 1 sombra más. 15% de prob. de Escarchar.",
+			"flavor": "Alguien escribió tu nombre con el dedo. Ya se ha borrado.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["ice", "projectile"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"stats": [{"stat": "pierce", "op": "flat", "value": 1}],
 			"effects": [
 				{
@@ -555,13 +592,13 @@
 		},
 		{
 			"id": "rusty_nail",
-			"name": "Clavo Oxidado",
-			"desc": "+0.3 daño. Tus astillas tienen un 25% de prob. de causar Sangrado.",
+			"name": "Clavo oxidado",
+			"desc": "+0.3 daño. Tus brasas tienen un 25% de prob. de causar Sangrado.",
 			"flavor": "Lo sacaron de un ataúd que nadie quiso cerrar.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["bleed", "projectile"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"stats": [{"stat": "damage", "op": "flat", "value": 0.3}],
 			"effects": [
 				{
@@ -576,13 +613,13 @@
 		},
 		{
 			"id": "bone_hook",
-			"name": "Anzuelo de Hueso",
-			"desc": "+10% prob. de crítico. Abatir a un enemigo que sangra te concede 1 crítico garantizado.",
+			"name": "Anzuelo de hueso",
+			"desc": "+10% prob. de crítico. Abatir a una sombra que sangra te concede 1 crítico garantizado.",
 			"flavor": "Pesca en la herida lo que el cuerpo no quiere soltar.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["bleed", "crit"],
-			"pools": {"treasure": 1.0, "shop": 0.7, "boss": 0.6},
+			"pools": {"treasure": 1.0, "boss": 0.6, "altar": 0.7},
 			"stats": [{"stat": "crit_chance", "op": "flat", "value": 0.1}],
 			"effects": [
 				{
@@ -596,75 +633,41 @@
 		},
 		{
 			"id": "waking_eye",
-			"name": "Ojo Insomne",
-			"desc": "Cada Lucidez (esquivar rozando un proyectil) te da 2 críticos garantizados más. +0.5 al multiplicador crítico.",
+			"name": "Ojo insomne",
+			"desc": "Cada Lucidez (esquivar rozando un disparo) te da 2 críticos garantizados más. +0.5 al multiplicador crítico.",
 			"flavor": "No parpadea. No puede permitírselo.",
 			"type": "passive",
 			"rarity": "rare",
 			"tags": ["crit", "dodge"],
 			"pools": {"treasure": 0.8, "boss": 1.0, "secret": 0.7},
 			"stats": [{"stat": "crit_mult", "op": "flat", "value": 0.5}],
-			"effects": [
-				{
-					"trigger": "graze",
-					"icd": 0.25,
-					"action": "crit_charges",
-					"params": {"amount": 2}
-				}
-			],
+			"effects": [{"trigger": "graze", "icd": 0.25, "action": "crit_charges", "params": {"amount": 2}}],
 			"icon": {"glyph": "eye", "c1": "#ffd27a", "c2": "#b3243b"}
 		},
 		{
-			"id": "tithe_box",
-			"name": "Cepillo de Diezmos",
-			"desc": "Al despejar una sala ganas 1 óbolo. +2 óbolos.",
-			"flavor": "Nadie recuerda a qué santo se le pagaba. Él sí.",
-			"type": "passive",
-			"rarity": "common",
-			"tags": ["greed"],
-			"pools": {"treasure": 1.0, "shop": 0.4, "secret": 0.8},
-			"effects": [
-				{"trigger": "room_clear", "action": "add_resource", "params": {"coins": 1}},
-				{"trigger": "acquire", "action": "add_resource", "params": {"coins": 2}}
-			],
-			"icon": {"glyph": "coin", "c1": "#d9a441", "c2": "#3a2830"}
-		},
-		{
-			"id": "gilded_tooth",
-			"name": "Diente de Oro",
-			"desc": "+5% prob. de crítico. Tus críticos arrancan 1 óbolo (como mucho uno cada 2 s).",
-			"flavor": "El barquero no acepta otra moneda.",
-			"type": "passive",
-			"rarity": "uncommon",
-			"tags": ["greed", "crit"],
-			"pools": {"treasure": 1.0, "shop": 0.6, "secret": 0.8},
-			"stats": [{"stat": "crit_chance", "op": "flat", "value": 0.05}],
-			"effects": [
-				{
-					"trigger": "hit",
-					"filter": {"crit": true},
-					"icd": 2.0,
-					"action": "add_resource",
-					"params": {"coins": 1}
-				}
-			],
-			"icon": {"glyph": "tooth", "c1": "#ffcc4d", "c2": "#6e5c3a"}
-		},
-		{
 			"id": "wax_effigy",
-			"name": "Efigie de Cera",
-			"desc": "+1 cera. Al recibir un golpe liberas 8 gotas de cera que Enceran (ralentizan).",
+			"name": "Efigie de cera",
+			"desc": "+1 cera. Al recibir un golpe sueltas 8 gotas de cera que Enceran (ralentizan).",
 			"flavor": "Tiene tu cara. Se derrite primero.",
 			"type": "passive",
 			"rarity": "uncommon",
 			"tags": ["wax", "defense"],
-			"pools": {"treasure": 1.0, "shop": 0.8},
+			"pools": {"treasure": 1.0, "altar": 0.8},
 			"effects": [
 				{
 					"trigger": "hurt",
 					"filter": {"tags_none": ["self"]},
 					"action": "spawn_projectiles",
-					"params": {"pattern": "ring", "count": 8, "damage_mult": 0.6, "speed_mult": 0.7, "range_mult": 0.5, "tags": ["projectile", "wax"], "statuses": [{"id": "waxed", "stacks": 1, "duration": 3.0}], "color": "#e8d9a8"}
+					"params": {
+						"pattern": "ring",
+						"count": 8,
+						"damage_mult": 0.6,
+						"speed_mult": 0.7,
+						"range_mult": 0.5,
+						"tags": ["projectile", "wax"],
+						"statuses": [{"id": "waxed", "stacks": 1, "duration": 3.0}],
+						"color": "#e8d9a8"
+					}
 				},
 				{"trigger": "acquire", "action": "add_wax", "params": {"amount": 1}}
 			],
@@ -672,23 +675,21 @@
 		},
 		{
 			"id": "candle_stub",
-			"name": "Cabo de Vela",
-			"desc": "+1 cera. +20% daño mientras tengas la vida completa.",
+			"name": "Cabo de vela",
+			"desc": "+1 cera. +20% daño mientras tu llama esté completa.",
 			"flavor": "Lo que queda de una vigilia que nadie terminó.",
 			"type": "passive",
 			"rarity": "common",
 			"tags": ["wax"],
-			"pools": {"treasure": 1.0, "shop": 1.0},
+			"pools": {"treasure": 1.0, "altar": 1.0},
 			"stats": [{"stat": "damage", "op": "pct", "value": 0.2, "condition": "full_hp"}],
-			"effects": [
-				{"trigger": "acquire", "action": "add_wax", "params": {"amount": 1}}
-			],
+			"effects": [{"trigger": "acquire", "action": "add_wax", "params": {"amount": 1}}],
 			"icon": {"glyph": "candle", "c1": "#ffb347", "c2": "#e8d9a8"}
 		},
 		{
 			"id": "bone_flute",
-			"name": "Flauta de Hueso",
-			"desc": "Al entrar en una sala con enemigos o con el jefe, un Ánima aliada se alza a tu lado (20 s, máx. 2).",
+			"name": "Flauta de hueso",
+			"desc": "Al entrar en una sala con sombras, un Ánima aliada se alza a tu lado (20 s, máx. 2).",
 			"flavor": "Toca una nana al revés. Los muertos la entienden.",
 			"type": "passive",
 			"rarity": "uncommon",
@@ -712,8 +713,8 @@
 		},
 		{
 			"id": "flagellant_cord",
-			"name": "Cordón del Flagelante",
-			"desc": "MALDITO: al despejar una sala, si tienes más de 3 de vida, pierdes 1 y ganas +0.3 de daño permanente.",
+			"name": "Cordón del flagelante",
+			"desc": "MALDITO: al despertar una sala, si tienes más de 3 de llama, pierdes 1 y ganas +0.3 de daño permanente.",
 			"flavor": "Cada nudo es una noche sin dormir.",
 			"type": "passive",
 			"rarity": "cursed",
@@ -726,7 +727,10 @@
 					"actions": [
 						{"action": "self_damage", "params": {"amount": 1}},
 						{"action": "permanent_stat", "params": {"stat": "damage", "op": "flat", "value": 0.3}},
-						{"action": "message", "params": {"text": "El cordón aprieta (+0.3 daño)", "color": "#b3243b"}}
+						{
+							"action": "message",
+							"params": {"text": "El cordón aprieta (+0.3 daño)", "color": "#b3243b"}
+						}
 					]
 				}
 			],
@@ -734,9 +738,9 @@
 		},
 		{
 			"id": "sleeper_eyelash",
-			"name": "Pestaña del Durmiente",
-			"desc": "+1 astilla por disparo, +15% daño y +1 perforación.",
-			"flavor": "Cayó cuando el Durmiente estuvo a punto de abrir los ojos.",
+			"name": "Pestaña en la almohada",
+			"desc": "+1 brasa por disparo, +15% daño y tus brasas atraviesan a 1 sombra más.",
+			"flavor": "Se te cayó mientras dormías. Alguien la sopló y pidió un deseo por ti.",
 			"type": "passive",
 			"rarity": "legendary",
 			"tags": ["projectile", "multishot"],
@@ -749,15 +753,86 @@
 			"icon": {"glyph": "crown", "c1": "#ffcc4d", "c2": "#efe6d8"}
 		},
 		{
+			"id": "tangerines",
+			"name": "Mandarinas",
+			"desc": "+1 llama máxima. Recuperas toda tu llama.",
+			"flavor": "Alguien las pela junto a tu cama. Dice que el olor despierta.",
+			"type": "passive",
+			"rarity": "uncommon",
+			"tags": ["health", "visit"],
+			"pools": {"treasure": 0.8, "altar": 1.0, "boss": 0.8},
+			"stats": [{"stat": "max_health", "op": "flat", "value": 1}],
+			"effects": [{"trigger": "acquire", "action": "heal", "params": {"amount": 24}}],
+			"icon": {"glyph": "tangerine", "c1": "#ff9a2e", "c2": "#3f6b2a"}
+		},
+		{
+			"id": "nurse_watch",
+			"name": "Reloj de la enfermera",
+			"desc": "Al encender una vela, disparas un 25% más rápido durante 6 s (acumula x3).",
+			"flavor": "Cuelga del revés para que ella pueda leerlo. Para ti, el tiempo también va al revés.",
+			"type": "passive",
+			"rarity": "common",
+			"tags": ["time", "visit"],
+			"pools": {"treasure": 1.0, "altar": 0.8, "secret": 0.6},
+			"effects": [
+				{
+					"trigger": "kindle",
+					"action": "temp_stat",
+					"params": {"stat": "fire_rate", "op": "pct", "value": 0.25, "duration": 6.0, "max_stacks": 3, "key": "nurse_watch"}
+				}
+			],
+			"icon": {"glyph": "watch", "c1": "#e6e1d6", "c2": "#6fa8a0"}
+		},
+		{
+			"id": "crayon_drawing",
+			"name": "Dibujo con ceras",
+			"desc": "Enciendes las velas el doble de rápido. +1 cera.",
+			"flavor": "Una casa, un sol y cuatro personas. Una lleva una vela en la mano.",
+			"type": "passive",
+			"rarity": "common",
+			"tags": ["wax", "light", "visit"],
+			"pools": {"treasure": 1.0, "altar": 1.0, "secret": 0.5},
+			"stats": [{"stat": "kindle_speed", "op": "pct", "value": 1.0}],
+			"effects": [{"trigger": "acquire", "action": "add_wax", "params": {"amount": 1}}],
+			"icon": {"glyph": "drawing", "c1": "#ffd27a", "c2": "#6fb6ff"}
+		},
+		{
+			"id": "ward_radio",
+			"name": "La radio de la sala",
+			"desc": "Al encender una vela, suena una canción: un anillo de 10 notas que hieren a las sombras cercanas.",
+			"flavor": "La dejan puesta bajito para que no estés en silencio. Siempre la misma emisora.",
+			"type": "passive",
+			"rarity": "uncommon",
+			"tags": ["sonic", "light", "visit"],
+			"pools": {"treasure": 1.0, "altar": 0.8, "boss": 0.5},
+			"effects": [
+				{
+					"trigger": "kindle",
+					"action": "spawn_projectiles",
+					"params": {
+						"pattern": "ring",
+						"origin": "event",
+						"count": 10,
+						"damage_mult": 1.1,
+						"speed_mult": 0.8,
+						"range_mult": 0.7,
+						"tags": ["projectile", "sonic"],
+						"color": "#c9b8ff"
+					}
+				}
+			],
+			"icon": {"glyph": "radio", "c1": "#c9b8ff", "c2": "#4a3a5a"}
+		},
+		{
 			"id": "broken_bell",
-			"name": "Campana Rota",
-			"desc": "ACTIVO: disipa los proyectiles enemigos, aturde 2 s y daña a todos. Recarga: 3 salas.",
+			"name": "Campana rota",
+			"desc": "ACTIVO: apaga los disparos enemigos, aturde 2 s y daña a todas las sombras. Recarga: 3 salas.",
 			"flavor": "Su grieta da una nota que el sueño no soporta.",
 			"type": "active",
 			"rarity": "uncommon",
 			"charge": 3,
 			"tags": ["bell", "control"],
-			"pools": {"shop": 0.6, "treasure": 0.5},
+			"pools": {"treasure": 0.5, "altar": 0.6},
 			"effects": [
 				{
 					"trigger": "use",
@@ -772,27 +847,36 @@
 		},
 		{
 			"id": "ember_bellows",
-			"name": "Fuelle de Brasas",
-			"desc": "ACTIVO: exhala un cono de 12 brasas que queman. Recarga: 2 salas.",
+			"name": "Fuelle de brasas",
+			"desc": "ACTIVO: exhala un cono de 12 brasas que Queman. Recarga: 2 salas.",
 			"flavor": "Respira hondo. Ahora, tú también ardes.",
 			"type": "active",
 			"rarity": "uncommon",
 			"charge": 2,
 			"tags": ["fire"],
-			"pools": {"treasure": 0.8, "shop": 0.8},
+			"pools": {"treasure": 0.8, "altar": 0.8},
 			"effects": [
 				{
 					"trigger": "use",
 					"action": "spawn_projectiles",
-					"params": {"pattern": "cone", "count": 12, "spread_deg": 50, "damage_mult": 1.0, "speed_mult": 1.1, "tags": ["projectile", "fire"], "statuses": [{"id": "burn", "stacks": 1, "duration": 3.0}], "color": "#ff8c3a"}
+					"params": {
+						"pattern": "cone",
+						"count": 12,
+						"spread_deg": 50,
+						"damage_mult": 1.0,
+						"speed_mult": 1.1,
+						"tags": ["projectile", "fire"],
+						"statuses": [{"id": "burn", "stacks": 1, "duration": 3.0}],
+						"color": "#ff8c3a"
+					}
 				}
 			],
 			"icon": {"glyph": "bellows", "c1": "#ff8c3a", "c2": "#5a4048"}
 		},
 		{
 			"id": "sacrifice_candle",
-			"name": "Vela del Sacrificio",
-			"desc": "ACTIVO: sacrifica 1 de vida por +0.4 de daño PERMANENTE. Requiere más de 1 de vida. Recarga: 1 sala.",
+			"name": "Vela del sacrificio",
+			"desc": "ACTIVO: sacrifica 1 de llama por +0.4 de daño PERMANENTE. Requiere más de 1 de llama. Recarga: 1 sala.",
 			"flavor": "Arde más quien menos tiene que perder.",
 			"type": "active",
 			"rarity": "cursed",
@@ -806,11 +890,15 @@
 					"actions": [
 						{"action": "self_damage", "params": {"amount": 1}},
 						{"action": "permanent_stat", "params": {"stat": "damage", "op": "flat", "value": 0.4}},
-						{"action": "message", "params": {"text": "La vela se alimenta (+0.4 daño)", "color": "#b3243b"}}
+						{
+							"action": "message",
+							"params": {"text": "La vela se alimenta (+0.4 daño)", "color": "#b3243b"}
+						}
 					]
 				}
 			],
 			"icon": {"glyph": "candle", "c1": "#b3243b", "c2": "#e8d9a8"}
 		}
-	]
+	],
+	"_comment": "Los objetos son RECUERDOS: cosas del mundo de vigilia filtradas por el sueño. Pools: treasure, altar (la Cabecera, cuestan llama), boss, secret."
 }

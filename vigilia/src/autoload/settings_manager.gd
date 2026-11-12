@@ -26,8 +26,7 @@ const ACTIONS := [
 	{"id": "shoot", "label": "Disparar (apuntar con ratón)", "default": {"type": "mouse", "code": MOUSE_BUTTON_LEFT}},
 	{"id": "dodge", "label": "Esquivar", "default": {"type": "key", "code": KEY_SPACE}},
 	{"id": "interact", "label": "Interactuar", "default": {"type": "key", "code": KEY_E}},
-	{"id": "use_active", "label": "Usar objeto activo", "default": {"type": "key", "code": KEY_Q}},
-	{"id": "bomb", "label": "Colocar bomba", "default": {"type": "key", "code": KEY_F}},
+	{"id": "use_active", "label": "Usar recuerdo activo", "default": {"type": "key", "code": KEY_Q}},
 	{"id": "inventory", "label": "Inventario y mapa", "default": {"type": "key", "code": KEY_TAB}},
 	{"id": "pause", "label": "Pausa", "default": {"type": "key", "code": KEY_ESCAPE}},
 ]
@@ -271,8 +270,6 @@ func _joy_defaults(id: String) -> Array:
 			out.append(_joy_button(JOY_BUTTON_X))
 		"use_active":
 			out.append(_joy_button(JOY_BUTTON_Y))
-		"bomb":
-			out.append(_joy_button(JOY_BUTTON_B))
 		"inventory":
 			out.append(_joy_button(JOY_BUTTON_BACK))
 		"pause":

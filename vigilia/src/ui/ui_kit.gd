@@ -65,6 +65,12 @@ static func _box(bg: Color, border: Color, border_w: int, radius: int, margin: i
 	return s
 
 
+## Panel discreto para avisos en partida: sin borde, fondo translúcido.
+static func soft_panel() -> StyleBoxFlat:
+	var s := _box(Color(0.03, 0.02, 0.05, 0.72), Color(0, 0, 0, 0), 0, 6, 14)
+	return s
+
+
 static func label(text: String, size: int = 17, color: Color = Palette.UI_TEXT, outline: int = 0) -> Label:
 	var l := Label.new()
 	l.text = text

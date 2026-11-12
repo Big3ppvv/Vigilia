@@ -71,7 +71,7 @@ func test_boss_is_far_leaf_and_specials_are_leaves() -> void:
 		assert_ge(int(dist[layout.boss]), int(params["min_boss_distance"]), "distancia del jefe")
 		for c in layout.rooms:
 			var rd: RoomData = layout.rooms[c]
-			if rd.type in ["boss", "treasure", "shop"]:
+			if rd.type in ["boss", "treasure", "altar"]:
 				assert_eq(rd.door_count(true), 1, "%s es hoja" % rd.type)
 
 
@@ -100,18 +100,41 @@ func test_extra_treasure_modifier_changes_generation() -> void:
 		assert_eq(layout.rooms_of_type("treasure").size(), expected, "tesoro extra")
 
 
-func test_locked_treasure_doors() -> void:
-	var params := _params(1)
-	assert_true(bool(params.get("treasure_locked", false)), "el piso 2 cierra los tesoros")
-	var layout := DungeonGenerator.generate(SeedUtil.seed_to_int("LOCK"), params)
-	var found := false
-	for c in layout.rooms:
-		for d in layout.rooms[c].doors:
-			var door: Dictionary = layout.rooms[c].doors[d]
-			if layout.rooms.has(door["to"]) and layout.rooms[door["to"]].type == "treasure":
-				assert_true(bool(door["locked"]), "puerta al tesoro cerrada con llave")
-				found = true
-	assert_true(found)
+func test_no_locked_doors() -> void:
+	for fi in ContentDB.floor_count():
+		var layout := DungeonGenerator.generate(SeedUtil.seed_to_int("NOLOCK%d" % fi), _params(fi))
+		for c in layout.rooms:
+			for d in layout.rooms[c].doors:
+				assert_false(bool(layout.rooms[c].doors[d].get("locked", false)), "sin cerraduras: no hay llaves")
+
+
+## Cada sala de combate tiene 2-3 velas votivas en suelo libre, lejos de las
+## apariciones y de los accesos de puerta, y repartidas (no amontonadas).
+func test_votives_in_every_combat_room() -> void:
+	for fi in ContentDB.floor_count():
+		var params := _params(fi)
+		for s in 80:
+			var layout := DungeonGenerator.generate(SeedUtil.seed_to_int("VOT%03d" % s), params)
+			for rd in layout.sorted_rooms():
+				if rd.type != "combat":
+					assert_true(rd.votives.is_empty(), "solo las salas de combate tienen velas")
+					continue
+				assert_true(rd.votives.size() >= 2 and rd.votives.size() <= 3, "2-3 velas (%d)" % rd.votives.size())
+				var spawn_tiles := {}
+				for sp in rd.spawns:
+					spawn_tiles[sp["tile"]] = true
+				var seen := {}
+				for v in rd.votives:
+					var t: Vector2i = v["tile"]
+					assert_false(bool(v["lit"]), "empiezan apagadas")
+					assert_eq(str(rd.layout[t.y])[t.x], ".", "sobre suelo libre")
+					assert_false(spawn_tiles.has(t), "no sobre una aparición")
+					assert_false(seen.has(t), "sin velas repetidas")
+					seen[t] = true
+				if rd.votives.size() >= 2:
+					var a: Vector2i = rd.votives[0]["tile"]
+					var b: Vector2i = rd.votives[1]["tile"]
+					assert_ge(absi(a.x - b.x) + absi(a.y - b.y), 3, "repartidas por la sala")
 
 
 func test_mirroring_keeps_templates_valid() -> void:

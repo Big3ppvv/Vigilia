@@ -196,11 +196,14 @@ func _step(p: Projectile, delta: float) -> bool:
 	var grid := world.room.grid
 	var lead := new_pos + dir * p.radius * 0.5
 	# Comprobación de rejilla en línea (equivale a RoomGrid.blocks_projectile_at).
-	var blocked := lead.x < 0.0 or lead.y < 0.0 or lead.x >= RoomView.W or lead.y >= RoomView.H
+	var outside := lead.x < 0.0 or lead.y < 0.0 or lead.x >= RoomView.W or lead.y >= RoomView.H
+	var blocked := outside
 	if not blocked and not p.spectral:
 		var cell := grid.cells[int(lead.y / RoomGrid.TILE) * RoomGrid.COLS + int(lead.x / RoomGrid.TILE)]
 		blocked = cell == RoomGrid.ROCK or cell == RoomGrid.PILLAR
 	if blocked:
+		if outside and p.team == Team.PLAYER:
+			world.on_projectile_wall(p, lead)
 		if p.bounces > 0:
 			var nrm := _bounce_normal(grid, p.pos, lead, p.spectral)
 			p.vel = p.vel.bounce(nrm)
@@ -316,15 +319,16 @@ func _draw() -> void:
 
 
 func _draw_player_shot(p: Projectile) -> void:
+	# Brasa: núcleo casi blanco, cuerpo del color y estela que se enfría hacia atrás.
 	var d := p.vel.normalized() if p.vel.length() > 0.01 else Vector2.RIGHT
-	var n := d.orthogonal()
 	var r := p.radius
-	draw_circle(p.pos, r * 1.9, Color(p.color, 0.13))
-	var body := PackedVector2Array([p.pos + d * r * 1.9, p.pos + n * r * 0.75, p.pos - d * r * 1.2, p.pos - n * r * 0.75])
-	draw_colored_polygon(body, p.color)
-	draw_circle(p.pos + d * r * 0.3, r * 0.35, Color(1, 1, 1, 0.75))
+	for i in 3:
+		draw_circle(p.pos - d * r * 1.5 * float(i + 1), r * (0.8 - 0.18 * i), Color(p.color, 0.3 - 0.08 * i))
+	draw_circle(p.pos, r * 2.1, Color(p.color, 0.12))
+	draw_circle(p.pos, r * 1.05, p.color)
+	draw_circle(p.pos + d * r * 0.25, r * 0.55, Color(1.0, 0.97, 0.88, 0.95))
 	if p.force_crit:
-		draw_arc(p.pos, r * 1.6, 0, TAU, 12, Palette.PLAYER_EYE, 1.5)
+		draw_arc(p.pos, r * 1.7, 0, TAU, 12, Palette.PLAYER_EYE, 1.5)
 
 
 func _draw_enemy_shot(p: Projectile) -> void:

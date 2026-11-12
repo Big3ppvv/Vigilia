@@ -73,9 +73,9 @@ func _draw_icon(rd: RoomData, c: Vector2) -> void:
 			draw_circle(c + Vector2(s * 0.35, -s * 0.1), s * 0.22, Color.BLACK)
 		"treasure":
 			draw_colored_polygon(PackedVector2Array([c + Vector2(0, -s), c + Vector2(s, 0), c + Vector2(0, s), c + Vector2(-s, 0)]), Palette.GOLD)
-		"shop":
-			draw_circle(c, s, Palette.BRONZE)
-			draw_circle(c, s * 0.4, Palette.WALL_DARK)
+		"altar":
+			draw_rect(Rect2(c - Vector2(s * 0.25, s), Vector2(s * 0.5, s * 2.0)), Color("8fb8b0"))
+			draw_rect(Rect2(c - Vector2(s, s * 0.25), Vector2(s * 2.0, s * 0.5)), Color("8fb8b0"))
 		"secret":
 			draw_circle(c, s, Color("8a5ab0"))
 		"start":

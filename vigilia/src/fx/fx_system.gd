@@ -74,6 +74,20 @@ func burst(pos: Vector2, color: Color, count: int, speed: float = 160.0, size: f
 		_parts.append([pos, v, l, l, size * _rng.randf_range(0.6, 1.3), color, 4.0])
 
 
+## Motas que ascienden despacio: así se deshacen las criaturas del sueño y así
+## sube el humo de una vela apagada.
+func rise(pos: Vector2, color: Color, count: int, spread: float = 18.0, life: float = 1.1) -> void:
+	var n := _scaled(count)
+	var budget := particle_budget()
+	for i in n:
+		if _parts.size() >= budget:
+			return
+		var p := pos + Vector2(_rng.randf_range(-spread, spread), _rng.randf_range(-spread * 0.6, spread * 0.6))
+		var v := Vector2(_rng.randf_range(-22.0, 22.0), _rng.randf_range(-95.0, -35.0))
+		var l := life * _rng.randf_range(0.6, 1.25)
+		_parts.append([p, v, l, l, _rng.randf_range(1.6, 3.6), color, 0.6])
+
+
 func puff(pos: Vector2, color: Color, count: int = 5) -> void:
 	burst(pos, color, count, 90.0, 2.5, 0.3)
 

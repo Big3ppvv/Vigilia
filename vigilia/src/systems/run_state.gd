@@ -15,6 +15,13 @@ var kills := 0
 var damage_dealt := 0.0
 var damage_taken := 0
 var rooms_cleared := 0
+## Salas despertadas encendiendo todas sus velas.
+var rooms_by_light := 0
+var candles_lit := 0
+## Sombras que se deshicieron con la luz (no cuentan como bajas).
+var dissolved := 0
+## Noche de vigilia (número de partida en el perfil, desde 1).
+var night := 1
 var items_taken: Array = []
 var killed_by := ""
 var result := ""
@@ -76,6 +83,10 @@ func build_summary(res: String, extra: Dictionary = {}) -> Dictionary:
 		"damage_dealt": int(damage_dealt),
 		"damage_taken": damage_taken,
 		"rooms_cleared": rooms_cleared,
+		"rooms_by_light": rooms_by_light,
+		"candles_lit": candles_lit,
+		"dissolved": dissolved,
+		"night": night,
 		"items": items_taken.duplicate(),
 		"killed_by": killed_by,
 		"date": Time.get_datetime_string_from_system(false, true),

@@ -2,13 +2,14 @@ class_name BotInput
 extends InputSource
 ## Piloto automático: juega partidas completas para pruebas de humo, de estrés y
 ## para depurar (F8). Política simple pero completa:
-##   evitar proyectiles -> combatir (mantener distancia, ametrallar lateralmente)
-##   -> recoger consumibles -> tomar objetos asequibles -> salida del piso ->
-##   explorar la sala no visitada más cercana (BFS sobre el grafo del piso).
+##   evitar proyectiles -> combatir (mantener distancia, ametrallar lateralmente,
+##   y acercarse a encender velas votivas si la llama lo permite) -> recoger
+##   consumibles -> tomar recuerdos -> salida del piso -> explorar la sala no
+##   visitada más cercana (BFS sobre el grafo del piso).
 ## Usa su propio RNG con semilla fija: no altera los flujos de la partida.
 
 var game: Node
-var stats := {"items_taken": 0, "dodges": 0}
+var stats := {"items_taken": 0, "dodges": 0, "kindle_trips": 0}
 ## Último objetivo de exploración (diagnóstico).
 var last_goal := ""
 var _move := Vector2.ZERO
@@ -88,6 +89,17 @@ func _combat(pl: Player, w: CombatWorld, target: Node2D) -> void:
 	var d := pl.global_position.distance_to(target.global_position)
 	var to := (target.global_position - pl.global_position).normalized()
 	var mv := Vector2.ZERO
+	var candle := _nearest_unlit_votive(pl, w)
+	if candle != null and pl.hp >= 3:
+		# Encender la vela mientras sigue disparando: es la otra forma de ganar la sala.
+		if pl.global_position.distance_to(candle.global_position) > VotiveCandle.LIGHT_RANGE * 0.6:
+			mv = _path_dir(pl, candle.global_position)
+			if last_goal != "vela":
+				stats["kindle_trips"] += 1
+			last_goal = "vela"
+		_move = (mv + to.orthogonal() * _strafe * 0.25).normalized()
+		_use_active_if_useful(pl, w, target)
+		return
 	if d < 170.0:
 		mv = -to
 	elif d > 300.0 or not w.room.grid.has_line_of_sight(pl.global_position, target.global_position):
@@ -98,9 +110,25 @@ func _combat(pl: Player, w: CombatWorld, target: Node2D) -> void:
 	if absf(off.x) > 380.0 or absf(off.y) > 210.0:
 		mv += (c - pl.global_position).normalized() * 0.9
 	_move = mv.normalized()
+	_use_active_if_useful(pl, w, target)
+
+
+func _use_active_if_useful(pl: Player, w: CombatWorld, target: Node2D) -> void:
 	var inv := pl.inventory
 	if inv.active_id != "" and inv.active_charge >= inv.active_max and (w.live_enemy_count() >= 3 or bool(target.get("is_boss"))):
 		_pressed["use_active"] = true
+
+
+func _nearest_unlit_votive(pl: Player, w: CombatWorld) -> VotiveCandle:
+	var best: VotiveCandle = null
+	var bd := INF
+	for v in w.votives:
+		if is_instance_valid(v) and v.can_kindle():
+			var d := pl.global_position.distance_to(v.global_position)
+			if d < bd:
+				bd = d
+				best = v
+	return best
 
 
 func _explore(pl: Player, w: CombatWorld) -> void:
@@ -111,13 +139,14 @@ func _explore(pl: Player, w: CombatWorld) -> void:
 			return
 	for n in game.get_tree().get_nodes_in_group("pedestals"):
 		var ped := n as ItemPedestal
-		if ped == null or ped.taken or ped.price > pl.coins:
+		if ped == null or ped.taken:
 			continue
-		if ped.is_consumable() and ped.consumable_kind == "heart" and pl.hp >= pl.max_hp():
+		# En la Cabecera solo recuerda si le sobra llama.
+		if ped.is_altar() and pl.max_hp() - ped.price < 5:
 			continue
 		# No intercambiar activos: el juego suelta el anterior y el bot entraría
 		# en un bucle de intercambio infinito.
-		if not ped.is_consumable() and pl.inventory.active_id != "" and str(ContentDB.get_item(ped.item_id).get("type", "")) == "active":
+		if pl.inventory.active_id != "" and str(ContentDB.get_item(ped.item_id).get("type", "")) == "active":
 			continue
 		last_goal = "pedestal %s %s" % [ped.item_id, Vector2i(ped.global_position)]
 		if pl.global_position.distance_to(ped.global_position) < 44.0:
@@ -151,7 +180,7 @@ func _explore(pl: Player, w: CombatWorld) -> void:
 
 ## Elige la puerta hacia la sala objetivo: la no visitada conocida más cercana;
 ## si no queda ninguna, la sala del jefe.
-func _choose_door(pl: Player) -> int:
+func _choose_door(_pl: Player) -> int:
 	var layout: FloorLayout = game.layout
 	var cur: RoomData = game.director.current
 	if layout == null or cur == null:
@@ -169,8 +198,6 @@ func _choose_door(pl: Player) -> int:
 		for d in rd.doors:
 			var door: Dictionary = rd.doors[d]
 			if bool(door["hidden"]):
-				continue
-			if bool(door.get("locked", false)) and pl.keys <= 0:
 				continue
 			var n: Vector2i = door["to"]
 			if not dist.has(n):

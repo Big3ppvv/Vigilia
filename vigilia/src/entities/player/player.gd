@@ -1,11 +1,15 @@
 class_name Player
 extends CharacterBody2D
-## La Espina. Movimiento con aceleración, esquiva con invulnerabilidad,
-## disparo basado en estadísticas, escudos de cera, recursos y objeto activo.
+## La Espina: la última llama de una conciencia que se niega a dormir.
 ##
-## Mecánica propia — LUCIDEZ: si un proyectil enemigo te roza durante la
-## esquiva, ganas cargas de crítico garantizado (graze_crits del personaje).
-## Debilidad — ASTILLA QUEBRADIZA: caída de daño al final del alcance
+## La vida ES la llama: su tamaño, su luz y lo que alcanzas a ver dependen de
+## cuánta te queda (CandleLighting lee flame_ratio()). Movimiento con
+## aceleración, esquiva con invulnerabilidad, disparo de brasas por estadísticas,
+## escudos de cera y un recuerdo activo.
+##
+## Mecánica propia — LUCIDEZ: si un disparo enemigo te roza durante la esquiva,
+## ganas críticos garantizados (graze_crits del personaje).
+## Debilidad — LLAMA CORTA: las brasas pierden daño al final de su alcance
 ## (propiedad de proyectil "falloff" definida en characters.json).
 
 signal died
@@ -17,11 +21,14 @@ const DODGE_TIME := 0.17
 const DODGE_IFRAMES := 0.26
 const HURT_IFRAMES := 1.0
 const MAX_WAX := 12
-const MAX_COINS := 99
 ## Tope de críticos garantizados acumulables (Lucidez y efectos de objetos).
 const MAX_CRIT_CHARGES := 9
 ## Fogonazo y retroceso del disparo: SOLO visuales (no alteran la simulación).
 const MUZZLE_TIME := 0.07
+## La llama "titila" al recibir un golpe: se encoge y palidece un instante.
+const GUTTER_TIME := 0.45
+
+static var _emissive: CanvasItemMaterial
 
 var world: CombatWorld
 var character: Dictionary = {}
@@ -34,9 +41,6 @@ var radius := 13.0
 var team := Team.PLAYER
 var hp := 6
 var wax := 0
-var coins := 0
-var keys := 0
-var bombs := 0
 var aim_dir := Vector2.RIGHT
 var alive := true
 var controllable := true
@@ -44,6 +48,8 @@ var crit_charges := 0
 var god_mode := false
 var killed_by := ""
 var flying := false
+## Vela votiva que está encendiendo ahora mismo (solo presentación).
+var kindling_target: Node2D = null
 
 var _fire_cd := 0.0
 var _dodge_cd := 0.0
@@ -56,8 +62,10 @@ var _anim_t := 0.0
 var _trail: Array = []
 var _graze_cd := 0.0
 var _muzzle_t := 0.0
-var _body_color := Palette.PLAYER_BODY
-var _edge_color := Palette.PLAYER_EDGE
+var _gutter_t := 0.0
+var _shorten_seq := 0
+var _flame_color := Palette.FLAME
+var _core_color := Palette.FLAME_CORE
 var _eye_color := Palette.PLAYER_EYE
 
 
@@ -71,15 +79,11 @@ func setup(p_world: CombatWorld, char_def: Dictionary, engine: SynergyEngine) ->
 	inventory = ItemSystem.new(self, engine)
 	input = HumanInput.new()
 	var cols: Dictionary = char_def.get("colors", {})
-	_body_color = Palette.parse(cols.get("body", ""), Palette.PLAYER_BODY)
-	_edge_color = Palette.parse(cols.get("edge", ""), Palette.PLAYER_EDGE)
+	_flame_color = Palette.parse(cols.get("flame", ""), Palette.FLAME)
+	_core_color = Palette.parse(cols.get("core", ""), Palette.FLAME_CORE)
 	_eye_color = Palette.parse(cols.get("eye", ""), Palette.PLAYER_EYE)
 	hp = mini(int(char_def.get("start_hp", 6)), max_hp())
 	wax = int(char_def.get("start_wax", 0))
-	var res: Dictionary = char_def.get("start_resources", {})
-	coins = int(res.get("coins", 0))
-	keys = int(res.get("keys", 0))
-	bombs = int(res.get("bombs", 0))
 	collision_layer = 4
 	collision_mask = 1 | 2
 	motion_mode = CharacterBody2D.MOTION_MODE_FLOATING
@@ -89,6 +93,11 @@ func setup(p_world: CombatWorld, char_def: Dictionary, engine: SynergyEngine) ->
 	cs.shape = shape
 	add_child(cs)
 	add_to_group("player")
+	# La llama es luz: no la oscurece la penumbra.
+	if _emissive == null:
+		_emissive = CanvasItemMaterial.new()
+		_emissive.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	material = _emissive
 
 
 ## Concede objetos iniciales (tras entrar al árbol: los efectos pueden necesitarlo).
@@ -106,12 +115,6 @@ func grant_starting_items() -> void:
 ## Contexto para modificadores condicionales/escalables de StatBlock.
 func stat_context(key: String) -> float:
 	match key:
-		"coins":
-			return float(coins)
-		"keys":
-			return float(keys)
-		"bombs":
-			return float(bombs)
 		"hp":
 			return float(hp)
 		"missing_hp":
@@ -124,11 +127,21 @@ func stat_context(key: String) -> float:
 			return float(inventory.items.size()) if inventory != null else 0.0
 		"moving":
 			return 1.0 if velocity.length() > 30.0 else 0.0
+		"wax":
+			return float(wax)
 	return 0.0
 
 
 func max_hp() -> int:
 	return stats.get_int("max_health") if stats != null else 6
+
+
+## Proporción de llama que queda (0 apagada, 1 completa). La usan la luz, el
+## audio y el efecto de somnolencia.
+func flame_ratio() -> float:
+	if not alive:
+		return 0.0
+	return clampf(float(hp) / float(maxi(1, max_hp())), 0.0, 1.0)
 
 
 func is_dodging() -> bool:
@@ -147,6 +160,7 @@ func _physics_process(delta: float) -> void:
 
 func _player_body(delta: float) -> void:
 	_anim_t += delta
+	_gutter_t = maxf(0.0, _gutter_t - delta)
 	if not alive:
 		velocity = velocity.move_toward(Vector2.ZERO, FRICTION * delta)
 		move_and_slide()
@@ -197,20 +211,13 @@ func _actions() -> void:
 		_dodge_iframes = DODGE_IFRAMES
 		_dodge_cd = stats.get_stat("dodge_cooldown")
 		Audio.play("dodge")
-		world.fx.puff(global_position, _edge_color, 6)
+		world.fx.burst(global_position, _flame_color, 8, 140.0, 2.5, 0.35)
 		world.engine.emit("dodge", {"direction": _dodge_dir, "position": global_position, "depth": 0, "tags": PackedStringArray(["dodge"])})
 	if input.just_pressed("interact"):
 		if world.game != null and world.game.has_method("try_interact"):
 			world.game.try_interact(self)
 	if input.just_pressed("use_active"):
 		inventory.use_active()
-	if input.just_pressed("bomb"):
-		if bombs > 0:
-			bombs -= 1
-			world.place_bomb(global_position)
-			_emit_resources()
-		else:
-			Audio.play("deny")
 
 
 func _shooting() -> void:
@@ -239,7 +246,7 @@ func _fire(dir: Vector2) -> void:
 		_configure_shot(p, d, crit_volley)
 		world.engine.emit("projectile_spawn", {"projectile": p, "tags": p.tags, "depth": 0, "generation": 0, "position": p.pos})
 	world.engine.emit("fire", {"direction": dir, "position": global_position, "depth": 0, "tags": PackedStringArray(["fire_event"])})
-	Audio.play("shoot", -8.0)
+	Audio.play("shoot", -9.0)
 	_muzzle_t = MUZZLE_TIME
 
 
@@ -278,10 +285,8 @@ func on_graze(_p: Projectile) -> void:
 		return
 	_graze_cd = 0.25
 	var n := int(character.get("graze_crits", 3))
-	# Antes: mini(cargas + n, n * 2), que REDUCÍA las cargas si otra fuente ya
-	# había dado más de n * 2. Ahora solo suma, con un tope común.
 	add_crit_charges(n)
-	world.fx.float_text(global_position + Vector2(0, -30), "¡Lucidez!", _eye_color, 15, 0.9)
+	world.fx.float_text(global_position + Vector2(0, -34), "lucidez", _eye_color, 15, 0.9)
 	world.hitstop(0.04)
 	world.fx.ring(global_position, 36.0, _eye_color, 0.3, 2.0)
 	Audio.play("graze")
@@ -293,7 +298,7 @@ func add_crit_charges(amount: int) -> void:
 
 
 # ---------------------------------------------------------------------------
-# Vida, escudos y recursos
+# Llama (vida), cera (escudo)
 # ---------------------------------------------------------------------------
 
 func apply_damage(info: DamageInfo) -> float:
@@ -308,7 +313,7 @@ func apply_damage(info: DamageInfo) -> float:
 			return 0.0
 		var ev := stats.get_stat("evasion")
 		if ev > 0.0 and world.rng.chance(ev):
-			world.fx.float_text(global_position + Vector2(0, -26), "esquivado", Palette.UI_DIM, 13, 0.7)
+			world.fx.float_text(global_position + Vector2(0, -30), "esquivado", Palette.UI_DIM, 13, 0.7)
 			_hurt_iframes = 0.25
 			return 0.0
 	var amount := maxi(1, int(round(info.amount)) if info.is_self else 1)
@@ -321,6 +326,8 @@ func apply_damage(info: DamageInfo) -> float:
 		world.fx.burst(global_position, Palette.WAX, 10, 160.0, 3.0, 0.4)
 	hp -= amount
 	world.run.damage_taken += amount
+	if amount > 0:
+		_gutter_t = GUTTER_TIME
 	if info.is_self:
 		Audio.play("pact")
 		world.fx.burst(global_position, Palette.BLOOD, 8, 120.0, 3.0, 0.4)
@@ -330,7 +337,7 @@ func apply_damage(info: DamageInfo) -> float:
 		world.shake(0.45)
 		world.hitstop(0.05)
 		Audio.play("player_hurt")
-		world.fx.burst(global_position, Palette.BLOOD, 12, 200.0, 3.0, 0.5)
+		world.fx.burst(global_position, Color(0.55, 0.6, 0.8), 14, 220.0, 2.5, 0.5)
 		if world.game != null and world.game.has_method("flash_damage"):
 			world.game.flash_damage()
 	_emit_health()
@@ -358,7 +365,8 @@ func heal(amount: int) -> void:
 	var before := hp
 	hp = mini(max_hp(), hp + amount)
 	if hp > before:
-		world.fx.float_text(global_position + Vector2(0, -28), "+%d" % (hp - before), Palette.BLOOD.lightened(0.3), 14, 0.8)
+		world.fx.float_text(global_position + Vector2(0, -32), "+%d" % (hp - before), Palette.FLAME_CORE, 14, 0.8)
+		world.fx.ring(global_position, 30.0, Palette.FLAME, 0.4, 2.0)
 	_emit_health()
 
 
@@ -367,11 +375,16 @@ func add_wax(amount: int) -> void:
 	_emit_health()
 
 
-func add_resources(c: int, k: int, b: int) -> void:
-	coins = clampi(coins + c, 0, MAX_COINS)
-	keys = clampi(keys + k, 0, 99)
-	bombs = clampi(bombs + b, 0, 99)
-	_emit_resources()
+## Recordar en la Cabecera acorta la llama PARA SIEMPRE (fuente única por pago,
+## para que dos pagos del mismo recuerdo no se pisen).
+func shorten_flame(amount: int, source: String) -> void:
+	if amount <= 0:
+		return
+	_shorten_seq += 1
+	stats.add_modifier("max_health", "flat", -float(amount), "%s#%d" % [source, _shorten_seq])
+	_gutter_t = GUTTER_TIME
+	world.fx.burst(global_position, _flame_color, 18, 180.0, 3.0, 0.6)
+	on_stats_changed()
 
 
 func _regen(delta: float) -> void:
@@ -390,8 +403,10 @@ func _die() -> void:
 	controllable = false
 	world.run.killed_by = killed_by
 	Audio.play("death")
-	world.fx.burst(global_position, _eye_color, 30, 260.0, 4.0, 1.0)
-	world.shake(0.8)
+	# La llama no estalla: se apaga y deja humo.
+	world.fx.burst(global_position + Vector2(0, -10), Color(0.6, 0.58, 0.66, 0.8), 26, 90.0, 4.0, 1.6)
+	world.fx.ring(global_position, 46.0, _flame_color, 0.8, 2.0)
+	world.shake(0.5)
 	died.emit()
 	EventBus.player_died.emit(killed_by)
 
@@ -411,23 +426,18 @@ func _emit_health() -> void:
 	EventBus.player_health_changed.emit(hp, max_hp(), wax)
 
 
-func _emit_resources() -> void:
-	EventBus.player_resources_changed.emit(coins, keys, bombs)
-
-
 func _emit_all() -> void:
 	_emit_health()
-	_emit_resources()
 	EventBus.player_stats_changed.emit()
 
 
 ## Estado mínimo para continuidad entre pisos y para el resumen.
 func snapshot() -> Dictionary:
-	return {"hp": hp, "wax": wax, "coins": coins, "keys": keys, "bombs": bombs, "items": inventory.items.duplicate(), "active": inventory.active_id}
+	return {"hp": hp, "wax": wax, "items": inventory.items.duplicate(), "active": inventory.active_id}
 
 
 # ---------------------------------------------------------------------------
-# Dibujo
+# Dibujo: una llama que respira, se inclina al moverse y titila al recibir daño
 # ---------------------------------------------------------------------------
 
 func _update_trail(delta: float) -> void:
@@ -440,52 +450,77 @@ func _update_trail(delta: float) -> void:
 
 
 func _draw() -> void:
+	var ratio := flame_ratio()
+	var t := _anim_t
 	for tr in _trail:
 		var lp: Vector2 = tr[0] - global_position
-		_draw_body(lp, Color(_edge_color, tr[1] * 2.0), 0.0, true)
-	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	draw_circle(Vector2(0, 12), 15.0, Palette.SHADOW)
-	var pulse := 0.5 + 0.5 * sin(_anim_t * 3.0)
-	draw_circle(Vector2.ZERO, 40.0 + 4.0 * pulse, Color(_eye_color, 0.06))
-	draw_circle(Vector2.ZERO, 26.0, Color(_eye_color, 0.06))
-	var alpha := 1.0
-	if _hurt_iframes > 0.0 and alive:
-		if Settings.flashes:
-			alpha = 0.35 if int(_anim_t * 18.0) % 2 == 0 else 1.0
-		else:
-			alpha = 0.6
+		_draw_flame(lp, 0.75, Color(_flame_color, float(tr[1]) * 2.2), Color(_core_color, float(tr[1]) * 2.0), 0.0, t)
 	if not alive:
-		alpha = 0.5
-	# Retroceso visual al disparar: el cuerpo se desplaza un instante hacia atrás.
-	var recoil: float = _muzzle_t / MUZZLE_TIME if alive else 0.0
-	_draw_body(-aim_dir * 2.5 * recoil, Color(1, 1, 1, alpha), _anim_t, false)
-	if recoil > 0.0:
-		var muzzle := aim_dir * (radius + 10.0)
-		draw_circle(muzzle, 7.0 + 6.0 * recoil, Color(Palette.FLAME, 0.22 * recoil))
-		draw_circle(muzzle, 2.5 + 4.0 * recoil, Color(Palette.FLAME_CORE, 0.85 * recoil))
-	if wax > 0:
-		draw_arc(Vector2.ZERO, radius + 7.0, 0, TAU, 24, Color(Palette.WAX, 0.35 * alpha), 2.0)
-	for i in crit_charges:
-		var a := _anim_t * 4.0 + i * TAU / maxf(1.0, float(crit_charges))
-		draw_circle(Vector2.RIGHT.rotated(a) * (radius + 12.0), 2.5, _eye_color)
-
-
-func _draw_body(off: Vector2, tint: Color, t: float, ghost: bool) -> void:
-	var sway := sin(t * 6.0) * 0.06 if velocity.length() > 20.0 else 0.0
-	var pts := PackedVector2Array()
-	var big := radius * 1.3
-	for i in 8:
-		var a := float(i) / 8.0 * TAU + sway - PI * 0.5
-		var r := big * (1.6 if i % 2 == 0 else 0.72)
-		pts.append(off + Vector2(cos(a), sin(a)) * r)
-	if ghost:
-		draw_colored_polygon(pts, tint)
+		# Mecha humeante.
+		draw_line(Vector2(0, 8), Vector2(0, -2), Color(0.12, 0.1, 0.1), 3.0)
+		draw_circle(Vector2(0, -4), 2.0, Color(0.9, 0.35, 0.15, 0.6 * absf(sin(t * 3.0))))
 		return
-	draw_colored_polygon(pts, Color(_body_color, tint.a))
-	var closed := pts.duplicate()
-	closed.append(pts[0])
-	draw_polyline(closed, Color(_edge_color.lightened(0.35), tint.a), 2.5)
-	var eye_c := off + Vector2(0, -1)
-	draw_circle(eye_c, 8.0, Color(Palette.BONE, tint.a))
-	draw_circle(eye_c + aim_dir * 3.0, 4.4, Color(_eye_color, tint.a))
-	draw_circle(eye_c + aim_dir * 4.0, 2.0, Color(0, 0, 0, tint.a))
+	var gutter := _gutter_t / GUTTER_TIME
+	var low := 1.0 - smoothstep(0.2, 0.55, ratio)
+	# Con poca llama, el fuego se enfría hacia el azul y tiembla más.
+	var outer := _flame_color.lerp(Palette.FLAME_BLUE, low * 0.65).lerp(Color(0.85, 0.9, 1.0), gutter * 0.7)
+	var core := _core_color.lerp(Color(0.85, 0.95, 1.0), gutter * 0.6)
+	var size := lerpf(0.62, 1.12, ratio) * (1.0 - 0.38 * gutter)
+	var hurt_alpha := 1.0
+	if _hurt_iframes > 0.0 and Settings.flashes:
+		hurt_alpha = 0.55 + 0.45 * absf(sin(t * 18.0))
+	var pulse := 0.5 + 0.5 * sin(t * 2.4)
+	draw_circle(Vector2(0, -6), (40.0 + 6.0 * pulse) * size, Color(outer, 0.05))
+	draw_circle(Vector2(0, -8), 24.0 * size, Color(outer, 0.08))
+	# La mecha (la espina que sostiene la llama).
+	draw_line(Vector2(0, 11), Vector2(0, 2), Color(0.1, 0.07, 0.07), 3.0)
+	if wax > 0:
+		draw_rect(Rect2(-8, 8, 16, 6), Color(Palette.WAX, 0.9))
+		draw_rect(Rect2(-9, 7, 18, 2), Color(Palette.WAX.lightened(0.2), 0.9))
+	var recoil: float = _muzzle_t / MUZZLE_TIME
+	var lean := clampf(-velocity.x * 0.03, -9.0, 9.0) - aim_dir.x * 2.0 * recoil
+	_draw_flame(Vector2(-aim_dir * 2.0 * recoil), size, Color(outer, hurt_alpha), Color(core, hurt_alpha), lean, t, low)
+	if recoil > 0.0:
+		var muzzle := aim_dir * (radius + 10.0) + Vector2(0, -8)
+		draw_circle(muzzle, 6.0 + 5.0 * recoil, Color(outer, 0.25 * recoil))
+		draw_circle(muzzle, 2.5 + 3.0 * recoil, Color(core, 0.85 * recoil))
+	# Mota de puntería: una chispa que orbita hacia donde miras.
+	var mote := aim_dir * (radius + 11.0) + Vector2(0, -8)
+	draw_circle(mote, 2.2, Color(core, 0.7))
+	for i in crit_charges:
+		var a := t * 4.0 + i * TAU / maxf(1.0, float(crit_charges))
+		draw_circle(Vector2.RIGHT.rotated(a) * (radius + 14.0) + Vector2(0, -8), 2.5, _eye_color)
+	if kindling_target != null and is_instance_valid(kindling_target):
+		# Hilo de chispas hacia la vela que se está encendiendo.
+		var to := kindling_target.global_position + Vector2(0, -26) - global_position
+		for i in 5:
+			var k := fmod(t * 1.8 + i * 0.2, 1.0)
+			var p := Vector2(0, -12).lerp(to, k) + Vector2(sin(t * 9.0 + i * 1.7), cos(t * 7.0 + i)) * 4.0
+			draw_circle(p, 2.0 * (1.0 - k) + 0.6, Color(core, 0.85 * (1.0 - k * 0.6)))
+
+
+## Lágrima de fuego en tres capas. `lean` inclina la punta (inercia del movimiento).
+func _draw_flame(off: Vector2, size: float, outer: Color, core: Color, lean: float, t: float, low: float = 0.0) -> void:
+	var flick := 1.0 + (0.06 + 0.1 * low) * sin(t * 13.0) + (0.04 + 0.06 * low) * sin(t * 21.0 + 1.7)
+	var h := 30.0 * size * flick
+	var w := 11.0 * size
+	var base := off + Vector2(0, 2)
+	for layer in 3:
+		var k: float = [1.0, 0.68, 0.38][layer]
+		var col: Color = [outer, outer.lerp(core, 0.55), core][layer]
+		var hh := h * k
+		var ww := w * k
+		var tip := base + Vector2(lean * k + 1.5 * sin(t * 6.0 + layer), -hh * 1.15)
+		var pts := PackedVector2Array([
+			base + Vector2(-ww, -ww * 0.2),
+			base + Vector2(-ww * 0.85, -hh * 0.45),
+			base.lerp(tip, 0.72) + Vector2(-ww * 0.38, 0),
+			tip,
+			base.lerp(tip, 0.72) + Vector2(ww * 0.38, 0),
+			base + Vector2(ww * 0.85, -hh * 0.45),
+			base + Vector2(ww, -ww * 0.2),
+			base + Vector2(ww * 0.55, ww * 0.55),
+			base + Vector2(0, ww * 0.75),
+			base + Vector2(-ww * 0.55, ww * 0.55),
+		])
+		draw_colored_polygon(pts, col)

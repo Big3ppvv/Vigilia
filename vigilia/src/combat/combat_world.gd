@@ -28,6 +28,8 @@ var player: Player
 var enemies: Array = []
 var allies: Array = []
 var familiars: Array = []
+## Velas votivas de la sala actual (las registra RoomDirector).
+var votives: Array = []
 ## Modificadores de mecánicas agregados por ItemSystem (objetos que alteran objetos).
 var mechanic_mods := {}
 var floor_params := {}
@@ -100,6 +102,15 @@ func nearest_hostile(pos: Vector2, team: int, max_dist: float, exclude: Dictiona
 			bd = d
 			best = t
 	return best
+
+
+## ¿Está `pos` dentro de la luz de alguna vela votiva encendida? Las sombras
+## en la luz reciben más daño y se mueven más despacio.
+func in_votive_light(pos: Vector2) -> bool:
+	for v in votives:
+		if is_instance_valid(v) and v.lit and pos.distance_squared_to(v.global_position) <= VotiveCandle.AURA * VotiveCandle.AURA:
+			return true
+	return false
 
 
 func live_enemy_count() -> int:
@@ -185,6 +196,12 @@ func on_projectile_impact(p: Projectile, pos: Vector2) -> void:
 			"depth": p.depth, "generation": p.generation, "proc_coef": p.proc_coef})
 
 
+## Una brasa del jugador choca contra el muro de la sala: las grietas ceden.
+func on_projectile_wall(_p: Projectile, pos: Vector2) -> void:
+	if room != null and room.on_wall_struck(pos):
+		fx.burst(pos, Palette.FLAME_CORE, 6, 120.0, 2.0, 0.3)
+
+
 func on_projectile_bounce(p: Projectile, pos: Vector2) -> void:
 	counters["bounces"] += 1
 	fx.ring(pos, 10.0, p.color, 0.15, 2.0)
@@ -198,8 +215,8 @@ func on_graze(pl: Player, p: Projectile) -> void:
 	engine.emit("graze", {"position": p.pos, "depth": 0, "tags": PackedStringArray(["graze"])})
 
 
-## Explosión: daña en área, rompe rocas, revela secretos, detona bombas cercanas
-## y emite "explosion". Las explosiones del jugador no le hieren salvo friendly_fire.
+## Explosión: daña en área, rompe cera endurecida, revela secretos y emite
+## "explosion". Las explosiones del jugador no le hieren salvo friendly_fire.
 func explode(pos: Vector2, radius: float, info: DamageInfo, color: Color = Palette.FLAME, friendly_fire: bool = false) -> void:
 	var __pt := Prof.t0()
 	if info.team == Team.PLAYER and not friendly_fire:
@@ -234,9 +251,6 @@ func explode(pos: Vector2, radius: float, info: DamageInfo, color: Color = Palet
 		deal_damage(v, di)
 	if room != null and room.on_explosion(pos, radius):
 		fx.burst(pos, Palette.WAX_DARK, 12, 200.0, 4.0, 0.6)
-	for b in get_tree().get_nodes_in_group("bombs"):
-		if is_instance_valid(b) and b.global_position.distance_to(pos) < radius and float(b.fuse) > 0.15:
-			b.fuse = 0.1
 	engine.emit("explosion", {"position": pos, "radius": radius, "info": info, "tags": info.tags, "depth": info.depth})
 	Prof.add("explosiones (con cadena)", __pt)
 
@@ -312,6 +326,16 @@ func on_enemy_killed(e: Enemy, info: DamageInfo, statuses: PackedStringArray) ->
 		boss_killed.emit(e)
 
 
+## Una sombra se deshace con la luz: no es una baja (sin "kill", sin botín).
+func on_enemy_dissolved(e: Enemy) -> void:
+	enemies.erase(e)
+	run.dissolved += 1
+	var pos := e.global_position
+	fx.rise(pos, e.blood_color().lightened(0.35), 18, e.radius * 0.8, 1.3)
+	fx.rise(pos, Palette.FLAME_CORE, 6, e.radius * 0.5, 0.9)
+	Audio.play("dissolve", -6.0)
+
+
 func _roll_drop(e: Enemy) -> void:
 	var table := "champion_drop" if e.champion_id != "" else "enemy_drop"
 	var t: Dictionary = ContentDB.loot.get(table, {})
@@ -381,21 +405,10 @@ func spawn_familiar(kind: String, index: int, total: int) -> Node2D:
 
 
 func spawn_pickup(kind: String, pos: Vector2, vel: Vector2 = Vector2.ZERO) -> void:
-	if kind == "coin3":
-		for i in 3:
-			spawn_pickup("coin", pos, Vector2.RIGHT.rotated(i * TAU / 3.0 + 0.4) * 140.0)
-		return
 	var pk := Pickup.new()
 	pk.position = pos
 	pk.setup(self, kind, vel)
 	entity_layer.add_child(pk)
-
-
-func place_bomb(pos: Vector2) -> void:
-	var b := Bomb.new()
-	b.position = pos
-	b.world = self
-	entity_layer.add_child(b)
 
 
 func terrain_speed_mult(ent: Node2D) -> float:

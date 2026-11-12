@@ -1,16 +1,20 @@
 class_name ItemPedestal
 extends Node2D
-## Pedestal de objeto (tesoro, jefe, secreta) o de venta (tienda).
-## Se toma con INTERACTUAR (E) para que el jugador lea la descripción antes de
+## Pedestal de un RECUERDO (tesoro, jefe, sala secreta o la Cabecera).
+## Se toma con INTERACTUAR (E) para que el jugador lea el recuerdo antes de
 ## decidir. Si pertenece a un grupo de elección, tomar uno hace DESAPARECER los
-## demás: decisión irreversible.
+## demás: decisión irreversible y anunciada.
+## En la Cabecera (`price` > 0) recordar cuesta llama MÁXIMA: la llama se acorta
+## para siempre. Nunca puede dejarte por debajo de MIN_FLAME_AFTER.
 
 const RANGE := 66.0
+const MIN_FLAME_AFTER := 2
+
+static var _emissive: CanvasItemMaterial
 
 var world: CombatWorld
 var entry: Dictionary = {}
 var item_id := ""
-var consumable_kind := ""
 var price := 0
 var group := -1
 var _t := 0.0
@@ -21,33 +25,39 @@ func setup(w: CombatWorld, e: Dictionary) -> void:
 	world = w
 	entry = e
 	item_id = str(e.get("item_id", ""))
-	consumable_kind = str(e.get("kind", "")) if bool(e.get("consumable", false)) else ""
 	price = maxi(0, int(e.get("price", 0)))
 	group = int(e.get("group", -1))
 	add_to_group("interactables")
 	add_to_group("pedestals")
+	# El recuerdo brilla con luz propia: se ve en la penumbra y llama a acercarse.
+	if _emissive == null:
+		_emissive = CanvasItemMaterial.new()
+		_emissive.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	material = _emissive
 
 
-func is_consumable() -> bool:
-	return consumable_kind != ""
+func is_altar() -> bool:
+	return price > 0
 
 
 func prompt() -> Array:
-	if is_consumable():
-		var names := {"heart": "Cuenta de vida", "key": "Llave de hueso", "bomb": "Bomba de sebo", "wax": "Cuenta de cera"}
-		return ["[E] Comprar %s — %d óbolos" % [names.get(consumable_kind, consumable_kind), price], ""]
 	var d := ContentDB.get_item(item_id)
-	var head := "[E] Tomar: " if price <= 0 else "[E] Comprar (%d óbolos): " % price
-	if price <= 0 and _has_rivals():
-		head = "[E] Elegir (las demás se desvanecen): "
-	var rar := Palette.rarity_label(str(d.get("rarity", "common")))
-	var tag_type := "Activo" if str(d.get("type", "")) == "active" else "Pasivo"
-	var detail := "%s · %s — %s" % [tag_type, rar, str(d.get("desc", ""))]
+	var item_name := str(d.get("name", item_id))
+	var head := "[E] Recordar: " + item_name
+	if is_altar():
+		head = "[E] Recordar: %s  —  cuesta %d de llama para siempre" % [item_name, price]
+	elif _has_rivals():
+		head = "[E] Elegir: %s  (el otro recuerdo se desvanecerá)" % item_name
+	var lines: Array = []
+	var flavor := str(d.get("flavor", ""))
+	if flavor != "":
+		lines.append("«%s»" % flavor)
+	lines.append(("Activo [Q] — " if str(d.get("type", "")) == "active" else "") + str(d.get("desc", "")))
 	if world != null and world.player != null and world.player.inventory != null:
 		var prog := world.player.inventory.preview_progress(item_id)
 		if prog != "":
-			detail += "\nSinergias: " + prog
-	return [head + str(d.get("name", item_id)), detail]
+			lines.append("Sinergias: " + prog)
+	return [head, "\n".join(lines)]
 
 
 ## true si hay otros pedestales sin tomar del mismo grupo de elección en la sala:
@@ -67,36 +77,20 @@ func _has_rivals() -> bool:
 func interact(pl: Player) -> bool:
 	if taken:
 		return false
-	if price > pl.coins:
+	if is_altar() and pl.max_hp() - price < MIN_FLAME_AFTER:
 		Audio.play("deny")
-		world.toast("Te faltan %d óbolos" % (price - pl.coins), Palette.UI_DANGER)
+		world.toast("Tu llama es demasiado corta para recordar esto", Palette.UI_DANGER)
 		return false
-	if is_consumable():
-		if consumable_kind == "heart" and pl.hp >= pl.max_hp():
-			Audio.play("deny")
-			world.toast("Ya tienes la vida completa", Palette.UI_DIM)
-			return false
-	if price > 0:
-		pl.add_resources(-price, 0, 0)
 	taken = true
 	entry["taken"] = true
-	if is_consumable():
-		match consumable_kind:
-			"heart":
-				pl.heal(1)
-			"key":
-				pl.add_resources(0, 1, 0)
-			"bomb":
-				pl.add_resources(0, 0, 1)
-			"wax":
-				pl.add_wax(1)
-		Audio.play("coin")
-	else:
-		var d := ContentDB.get_item(item_id)
-		pl.inventory.add_item(item_id, int(entry.get("active_charge", -1)))
-		EventBus.banner.emit(str(d.get("name", item_id)), str(d.get("desc", "")), Palette.rarity_color(str(d.get("rarity", "common"))))
-		Audio.play("item")
-		world.fx.burst(global_position + Vector2(0, -24), Palette.rarity_color(str(d.get("rarity", "common"))), 24, 220.0, 3.0, 0.7)
+	if is_altar():
+		pl.shorten_flame(price, "altar:" + item_id)
+	var d := ContentDB.get_item(item_id)
+	pl.inventory.add_item(item_id, int(entry.get("active_charge", -1)))
+	EventBus.memory_taken.emit(item_id)
+	Audio.play("item")
+	world.fx.burst(global_position + Vector2(0, -24), Palette.rarity_color(str(d.get("rarity", "common"))), 24, 220.0, 3.0, 0.7)
+	world.fx.ring(global_position + Vector2(0, -24), 60.0, Palette.FLAME_CORE, 0.6, 2.0)
 	if group >= 0 and world.game != null and world.game.has_method("on_pedestal_group_taken"):
 		world.game.on_pedestal_group_taken(self)
 	queue_free()
@@ -119,22 +113,29 @@ func _process(delta: float) -> void:
 
 
 func _draw() -> void:
-	draw_circle(Vector2(0, 14), 22.0, Palette.SHADOW)
-	draw_colored_polygon(PackedVector2Array([Vector2(-22, 16), Vector2(-16, -2), Vector2(16, -2), Vector2(22, 16)]), Palette.WALL_TOP)
-	draw_rect(Rect2(-18, -6, 36, 6), Palette.WALL_TOP.lightened(0.1))
-	var bob := sin(_t * 2.5) * 4.0
-	var c := Vector2(0, -30 + bob)
-	if is_consumable():
-		var glyph := {"heart": "heart", "key": "key", "bomb": "bomb", "wax": "wax"}.get(consumable_kind, "coin_small") as String
-		GlyphPainter.draw_glyph(self, glyph, c, 12.0, Palette.BONE, Palette.WALL_TOP, _t)
+	var d := ContentDB.get_item(item_id)
+	var rc := Palette.rarity_color(str(d.get("rarity", "common")))
+	# Mesita (Cabecera) o pedestal de cera.
+	draw_circle(Vector2(0, 16), 24.0, Color(0, 0, 0, 0.35))
+	if is_altar():
+		draw_rect(Rect2(-20, -4, 40, 22), Color(0.16, 0.13, 0.12))
+		draw_rect(Rect2(-20, -6, 40, 4), Color(0.26, 0.21, 0.18))
+		draw_line(Vector2(-14, 6), Vector2(14, 6), Color(0.3, 0.25, 0.2), 1.5)
 	else:
-		var d := ContentDB.get_item(item_id)
-		var rc := Palette.rarity_color(str(d.get("rarity", "common")))
-		draw_circle(c, 26.0, Color(rc, 0.12 + 0.05 * sin(_t * 3.0)))
-		GlyphPainter.draw_item(self, d, c, 15.0, _t)
-	if price > 0:
-		var font := ThemeDB.fallback_font
-		var txt := str(price)
-		var w := font.get_string_size(txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14).x
-		GlyphPainter.draw_glyph(self, "coin_small", Vector2(-w * 0.5 - 8, 32), 6.0, Palette.BONE, Palette.WALL_TOP)
-		draw_string(font, Vector2(-w * 0.5 + 2, 37), txt, HORIZONTAL_ALIGNMENT_LEFT, -1, 14, Palette.UI_ACCENT)
+		draw_colored_polygon(PackedVector2Array([Vector2(-20, 16), Vector2(-14, -2), Vector2(14, -2), Vector2(20, 16)]), Color(0.22, 0.17, 0.16))
+		draw_rect(Rect2(-16, -6, 32, 5), Color(0.32, 0.25, 0.2))
+	var bob := sin(_t * 2.2) * 4.0
+	var c := Vector2(0, -30 + bob)
+	var pulse := 0.5 + 0.5 * sin(_t * 2.6)
+	draw_circle(c, 34.0, Color(Palette.FLAME_CORE, 0.05 + 0.03 * pulse))
+	draw_circle(c, 22.0, Color(rc, 0.12 + 0.06 * pulse))
+	GlyphPainter.draw_item(self, d, c, 15.0, _t)
+	# Motas de luz que suben: el recuerdo "respira".
+	for i in 4:
+		var k := fmod(_t * 0.45 + i * 0.25, 1.0)
+		var px := sin(_t * 1.3 + i * 2.1) * 14.0
+		draw_circle(c + Vector2(px, 18.0 - k * 46.0), 1.6, Color(Palette.FLAME_CORE, 0.6 * (1.0 - k)))
+	if is_altar():
+		var total_w := price * 14.0
+		for i in price:
+			GlyphPainter.flame(self, Vector2(-total_w * 0.5 + 7.0 + i * 14.0, 34), 5.5, _t + i)

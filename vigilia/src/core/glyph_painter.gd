@@ -140,27 +140,50 @@ static func draw_glyph(ci: CanvasItem, glyph: String, c: Vector2, s: float, c1: 
 			ci.draw_rect(Rect2(c + Vector2(0.4, -0.1) * s, Vector2(0.4, 0.2) * s), c1)
 			_flame(ci, c + Vector2(0.95, 0.05) * s, s * 0.25, t)
 		"heart":
-			ci.draw_circle(c, s * 0.6, Palette.BLOOD)
-			ci.draw_circle(c + Vector2(-0.18, -0.2) * s, s * 0.16, Color(1, 1, 1, 0.45))
+			# Ascua: devuelve llama. Brasa redonda con corazón incandescente.
+			var beat := 1.0 + 0.08 * sin(t * 6.0)
+			ci.draw_circle(c, s * 0.62 * beat, Color(Palette.FLAME, 0.35))
+			ci.draw_circle(c, s * 0.42 * beat, Palette.FLAME)
+			ci.draw_circle(c + Vector2(-0.08, -0.1) * s, s * 0.2, Palette.FLAME_CORE)
 		"wax":
-			ci.draw_circle(c, s * 0.6, Palette.WAX)
-			ci.draw_circle(c + Vector2(0.1, 0.12) * s, s * 0.45, Palette.WAX_DARK)
-			ci.draw_circle(c + Vector2(-0.18, -0.2) * s, s * 0.16, Color(1, 1, 1, 0.6))
-		"key":
-			ci.draw_circle(c + Vector2(-0.45, 0) * s, s * 0.35, Palette.BONE)
-			ci.draw_circle(c + Vector2(-0.45, 0) * s, s * 0.15, dark)
-			ci.draw_rect(Rect2(c + Vector2(-0.15, -0.1) * s, Vector2(1.0, 0.2) * s), Palette.BONE)
-			ci.draw_rect(Rect2(c + Vector2(0.55, 0.05) * s, Vector2(0.15, 0.3) * s), Palette.BONE)
-			ci.draw_rect(Rect2(c + Vector2(0.3, 0.05) * s, Vector2(0.12, 0.22) * s), Palette.BONE)
-		"bomb":
-			ci.draw_circle(c + Vector2(0, 0.15) * s, s * 0.62, Color("2a2230"))
-			ci.draw_circle(c + Vector2(-0.2, -0.05) * s, s * 0.16, Color(1, 1, 1, 0.25))
-			ci.draw_line(c + Vector2(0.2, -0.4) * s, c + Vector2(0.45, -0.8) * s, Palette.WAX_DARK, maxf(1.0, s * 0.1))
-			_flame(ci, c + Vector2(0.45, -0.85) * s, s * 0.2, t)
-		"coin_small":
-			ci.draw_circle(c, s * 0.7, Palette.BRONZE)
-			ci.draw_arc(c, s * 0.5, 0, TAU, 16, Palette.GOLD, maxf(1.0, s * 0.12))
-			ci.draw_circle(c, s * 0.16, Palette.WALL_DARK)
+			ci.draw_circle(c + Vector2(0, 0.15) * s, s * 0.55, Palette.WAX_SHADOW)
+			ci.draw_circle(c + Vector2(0, 0.05) * s, s * 0.5, Palette.WAX)
+			ci.draw_colored_polygon(_pts(c, s, [[-0.25, -0.2], [0.0, -0.95], [0.25, -0.2]]), Palette.WAX)
+			ci.draw_circle(c + Vector2(-0.18, -0.05) * s, s * 0.12, Color(1, 1, 1, 0.5))
+		"tangerine":
+			ci.draw_circle(c + Vector2(0, 0.1) * s, s * 0.68, c1.darkened(0.25))
+			ci.draw_circle(c + Vector2(-0.05, 0.05) * s, s * 0.6, c1)
+			for i in 5:
+				var a := -PI * 0.5 + i * TAU / 5.0
+				ci.draw_line(c + Vector2(0, 0.05) * s, c + Vector2(cos(a), sin(a) + 0.08) * s * 0.55, c1.darkened(0.15), maxf(1.0, s * 0.05))
+			ci.draw_colored_polygon(_pts(c, s, [[0.0, -0.55], [0.35, -0.95], [0.5, -0.7], [0.1, -0.5]]), c2)
+			ci.draw_circle(c + Vector2(-0.25, -0.15) * s, s * 0.1, Color(1, 1, 1, 0.45))
+		"watch":
+			ci.draw_line(c + Vector2(0, -0.95) * s, c + Vector2(0, -0.6) * s, c2, maxf(1.5, s * 0.12))
+			ci.draw_circle(c + Vector2(0, -0.98) * s, s * 0.12, c2)
+			ci.draw_circle(c + Vector2(0, 0.1) * s, s * 0.66, c2)
+			ci.draw_circle(c + Vector2(0, 0.1) * s, s * 0.55, c1)
+			# Esfera del revés: las agujas miran hacia arriba al leerla desde el pecho.
+			ci.draw_line(c + Vector2(0, 0.1) * s, c + Vector2(0, 0.1) * s + Vector2.DOWN.rotated(t * 0.5) * s * 0.42, dark, maxf(1.0, s * 0.07))
+			ci.draw_line(c + Vector2(0, 0.1) * s, c + Vector2(0, 0.1) * s + Vector2.DOWN.rotated(t * 0.05 + 1.2) * s * 0.3, dark, maxf(1.5, s * 0.1))
+			ci.draw_circle(c + Vector2(0, 0.1) * s, s * 0.06, dark)
+		"drawing":
+			ci.draw_colored_polygon(_pts(c, s, [[-0.8, -0.7], [0.75, -0.8], [0.8, 0.75], [-0.75, 0.8]]), Color("efe6d8"))
+			ci.draw_polyline(_pts(c, s, [[-0.5, 0.55], [-0.5, 0.0], [-0.1, -0.35], [0.3, 0.0], [0.3, 0.55], [-0.5, 0.55]]), c2, maxf(1.0, s * 0.08))
+			ci.draw_circle(c + Vector2(0.5, -0.45) * s, s * 0.17, c1)
+			for i in 3:
+				ci.draw_line(c + Vector2(-0.6 + i * 0.25, 0.55) * s, c + Vector2(-0.6 + i * 0.25, 0.3) * s, Color("b3243b"), maxf(1.0, s * 0.06))
+			_flame(ci, c + Vector2(0.55, 0.3) * s, s * 0.18, t)
+		"radio":
+			ci.draw_rect(Rect2(c + Vector2(-0.8, -0.35) * s, Vector2(1.6, 0.95) * s), c2)
+			ci.draw_rect(Rect2(c + Vector2(-0.7, -0.25) * s, Vector2(0.75, 0.75) * s), c2.lightened(0.15))
+			for i in 4:
+				ci.draw_line(c + Vector2(-0.65, -0.15 + i * 0.17) * s, c + Vector2(-0.0, -0.15 + i * 0.17) * s, dark, maxf(1.0, s * 0.05))
+			ci.draw_circle(c + Vector2(0.4, 0.1) * s, s * 0.22, c1)
+			ci.draw_line(c + Vector2(0.5, -0.35) * s, c + Vector2(0.85, -0.95) * s, c2.lightened(0.3), maxf(1.0, s * 0.06))
+			for i in 3:
+				var k := fmod(t * 0.8 + i * 0.33, 1.0)
+				ci.draw_arc(c + Vector2(0.4, 0.1) * s, s * (0.3 + 0.5 * k), -0.6, 0.6, 6, Color(c1, 0.7 * (1.0 - k)), maxf(1.0, s * 0.06))
 		_:
 			ci.draw_circle(c, s * 0.7, c2)
 			ci.draw_circle(c, s * 0.45, c1)

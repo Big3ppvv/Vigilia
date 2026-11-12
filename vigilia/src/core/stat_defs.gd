@@ -5,7 +5,7 @@ extends RefCounted
 ## validación de contenido: un error tipográfico en un JSON no pasa en silencio.
 
 const DEFS := {
-	"max_health": {"default": 6.0, "min": 1.0, "max": 24.0, "int": true, "label": "Vida máxima"},
+	"max_health": {"default": 6.0, "min": 1.0, "max": 24.0, "int": true, "label": "Llama máxima"},
 	"damage": {"default": 3.5, "min": 0.25, "max": 999.0, "label": "Daño"},
 	"fire_rate": {"default": 3.0, "min": 0.4, "max": 30.0, "label": "Cadencia (disp/s)"},
 	"move_speed": {"default": 250.0, "min": 80.0, "max": 560.0, "label": "Velocidad"},
@@ -29,6 +29,7 @@ const DEFS := {
 	"cooldown_reduction": {"default": 0.0, "min": 0.0, "max": 0.75, "label": "Reducción de recarga"},
 	"summon_power": {"default": 1.0, "min": 0.1, "max": 10.0, "label": "Poder de invocación"},
 	"dodge_cooldown": {"default": 0.85, "min": 0.2, "max": 3.0, "label": "Recarga de esquiva (s)"},
+	"kindle_speed": {"default": 1.0, "min": 0.25, "max": 6.0, "label": "Encender velas"},
 	"res_fire": {"default": 0.0, "min": -1.0, "max": 0.9, "label": "Resist. fuego"},
 	"res_ice": {"default": 0.0, "min": -1.0, "max": 0.9, "label": "Resist. hielo"},
 	"res_poison": {"default": 0.0, "min": -1.0, "max": 0.9, "label": "Resist. veneno"},
@@ -39,7 +40,7 @@ const DEFS := {
 const DISPLAY_ORDER := [
 	"damage", "fire_rate", "move_speed", "range", "shot_speed", "shot_size",
 	"crit_chance", "crit_mult", "luck", "projectile_count", "pierce", "bounces",
-	"homing", "evasion", "dodge_cooldown", "status_damage", "status_duration",
+	"homing", "evasion", "dodge_cooldown", "kindle_speed", "status_damage", "status_duration",
 ]
 
 
@@ -65,7 +66,7 @@ static func format_value(id: String, v: float) -> String:
 		return str(int(round(v)))
 	if id in ["crit_chance", "evasion", "cooldown_reduction"]:
 		return "%d%%" % int(round(v * 100.0))
-	if id in ["status_damage", "status_duration", "knockback", "summon_power", "shot_size", "crit_mult"]:
+	if id in ["status_damage", "status_duration", "knockback", "summon_power", "shot_size", "crit_mult", "kindle_speed"]:
 		return "x%.2f" % v
 	if absf(v) >= 100.0:
 		return str(int(round(v)))

@@ -1,14 +1,16 @@
 class_name Pickup
 extends Node2D
-## Consumible del suelo: óbolo, cuenta de vida, cera, llave o bomba.
-## Imán corto; las cuentas de vida y la cera no se recogen si no se necesitan
-## (quedan en la sala para volver a por ellas: el estado de la sala persiste).
+## Consumible del suelo: ascua ("heart": devuelve 1 de llama) o cera (escudo).
+## Imán corto; no se recogen si no se necesitan (quedan en la sala para volver a
+## por ellas: el estado de la sala persiste). Brillan con luz propia.
 
 const MAGNET := 70.0
 const SETTLE := 0.3
 
+static var _emissive: CanvasItemMaterial
+
 var world: CombatWorld
-var kind := "coin"
+var kind := "heart"
 var vel := Vector2.ZERO
 var radius := 9.0
 var _t := 0.0
@@ -19,6 +21,10 @@ func setup(w: CombatWorld, k: String, v: Vector2) -> void:
 	kind = k
 	vel = v
 	add_to_group("pickups")
+	if _emissive == null:
+		_emissive = CanvasItemMaterial.new()
+		_emissive.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	material = _emissive
 
 
 func _physics_process(delta: float) -> void:
@@ -55,15 +61,6 @@ func _wanted(pl: Player) -> bool:
 
 func _collect(pl: Player) -> void:
 	match kind:
-		"coin":
-			pl.add_resources(1, 0, 0)
-			Audio.play("coin", -4.0)
-		"key":
-			pl.add_resources(0, 1, 0)
-			Audio.play("pickup")
-		"bomb":
-			pl.add_resources(0, 0, 1)
-			Audio.play("pickup")
 		"heart":
 			pl.heal(1)
 			Audio.play("heart")
@@ -77,6 +74,5 @@ func _collect(pl: Player) -> void:
 
 func _draw() -> void:
 	var bob := sin(_t * 4.0) * 2.5
-	draw_circle(Vector2(0, 9), 8.0, Palette.SHADOW)
-	var glyph := {"coin": "coin_small", "heart": "heart", "wax": "wax", "key": "key", "bomb": "bomb"}.get(kind, "coin_small") as String
-	GlyphPainter.draw_glyph(self, glyph, Vector2(0, bob - 2.0), 10.0, Palette.BONE, Palette.WALL_TOP, _t)
+	draw_circle(Vector2(0, -2 + bob), 16.0, Color(Palette.FLAME if kind == "heart" else Palette.WAX, 0.08))
+	GlyphPainter.draw_glyph(self, kind, Vector2(0, bob - 2.0), 10.0, Palette.BONE, Palette.WALL_TOP, _t)

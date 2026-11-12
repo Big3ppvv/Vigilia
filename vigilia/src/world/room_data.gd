@@ -5,7 +5,7 @@ extends RefCounted
 ## rocas rotas y consumibles en el suelo.
 
 var coord := Vector2i.ZERO
-## start | combat | treasure | shop | boss | secret
+## start | combat | treasure | altar | boss | secret
 var type := "combat"
 var depth := 0
 var template_id := ""
@@ -20,6 +20,8 @@ var spawns: Array = []
 var pedestals: Array = []
 ## Consumibles sueltos: [{kind, pos: Vector2}] (al generar se usan tiles)
 var pickups: Array = []
+## Velas votivas de la sala: [{tile: Vector2i, lit: bool}] (solo combate).
+var votives: Array = []
 var lore_tile := Vector2i(-1, -1)
 var boss_id := ""
 var boss_reward := ""
@@ -49,7 +51,7 @@ func door_count(include_hidden: bool = true) -> int:
 
 
 func is_special() -> bool:
-	return type in ["treasure", "shop", "boss", "secret"]
+	return type in ["treasure", "altar", "boss", "secret"]
 
 
 func serialize() -> Dictionary:
@@ -63,8 +65,11 @@ func serialize() -> Dictionary:
 	var pe: Array = []
 	for p in pedestals:
 		pe.append([p["tile"].x, p["tile"].y, p.get("pool", ""), p.get("item_id", ""), p.get("kind", "")])
+	var vo: Array = []
+	for v in votives:
+		vo.append([v["tile"].x, v["tile"].y])
 	return {
 		"coord": [coord.x, coord.y], "type": type, "depth": depth,
 		"template": template_id, "layout": Array(layout), "doors": ds,
-		"spawns": sp, "pedestals": pe, "boss": boss_id,
+		"spawns": sp, "pedestals": pe, "boss": boss_id, "votives": vo,
 	}

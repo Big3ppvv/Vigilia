@@ -229,9 +229,6 @@ func passes_filter(f: Dictionary, ctx: Dictionary) -> bool:
 			"room_type":
 				if world == null or world.room_type() != str(v):
 					return false
-			"coins_min":
-				if world == null or world.player == null or world.player.coins < int(v):
-					return false
 			"pickup_kind":
 				if str(ctx.get("kind", "")) != str(v):
 					return false

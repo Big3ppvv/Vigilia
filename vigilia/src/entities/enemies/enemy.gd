@@ -15,6 +15,9 @@ extends CharacterBody2D
 signal died(enemy: Enemy)
 
 const SPAWN_TIME := 0.6
+## Dentro de la luz de una vela votiva encendida, las sombras se debilitan.
+const LIGHT_VULNERABILITY := 1.25
+const LIGHT_SLOW := 0.82
 
 var def: Dictionary = {}
 var enemy_id := ""
@@ -175,6 +178,8 @@ func _physics_body(delta: float) -> void:
 		behave(adt)
 	_champion_tick(delta)
 	var mult := status.speed_mult() * world.terrain_speed_mult(self)
+	if not is_boss and world.in_votive_light(global_position):
+		mult *= LIGHT_SLOW
 	velocity = velocity.move_toward(desired_velocity * mult, accel * delta)
 	move_and_slide()
 	_contact(delta)
@@ -210,6 +215,8 @@ func apply_damage(info: DamageInfo) -> float:
 		return 0.0
 	var amount := DamageSystem.mitigate(info, tolerance, allergies, immunities, armor)
 	amount = modify_incoming(amount, info)
+	if info.team == Team.PLAYER and not is_boss and world.in_votive_light(global_position):
+		amount *= LIGHT_VULNERABILITY
 	if amount <= 0.0:
 		return 0.0
 	if shield_hp > 0.0:
@@ -283,6 +290,17 @@ func die(info: DamageInfo) -> void:
 	world.on_enemy_killed(self, info, statuses)
 	on_death(info)
 	_champion_on_death()
+	died.emit(self)
+	status.clear()
+	queue_free()
+
+
+## La luz despierta la sala: la sombra se deshace sin morir (no emite "kill").
+func dissolve() -> void:
+	if not alive:
+		return
+	alive = false
+	world.on_enemy_dissolved(self)
 	died.emit(self)
 	status.clear()
 	queue_free()

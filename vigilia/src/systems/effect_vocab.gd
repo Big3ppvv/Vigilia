@@ -17,7 +17,8 @@ const TRIGGERS := {
 	"dodge": "El jugador inicia una esquiva.",
 	"graze": "Esquiva perfecta: un proyectil enemigo roza al jugador durante la esquiva.",
 	"room_enter": "El jugador entra en una habitación.",
-	"room_clear": "La habitación queda despejada.",
+	"room_clear": "La sala despierta: todas sus velas arden o no queda ninguna sombra.",
+	"kindle": "El jugador enciende una vela votiva (ctx.position = la vela).",
 	"explosion": "Ocurre una explosión (cualquier origen).",
 	"status_applied": "Se aplica un estado alterado a un enemigo.",
 	"reaction": "Se produce una reacción elemental.",
@@ -33,7 +34,7 @@ const FILTERS := [
 	"tags_any", "tags_all", "tags_none",
 	"target_status_any", "target_status_none", "target_is_boss",
 	"player_hp_min", "player_hp_max", "crit", "max_generation",
-	"min_depth", "max_depth", "room_type", "coins_min", "pickup_kind",
+	"min_depth", "max_depth", "room_type", "pickup_kind",
 	"status", "reaction",
 ]
 
@@ -47,7 +48,6 @@ const ACTIONS := {
 	"permanent_stat": ["stat", "op", "value"],
 	"heal": ["amount"],
 	"add_wax": ["amount"],
-	"add_resource": ["coins", "keys", "bombs"],
 	"spawn_ally": ["kind", "duration", "max", "count"],
 	"self_damage": ["amount"],
 	"empower_projectile": ["damage_mult", "size_mult", "pierce_add", "speed_mult", "color", "tags_add", "knockback_mult"],

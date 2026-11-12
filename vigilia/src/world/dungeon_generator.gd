@@ -8,17 +8,19 @@ extends RefCounted
 ##   1. Crecimiento en rejilla desde el origen (sala inicial). Una celda nueva solo
 ##      se acepta si tiene un único vecino ocupado: produce ramas y no bloques.
 ##   2. Bucles: se conectan algunos pares de salas normales adyacentes (atajos).
-##   3. Salas especiales (jefe, tesoro, tienda) como HOJAS nuevas con una sola
+##   3. Salas especiales (jefe, tesoro, cabecera) como HOJAS nuevas con una sola
 ##      puerta. El jefe va en la hoja más lejana del inicio (BFS), con distancia
 ##      mínima configurable.
 ##   4. Sala secreta en una celda vacía adyacente a >= 2 salas normales, unida por
 ##      puertas OCULTAS (muros agrietados que se abren con explosiones).
 ##   5. Validación estructural; si falla, se reintenta con una sub-semilla derivada
 ##      del número de intento (sigue siendo determinista).
-##   6. Población: plantilla, espejado, enemigos y pedestales por sala con un RNG
-##      derivado de la coordenada => el contenido no depende del orden de visita.
+##   6. Población: plantilla, espejado, enemigos, pedestales y VELAS VOTIVAS por sala
+##      con un RNG derivado de la coordenada => el contenido no depende del orden
+##      de visita. Las velas se eligen DESPUÉS de las demás tiradas de la sala.
 
-const VERSION := 1
+## v2: cabecera (altar) en lugar de tienda, sin puertas cerradas, velas votivas.
+const VERSION := 2
 const MAX_ATTEMPTS := 60
 ## Límites del mapa (|x| <= BOUND_X, |y| <= BOUND_Y) para que el minimapa sea compacto.
 const BOUND_X := 5
@@ -106,8 +108,8 @@ static func _try_generate(rng: RngStream, params: Dictionary) -> FloorLayout:
 	var specials: Array = ["boss"]
 	for i in int(params.get("treasure", 1)) + int(params.get("extra_treasure", 0)):
 		specials.append("treasure")
-	for i in int(params.get("shop", 1)):
-		specials.append("shop")
+	for i in int(params.get("altar", 1)):
+		specials.append("altar")
 	var boss_cell := Vector2i.ZERO
 	for kind in specials:
 		var dist := _bfs(adj, origin)
@@ -192,13 +194,11 @@ static func _try_generate(rng: RngStream, params: Dictionary) -> FloorLayout:
 		rd.coord = c
 		rd.type = cells[c]
 		layout.rooms[c] = rd
-	var locked_treasure := bool(params.get("treasure_locked", false))
 	for c in adj:
 		for n in adj[c]:
 			var d := FloorLayout.dir_of(n - c)
 			var kind := _door_kind(cells[c], cells[n])
-			var locked: bool = locked_treasure and cells[n] == "treasure"
-			layout.rooms[c].doors[d] = {"to": n, "kind": kind, "hidden": false, "locked": locked}
+			layout.rooms[c].doors[d] = {"to": n, "kind": kind, "hidden": false, "locked": false}
 	if secret_cell != Vector2i(9999, 9999):
 		layout.secret = secret_cell
 		layout.has_secret = true
@@ -213,7 +213,7 @@ static func _try_generate(rng: RngStream, params: Dictionary) -> FloorLayout:
 
 
 static func _door_kind(a: String, b: String) -> String:
-	for t in ["boss", "treasure", "shop"]:
+	for t in ["boss", "treasure", "altar"]:
 		if a == t or b == t:
 			return t
 	return "normal"
@@ -286,8 +286,8 @@ static func validate(layout: FloorLayout, params: Dictionary) -> PackedStringArr
 	var want_treasure := int(params.get("treasure", 1)) + int(params.get("extra_treasure", 0))
 	if int(counts.get("treasure", 0)) != want_treasure:
 		errs.append("tesoros: %d (se esperan %d)" % [counts.get("treasure", 0), want_treasure])
-	if int(counts.get("shop", 0)) != int(params.get("shop", 1)):
-		errs.append("tiendas incorrectas")
+	if int(counts.get("altar", 0)) != int(params.get("altar", 1)):
+		errs.append("cabeceras incorrectas")
 	var normal := int(counts.get("start", 0)) + int(counts.get("combat", 0))
 	var rr: Array = params.get("rooms", [8, 10])
 	if normal < int(rr[0]) or normal > int(rr[1]):
@@ -319,7 +319,7 @@ static func validate(layout: FloorLayout, params: Dictionary) -> PackedStringArr
 	# Especiales: una sola puerta visible.
 	for c in layout.rooms:
 		var rd3: RoomData = layout.rooms[c]
-		if rd3.type in ["boss", "treasure", "shop"] and rd3.door_count(true) != 1:
+		if rd3.type in ["boss", "treasure", "altar"] and rd3.door_count(true) != 1:
 			errs.append("sala especial %s con %d puertas" % [rd3.type, rd3.door_count(true)])
 	if vis.has(layout.boss) and int(vis[layout.boss]) < int(params.get("min_boss_distance", 3)):
 		errs.append("jefe demasiado cerca del inicio")
@@ -332,7 +332,7 @@ static func _fallback(params: Dictionary) -> FloorLayout:
 	layout.floor_index = int(params.get("floor_index", 0))
 	var spec := {
 		Vector2i(0, 0): "start", Vector2i(1, 0): "combat", Vector2i(2, 0): "combat",
-		Vector2i(3, 0): "boss", Vector2i(1, -1): "treasure", Vector2i(2, 1): "shop",
+		Vector2i(3, 0): "boss", Vector2i(1, -1): "treasure", Vector2i(2, 1): "altar",
 	}
 	for c in spec:
 		var rd := RoomData.new()
@@ -431,7 +431,7 @@ static func _fill_room(rd: RoomData, rng: RngStream, params: Dictionary) -> void
 	var pool: Array = params.get("enemy_pool", [])
 	var champs: Array = params.get("champions", [])
 	var champ_chance := float(params.get("champion_chance", 0.0))
-	var item_pool: String = {"treasure": "treasure", "secret": "secret", "boss": "boss", "shop": "shop"}.get(rd.type, "treasure")
+	var item_pool: String = {"treasure": "treasure", "secret": "secret", "boss": "boss", "altar": "altar"}.get(rd.type, "treasure")
 	var group := 0
 	for y in rd.layout.size():
 		var row: String = rd.layout[y]
@@ -456,14 +456,57 @@ static func _fill_room(rd: RoomData, rng: RngStream, params: Dictionary) -> void
 				"I":
 					rd.pedestals.append({"tile": tile, "pool": item_pool, "price": 0, "item_id": "", "taken": false, "group": group, "consumable": false})
 				"S":
-					rd.pedestals.append({"tile": tile, "pool": "shop", "price": -1, "item_id": "", "taken": false, "group": -1, "consumable": false})
-				"H":
-					rd.pedestals.append({"tile": tile, "pool": "shop", "price": -1, "item_id": "", "taken": false, "group": -1, "consumable": true, "kind": ""})
+					rd.pedestals.append({"tile": tile, "pool": "altar", "price": -1, "item_id": "", "taken": false, "group": -1, "consumable": false})
 				"P":
 					rd.pickups.append({"tile": tile, "table": "secret_pickup"})
 				"L":
 					rd.lore_tile = tile
 	rd.cleared = not rd.is_combat()
+	if rd.type == "combat":
+		_place_votives(rd, rng, 2 if rd.difficulty <= 1 else 3)
+
+
+## Velas votivas: el objetivo alternativo de la sala (encenderlas todas la despierta).
+## Muestreo del punto más lejano: quedan repartidas y obligan a moverse. Nunca en
+## accesos de puerta, apariciones ni junto a ellas.
+static func _place_votives(rd: RoomData, rng: RngStream, count: int) -> void:
+	var blocked := {}
+	for s in rd.spawns:
+		var st: Vector2i = s["tile"]
+		for dy in range(-1, 2):
+			for dx in range(-1, 2):
+				blocked[st + Vector2i(dx, dy)] = true
+	var cands: Array = []
+	for y in range(1, rd.layout.size() - 1):
+		var row: String = rd.layout[y]
+		for x in range(1, row.length() - 1):
+			var t := Vector2i(x, y)
+			if row[x] != "." or blocked.has(t):
+				continue
+			# Lejos de las puertas (filas/columnas centrales junto al muro).
+			if (absi(x - 7) <= 1 and (y <= 1 or y >= 7)) or (absi(y - 4) <= 1 and (x <= 1 or x >= 13)):
+				continue
+			cands.append(t)
+	if cands.is_empty():
+		return
+	var chosen: Array = [rng.pick(cands)]
+	while chosen.size() < count and chosen.size() < cands.size():
+		var best: Array = []
+		var best_d := -1
+		for c in cands:
+			if chosen.has(c):
+				continue
+			var md := 9999
+			for o in chosen:
+				md = mini(md, absi(c.x - o.x) + absi(c.y - o.y))
+			if md > best_d:
+				best_d = md
+				best = [c]
+			elif md == best_d:
+				best.append(c)
+		chosen.append(rng.pick(best))
+	for c in chosen:
+		rd.votives.append({"tile": c, "lit": false})
 
 
 ## Elige un enemigo del pool con nivel == tier; si no hay, baja de nivel.

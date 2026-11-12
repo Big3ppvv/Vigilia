@@ -1,6 +1,6 @@
 class_name ItemSystem
 extends RefCounted
-## Inventario del jugador y aplicador de objetos.
+## Inventario del jugador (sus recuerdos) y aplicador de objetos.
 ##
 ## Al obtener un objeto:
 ##   1. Modificadores de estadística (fuente "item:<id>"; cada copia suma).
@@ -16,9 +16,10 @@ extends RefCounted
 ## inventario y pedestales).
 const TAG_LABELS := {
 	"fire": "fuego", "explosion": "explosión", "poison": "veneno", "ice": "hielo",
-	"bleed": "sangrado", "blood": "sangre", "crit": "crítico", "greed": "codicia",
-	"wax": "cera", "undead": "no-muertos", "sacrifice": "sacrificio", "dodge": "esquiva",
-	"moth": "polilla", "summon": "invocación", "projectile": "astilla", "bell": "campana",
+	"bleed": "sangrado", "blood": "sangre", "crit": "crítico", "light": "luz",
+	"wax": "cera", "undead": "difuntos", "sacrifice": "sacrificio", "dodge": "esquiva",
+	"moth": "polilla", "summon": "invocación", "projectile": "brasa", "bell": "campana",
+	"visit": "visitas", "sonic": "sonido", "time": "tiempo",
 }
 
 var player: Player

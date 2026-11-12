@@ -13,9 +13,9 @@ const DATA_DIR := "res://data/"
 const ROOM_COLS := 15
 const ROOM_ROWS := 9
 ## Leyenda de plantillas de habitación (ver docs/CONTENT_GUIDE.md).
-const ROOM_CHARS := ".#X~123BIPSHL"
-const WALKABLE_CHARS := ".~123BIPSHL"
-const ROOM_TYPES := ["start", "combat", "treasure", "shop", "boss", "secret"]
+const ROOM_CHARS := ".#X~123BIPSL"
+const WALKABLE_CHARS := ".~123BIPSL"
+const ROOM_TYPES := ["start", "combat", "treasure", "altar", "boss", "secret"]
 ## Casillas que deben quedar libres junto a cada puerta (N, E, S, O).
 const DOOR_APPROACH := [
 	[Vector2i(7, 0), Vector2i(7, 1)],
@@ -233,7 +233,7 @@ func _validate() -> void:
 		for k in ["a", "b"]:
 			if not statuses.has(str(r.get(k, ""))):
 				errors.append("reacción '%s': estado desconocido '%s'" % [r.get("id", "?"), r.get(k, "")])
-	for t in ["start", "combat", "treasure", "shop", "boss", "secret"]:
+	for t in ROOM_TYPES:
 		if not rooms_by_type.has(t):
 			errors.append("rooms.json: no hay plantillas de tipo '%s'" % t)
 

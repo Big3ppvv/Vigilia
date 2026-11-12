@@ -6,7 +6,7 @@
 			"id": "moth_swarm",
 			"name": "Enjambre",
 			"type": "transformation",
-			"desc": "Tres reliquias de polilla: dos polillas lunares te orbitan y bloquean disparos; tus astillas aletean. +10% cadencia.",
+			"desc": "Tres recuerdos de polilla: dos polillas lunares te orbitan y bloquean disparos; tus brasas aletean. +10% cadencia.",
 			"secret": false,
 			"requires": {"tags": {"moth": 3}},
 			"grants": {
@@ -19,18 +19,16 @@
 			"id": "transfusion",
 			"name": "Transfusión",
 			"type": "transformation",
-			"desc": "Dos pactos de sangre: tu cuerpo aprende a cerrarse solo (+2 vida por minuto).",
+			"desc": "Dos recuerdos de sangre: tu llama aprende a avivarse sola (+2 de llama por minuto).",
 			"secret": false,
 			"requires": {"tags": {"blood": 2}},
-			"grants": {
-				"stats": [{"stat": "regen", "op": "flat", "value": 2.0}]
-			}
+			"grants": {"stats": [{"stat": "regen", "op": "flat", "value": 2.0}]}
 		},
 		{
 			"id": "drowned_wick",
-			"name": "Mecha Ahogada",
+			"name": "Mecha ahogada",
 			"type": "negative",
-			"desc": "La escarcha humedece la pólvora: tus explosiones tienen -30% de radio, pero escarchan.",
+			"desc": "El hielo humedece la pólvora: tus explosiones tienen -30% de radio, pero escarchan.",
 			"secret": true,
 			"requires": {"items_all": ["candle_frost", "candle_powder"]},
 			"grants": {
@@ -47,9 +45,9 @@
 		},
 		{
 			"id": "resonant_belfry",
-			"name": "Campanario Resonante",
+			"name": "Campanario resonante",
 			"type": "combo",
-			"desc": "El eco de la campana rota vive en tus astillas: cada rebote libera una onda expansiva.",
+			"desc": "El eco de la campana rota vive en tus brasas: cada rebote libera una onda expansiva.",
 			"secret": true,
 			"requires": {"items_all": ["belfry_echo", "broken_bell"]},
 			"grants": {
@@ -66,7 +64,7 @@
 			"id": "pyre",
 			"name": "Pira",
 			"type": "transformation",
-			"desc": "Tres reliquias de fuego: todas tus astillas Queman y arden en naranja. +25% daño de estados.",
+			"desc": "Tres recuerdos de fuego: todas tus brasas Queman y arden en naranja. +25% daño de estados.",
 			"secret": false,
 			"requires": {"tags": {"fire": 3}},
 			"grants": {
@@ -76,44 +74,36 @@
 		},
 		{
 			"id": "powder_saint",
-			"name": "Santo de la Pólvora",
+			"name": "Santo de la pólvora",
 			"type": "transformation",
-			"desc": "Tres reliquias explosivas: tus explosiones son un 30% más grandes y un 20% más dañinas.",
+			"desc": "Tres recuerdos explosivos: tus explosiones son un 30% más grandes y un 20% más dañinas.",
 			"secret": false,
 			"requires": {"tags": {"explosion": 3}},
-			"grants": {
-				"mechanics": {"explosion_radius_mult": 1.3, "explosion_damage_mult": 1.2}
-			}
+			"grants": {"mechanics": {"explosion_radius_mult": 1.3, "explosion_damage_mult": 1.2}}
 		},
 		{
 			"id": "clairvoyance",
 			"name": "Clarividencia",
 			"type": "transformation",
-			"desc": "Tres reliquias de crítico: +0.75 al multiplicador crítico y tus astillas brillan en oro.",
+			"desc": "Tres recuerdos de crítico: +0.75 al multiplicador crítico y tus brasas brillan en oro.",
 			"secret": false,
 			"requires": {"tags": {"crit": 3}},
-			"grants": {
-				"projectile": {"color": "#ffcc4d"},
-				"stats": [{"stat": "crit_mult", "op": "flat", "value": 0.75}]
-			}
+			"grants": {"projectile": {"color": "#ffcc4d"}, "stats": [{"stat": "crit_mult", "op": "flat", "value": 0.75}]}
 		},
 		{
 			"id": "miasma",
 			"name": "Miasma",
 			"type": "combo",
-			"desc": "Dos reliquias de veneno: el Veneno y el Sangrado que aplicas suman 1 carga más. +15% daño de estados.",
+			"desc": "Dos recuerdos de veneno: el Veneno y el Sangrado que aplicas suman 1 carga más. +15% daño de estados.",
 			"secret": false,
 			"requires": {"tags": {"poison": 2}},
-			"grants": {
-				"mechanics": {"status_stacks_add": 1},
-				"stats": [{"stat": "status_damage", "op": "pct", "value": 0.15}]
-			}
+			"grants": {"mechanics": {"status_stacks_add": 1}, "stats": [{"stat": "status_damage", "op": "pct", "value": 0.15}]}
 		},
 		{
 			"id": "frostbite",
 			"name": "Congelación",
 			"type": "combo",
-			"desc": "Dos reliquias de hielo: golpear a un enemigo escarchado puede congelarlo 0.8 s (no a los jefes; como mucho uno por segundo).",
+			"desc": "Dos recuerdos de hielo: golpear a una sombra escarchada puede congelarla 0.8 s (no a los jefes; como mucho una por segundo).",
 			"secret": false,
 			"requires": {"tags": {"ice": 2}},
 			"grants": {
@@ -133,7 +123,7 @@
 			"id": "hemophilia",
 			"name": "Hemofilia",
 			"type": "combo",
-			"desc": "Dos reliquias de sangrado: tus críticos salpican sangre que salta a 2 enemigos cercanos.",
+			"desc": "Dos recuerdos de sangrado: tus críticos salpican sangre que salta a 2 sombras cercanas.",
 			"secret": false,
 			"requires": {"tags": {"bleed": 2}},
 			"grants": {
@@ -148,29 +138,10 @@
 			}
 		},
 		{
-			"id": "avarice",
-			"name": "Avaricia",
-			"type": "combo",
-			"desc": "Dos reliquias de codicia: cada 8 enemigos abatidos ganas 1 óbolo. +1 suerte.",
-			"secret": false,
-			"requires": {"tags": {"greed": 2}},
-			"grants": {
-				"stats": [{"stat": "luck", "op": "flat", "value": 1}],
-				"effects": [
-					{
-						"trigger": "kill",
-						"every": 8,
-						"action": "add_resource",
-						"params": {"coins": 1}
-					}
-				]
-			}
-		},
-		{
 			"id": "wax_carapace",
-			"name": "Coraza de Cera",
+			"name": "Coraza de cera",
 			"type": "combo",
-			"desc": "Dos reliquias de cera: al recibir un golpe estallas en cera hirviente (no te hiere). 50% de ganar 1 cera al despejar una sala.",
+			"desc": "Dos recuerdos de cera: al recibir un golpe estallas en cera hirviente (no te hiere). 50% de ganar 1 cera al despertar una sala.",
 			"secret": false,
 			"requires": {"tags": {"wax": 2}},
 			"grants": {
@@ -181,31 +152,24 @@
 						"action": "explode",
 						"params": {"radius": 96, "damage_mult": 1.5, "base": "player", "tags": ["explosion", "wax"], "color": "#e8d9a8"}
 					},
-					{
-						"trigger": "room_clear",
-						"chance": 0.5,
-						"action": "add_wax",
-						"params": {"amount": 1}
-					}
+					{"trigger": "room_clear", "chance": 0.5, "action": "add_wax", "params": {"amount": 1}}
 				]
 			}
 		},
 		{
 			"id": "funeral_procession",
-			"name": "Cortejo Fúnebre",
+			"name": "Cortejo fúnebre",
 			"type": "combo",
-			"desc": "Dos reliquias de no-muertos: tus Ánimas duran un 50% más y puedes tener 2 más a la vez.",
+			"desc": "Dos recuerdos de difuntos: tus Ánimas duran un 50% más y puedes tener 2 más a la vez.",
 			"secret": false,
 			"requires": {"tags": {"undead": 2}},
-			"grants": {
-				"mechanics": {"ally_duration_mult": 1.5, "ally_cap_add": 2}
-			}
+			"grants": {"mechanics": {"ally_duration_mult": 1.5, "ally_cap_add": 2}}
 		},
 		{
 			"id": "cilice",
 			"name": "Cilicio",
 			"type": "combo",
-			"desc": "Dos reliquias de sacrificio: cada vez que te hieres a ti mismo ganas +0.15 de daño permanente.",
+			"desc": "Dos recuerdos de sacrificio: cada vez que te haces daño ganas +0.15 de daño permanente.",
 			"secret": false,
 			"requires": {"tags": {"sacrifice": 2}},
 			"grants": {
@@ -221,15 +185,46 @@
 		},
 		{
 			"id": "lucid_dance",
-			"name": "Danza Lúcida",
+			"name": "Danza lúcida",
 			"type": "combo",
-			"desc": "Dos reliquias de esquiva: cada esquiva te concede 1 crítico garantizado.",
+			"desc": "Dos recuerdos de esquiva: cada esquiva te concede 1 crítico garantizado.",
 			"secret": false,
 			"requires": {"tags": {"dodge": 2}},
 			"grants": {
+				"effects": [{"trigger": "dodge", "action": "crit_charges", "params": {"amount": 1}}]
+			}
+		},
+		{
+			"id": "shared_flame",
+			"name": "Lumbre compartida",
+			"type": "combo",
+			"desc": "Dos recuerdos de luz: cada vela que enciendes estalla en una llamarada (150% de tu daño).",
+			"requires": {"tags": {"light": 2}},
+			"grants": {
 				"effects": [
-					{"trigger": "dodge", "action": "crit_charges", "params": {"amount": 1}}
+					{
+						"trigger": "kindle",
+						"action": "explode",
+						"params": {
+							"radius": 120,
+							"damage_mult": 1.5,
+							"base": "player",
+							"tags": ["explosion", "fire", "light"],
+							"color": "#ffd27a"
+						}
+					}
 				]
+			}
+		},
+		{
+			"id": "visiting_hours",
+			"name": "Horario de visitas",
+			"type": "transformation",
+			"desc": "Tres recuerdos de visitas: +1 llama máxima y recuperas 1 de llama cada vez que despiertas una sala.",
+			"requires": {"tags": {"visit": 3}},
+			"grants": {
+				"stats": [{"stat": "max_health", "op": "flat", "value": 1}],
+				"effects": [{"trigger": "room_clear", "action": "heal", "params": {"amount": 1}}]
 			}
 		}
 	]

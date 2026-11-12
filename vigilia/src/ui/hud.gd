@@ -1,27 +1,41 @@
 class_name Hud
 extends ScaledRoot
 ## HUD de partida. Escucha EventBus: la simulación nunca llama a la interfaz.
+##
+## Principio: lo mínimo para jugar, y que lo que se muestra pertenezca al sueño.
+##   - Arriba a la izquierda, la LLAMA (vida) como pequeñas llamas, la cera y el
+##     recuerdo activo.
+##   - Arriba, en combate, las velas de la sala (encendidas / por encender).
+##   - Al recordar algo, una carta con su nombre, su texto y lo que hace.
+##   - Los susurros del Arrullo y la voz de quien vela, abajo y despacio.
 
 var game: Node
 var minimap: Minimap
 var _status: _StatusPanel
+var _votives: _VotiveBar
 var _floor_label: Label
 var _banner_box: VBoxContainer
 var _banner_title: Label
 var _banner_sub: Label
 var _banner_t := 0.0
-## Un cartel "retenido" (activación de sinergia o cola pendiente) no se pisa: los
-## carteles que llegan mientras se muestra esperan su turno. Antes, el cartel de
-## la sinergia quedaba tapado EN EL MISMO FRAME por el del objeto recogido.
+## Un cartel "retenido" (activación de sinergia o cola pendiente) no se pisa.
 var _banner_sticky := false
 var _banner_queue: Array = []
+var _card: VBoxContainer
+var _card_name: Label
+var _card_flavor: Label
+var _card_desc: Label
+var _card_t := 0.0
 var _toasts: VBoxContainer
 var _prompt_panel: PanelContainer
 var _prompt_title: Label
 var _prompt_detail: Label
 var _boss_bar: _BossBar
 var _items_row: _ItemsRow
-var _tolerance_label: Label
+var _whisper: Label
+var _whisper_t := 0.0
+var _whisper_len := 0.0
+var _hint: Label
 var _fps_label: Label
 
 
@@ -30,37 +44,57 @@ func setup(p_game: Node) -> void:
 	theme = UIKit.theme()
 
 	_status = _StatusPanel.new()
-	_status.position = Vector2(14, 10)
-	_status.size = Vector2(380, 150)
+	_status.position = Vector2(18, 14)
+	_status.size = Vector2(380, 130)
 	add_child(_status)
+
+	_votives = _VotiveBar.new()
+	_votives.anchor_left = 0.5
+	_votives.anchor_right = 0.5
+	_votives.offset_left = -160
+	_votives.offset_right = 160
+	_votives.offset_top = 14
+	_votives.offset_bottom = 58
+	_votives.visible = false
+	add_child(_votives)
+
+	_hint = UIKit.label("", 15, Color(Palette.FLAME_CORE, 0.85), 4)
+	_hint.anchor_left = 0.5
+	_hint.anchor_right = 0.5
+	_hint.offset_left = -360
+	_hint.offset_right = 360
+	_hint.offset_top = 60
+	_hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	add_child(_hint)
 
 	minimap = Minimap.new()
 	minimap.anchor_left = 1.0
 	minimap.anchor_right = 1.0
-	minimap.offset_left = -196
-	minimap.offset_right = -12
-	minimap.offset_top = 10
-	minimap.offset_bottom = 138
+	minimap.offset_left = -176
+	minimap.offset_right = -14
+	minimap.offset_top = 14
+	minimap.offset_bottom = 120
 	add_child(minimap)
-	_floor_label = UIKit.label("", 14, Palette.UI_DIM, 3)
+	_floor_label = UIKit.label("", 13, Palette.UI_DIM, 3)
 	_floor_label.anchor_left = 1.0
 	_floor_label.anchor_right = 1.0
 	_floor_label.offset_left = -300
-	_floor_label.offset_right = -12
-	_floor_label.offset_top = 142
+	_floor_label.offset_right = -14
+	_floor_label.offset_top = 124
 	_floor_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_floor_label)
 
 	_banner_box = VBoxContainer.new()
 	_banner_box.anchor_left = 0.5
 	_banner_box.anchor_right = 0.5
-	_banner_box.offset_left = -420
-	_banner_box.offset_right = 420
-	_banner_box.offset_top = 92
+	_banner_box.offset_left = -440
+	_banner_box.offset_right = 440
+	_banner_box.offset_top = 104
 	_banner_box.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_banner_title = UIKit.label("", 30, Palette.UI_ACCENT, 6)
+	_banner_title = UIKit.label("", 34, Palette.UI_ACCENT, 6)
 	_banner_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_banner_sub = UIKit.label("", 16, Palette.UI_TEXT, 4)
+	_banner_sub = UIKit.label("", 17, Palette.UI_TEXT, 4)
 	_banner_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_banner_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_banner_box.add_child(_banner_title)
@@ -68,33 +102,68 @@ func setup(p_game: Node) -> void:
 	_banner_box.modulate.a = 0.0
 	add_child(_banner_box)
 
+	_card = VBoxContainer.new()
+	_card.anchor_left = 0.5
+	_card.anchor_right = 0.5
+	_card.offset_left = -360
+	_card.offset_right = 360
+	_card.offset_top = 150
+	_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_card.add_theme_constant_override("separation", 6)
+	_card_name = UIKit.label("", 30, Palette.FLAME_CORE, 6)
+	_card_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_card_flavor = UIKit.label("", 16, Color(Palette.WAX, 0.9), 4)
+	_card_flavor.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_card_flavor.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_card_desc = UIKit.label("", 15, Palette.UI_TEXT, 4)
+	_card_desc.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_card_desc.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_card.add_child(_card_name)
+	_card.add_child(_card_flavor)
+	_card.add_child(_card_desc)
+	_card.modulate.a = 0.0
+	add_child(_card)
+
 	_toasts = VBoxContainer.new()
 	_toasts.anchor_left = 0.5
 	_toasts.anchor_right = 0.5
 	_toasts.offset_left = -360
 	_toasts.offset_right = 360
-	_toasts.offset_top = 196
+	_toasts.offset_top = 300
 	_toasts.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(_toasts)
+
+	_whisper = UIKit.label("", 22, Palette.WHISPER, 5)
+	_whisper.anchor_left = 0.5
+	_whisper.anchor_right = 0.5
+	_whisper.anchor_top = 1.0
+	_whisper.anchor_bottom = 1.0
+	_whisper.offset_left = -460
+	_whisper.offset_right = 460
+	_whisper.offset_top = -230
+	_whisper.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_whisper.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_whisper.modulate.a = 0.0
+	add_child(_whisper)
 
 	_prompt_panel = PanelContainer.new()
 	_prompt_panel.anchor_top = 1.0
 	_prompt_panel.anchor_bottom = 1.0
 	_prompt_panel.anchor_left = 0.5
 	_prompt_panel.anchor_right = 0.5
-	_prompt_panel.offset_left = -330
-	_prompt_panel.offset_right = 330
-	_prompt_panel.offset_top = -132
-	_prompt_panel.offset_bottom = -76
+	_prompt_panel.offset_left = -360
+	_prompt_panel.offset_right = 360
+	_prompt_panel.offset_top = -150
+	_prompt_panel.offset_bottom = -78
 	_prompt_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	# Crece hacia arriba si el detalle ocupa más líneas (no invade la barra de jefe).
 	_prompt_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	_prompt_panel.add_theme_stylebox_override("panel", UIKit.soft_panel())
 	var pv := VBoxContainer.new()
 	pv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_prompt_title = UIKit.label("", 18, Palette.UI_ACCENT)
 	_prompt_detail = UIKit.label("", 14, Palette.UI_TEXT)
 	_prompt_detail.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_prompt_detail.custom_minimum_size = Vector2(620, 0)
+	_prompt_detail.custom_minimum_size = Vector2(680, 0)
 	pv.add_child(_prompt_title)
 	pv.add_child(_prompt_detail)
 	_prompt_panel.add_child(pv)
@@ -108,7 +177,7 @@ func setup(p_game: Node) -> void:
 	_boss_bar.anchor_right = 0.5
 	_boss_bar.offset_left = -300
 	_boss_bar.offset_right = 300
-	_boss_bar.offset_top = -64
+	_boss_bar.offset_top = -60
 	_boss_bar.offset_bottom = -18
 	_boss_bar.visible = false
 	add_child(_boss_bar)
@@ -122,22 +191,12 @@ func setup(p_game: Node) -> void:
 	_items_row.offset_bottom = -10
 	add_child(_items_row)
 
-	_tolerance_label = UIKit.label("", 13, Palette.FLAME, 3)
-	_tolerance_label.anchor_left = 1.0
-	_tolerance_label.anchor_right = 1.0
-	_tolerance_label.offset_left = -300
-	_tolerance_label.offset_right = -12
-	_tolerance_label.offset_top = 162
-	_tolerance_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	_tolerance_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	add_child(_tolerance_label)
-
 	_fps_label = UIKit.label("", 12, Palette.UI_DIM, 2)
 	_fps_label.anchor_left = 1.0
 	_fps_label.anchor_right = 1.0
 	_fps_label.offset_left = -110
-	_fps_label.offset_right = -12
-	_fps_label.offset_top = 236
+	_fps_label.offset_right = -14
+	_fps_label.offset_top = 146
 	_fps_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	add_child(_fps_label)
 
@@ -148,9 +207,12 @@ func setup(p_game: Node) -> void:
 	EventBus.boss_health_changed.connect(_on_boss_health)
 	EventBus.boss_defeated.connect(func(_id: String) -> void: _boss_bar.visible = false)
 	EventBus.item_acquired.connect(func(_id: String, _s: int) -> void: _items_row.refresh(game.player))
+	EventBus.memory_taken.connect(_on_memory_taken)
 	EventBus.room_entered.connect(_on_room_entered)
 	EventBus.floor_entered.connect(_on_floor_entered)
 	EventBus.synergy_activated.connect(_on_synergy_activated)
+	EventBus.votives_changed.connect(_on_votives_changed)
+	EventBus.whisper.connect(_on_whisper)
 
 
 func set_layout(l: FloorLayout) -> void:
@@ -169,7 +231,19 @@ func _on_room_entered(rd: RoomData) -> void:
 
 func _on_floor_entered(_index: int, floor_name: String) -> void:
 	_floor_label.text = floor_name
-	_tolerance_label.text = ToleranceSystem.describe(game.run)
+
+
+func _on_votives_changed(lit: int, total: int) -> void:
+	_votives.lit = lit
+	_votives.total = total
+	var combat: bool = game.director != null and game.director.combat_active
+	_votives.visible = total > 0 and combat
+	# Pista solo en las primeras salas de las primeras noches.
+	var run: RunState = game.run
+	if combat and total > 0 and run.night <= 2 and run.floor_index == 0 and run.rooms_cleared < 2 and lit == 0:
+		_hint.text = "Quédate junto a una vela apagada para encenderla. Si todas arden, la sala despierta."
+	else:
+		_hint.text = ""
 
 
 func _on_banner(title: String, subtitle: String, color: Color) -> void:
@@ -189,8 +263,18 @@ func _show_banner(title: String, subtitle: String, color: Color) -> void:
 	_banner_title.text = title
 	_banner_title.add_theme_color_override("font_color", color)
 	_banner_sub.text = subtitle
-	_banner_t = 3.2
+	_banner_t = 3.4
 	_banner_sticky = false
+
+
+func _on_memory_taken(item_id: String) -> void:
+	var d := ContentDB.get_item(item_id)
+	_card_name.text = str(d.get("name", item_id))
+	_card_name.add_theme_color_override("font_color", Palette.FLAME_CORE.lerp(Palette.rarity_color(str(d.get("rarity", "common"))), 0.35))
+	var flavor := str(d.get("flavor", ""))
+	_card_flavor.text = "«%s»" % flavor if flavor != "" else ""
+	_card_desc.text = str(d.get("desc", ""))
+	_card_t = 5.0
 
 
 func _on_toast(text: String, color: Color) -> void:
@@ -201,10 +285,17 @@ func _on_toast(text: String, color: Color) -> void:
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	l.set_meta("t", 3.0)
 	_toasts.add_child(l)
-	while _toasts.get_child_count() > 4:
+	while _toasts.get_child_count() > 3:
 		var old := _toasts.get_child(0)
 		_toasts.remove_child(old)
 		old.queue_free()
+
+
+func _on_whisper(text: String, outside: bool) -> void:
+	_whisper.text = text
+	_whisper.add_theme_color_override("font_color", Palette.OUTSIDE_VOICE if outside else Palette.WHISPER)
+	_whisper_len = clampf(2.6 + text.length() * 0.05, 3.0, 7.0)
+	_whisper_t = _whisper_len
 
 
 func _on_prompt(title: String, detail: String) -> void:
@@ -234,15 +325,27 @@ func _process(delta: float) -> void:
 	_status.queue_redraw()
 	if _banner_t > 0.0:
 		_banner_t -= delta
-		_banner_box.modulate.a = clampf(_banner_t / 0.6, 0.0, 1.0) * clampf((3.2 - _banner_t) / 0.25, 0.0, 1.0)
+		_banner_box.modulate.a = clampf(_banner_t / 0.7, 0.0, 1.0) * clampf((3.4 - _banner_t) / 0.35, 0.0, 1.0)
 	elif not _banner_queue.is_empty():
 		var b: Array = _banner_queue.pop_front()
 		var col: Color = b[2]
 		_show_banner(str(b[0]), str(b[1]), col)
-		# La cola se vacía en orden: mientras quede algo, el cartel actual no se pisa.
 		_banner_sticky = not _banner_queue.is_empty()
 	else:
 		_banner_box.modulate.a = 0.0
+	if _card_t > 0.0:
+		_card_t -= delta
+		_card.modulate.a = clampf(_card_t / 0.8, 0.0, 1.0) * clampf((5.0 - _card_t) / 0.3, 0.0, 1.0)
+		# La carta del recuerdo manda: el cartel genérico espera.
+		_banner_box.modulate.a = minf(_banner_box.modulate.a, 1.0 - _card.modulate.a)
+	else:
+		_card.modulate.a = 0.0
+	if _whisper_t > 0.0:
+		_whisper_t -= delta
+		var since := _whisper_len - _whisper_t
+		_whisper.modulate.a = clampf(since / 0.9, 0.0, 1.0) * clampf(_whisper_t / 1.2, 0.0, 1.0)
+	else:
+		_whisper.modulate.a = 0.0
 	for l in _toasts.get_children():
 		var t: float = float(l.get_meta("t", 0.0)) - delta
 		l.set_meta("t", t)
@@ -254,7 +357,7 @@ func _process(delta: float) -> void:
 		_fps_label.text = "%d FPS" % Engine.get_frames_per_second()
 
 
-## Panel superior izquierdo: vida (cuentas), cera, recursos y objeto activo.
+## La llama (vida) como llamas pequeñas, la cera y el recuerdo activo.
 class _StatusPanel:
 	extends Control
 	var player: Player
@@ -269,51 +372,76 @@ class _StatusPanel:
 			return
 		var font := ThemeDB.fallback_font
 		var mh := player.max_hp()
-		var x := 10.0
+		var low := player.hp <= 2 and player.alive
+		var x := 12.0
 		for i in mh:
-			var c := Vector2(x, 14)
+			var base := Vector2(x, 34)
+			draw_line(base + Vector2(0, 4), base + Vector2(0, -2), Color(0.25, 0.2, 0.2), 2.0)
 			if i < player.hp:
-				draw_circle(c, 8.0, Palette.BLOOD_DARK)
-				draw_circle(c, 6.5, Palette.BLOOD)
-				draw_circle(c + Vector2(-2, -2), 2.2, Color(1, 1, 1, 0.5))
+				# La última llama tiembla y se enfría cuando queda poca.
+				var col := Palette.FLAME
+				var h := 11.0
+				if low:
+					col = Palette.FLAME.lerp(Palette.FLAME_BLUE, 0.5)
+					h = 9.0 + 2.0 * absf(sin(_t * 6.0 + i))
+				draw_circle(base + Vector2(0, -8), 11.0, Color(col, 0.12))
+				GlyphPainter.flame(self, base, h, _t * 1.3 + i * 0.9, col, Palette.FLAME_CORE)
 			else:
-				draw_circle(c, 8.0, Color(0, 0, 0, 0.6))
-				draw_arc(c, 6.5, 0, TAU, 14, Color(Palette.BLOOD, 0.6), 1.5)
-			x += 19.0
+				draw_circle(base + Vector2(0, -3), 2.0, Color(0.5, 0.45, 0.45, 0.5))
+			x += 22.0
 		for i in player.wax:
-			var c2 := Vector2(x, 14)
-			draw_circle(c2, 8.0, Palette.WAX_SHADOW)
-			draw_circle(c2, 6.5, Palette.WAX)
-			x += 19.0
-		var y := 44.0
-		var items := [["coin_small", player.coins], ["key", player.keys], ["bomb", player.bombs]]
-		var rx := 6.0
-		for it in items:
-			GlyphPainter.draw_glyph(self, str(it[0]), Vector2(rx + 8, y), 9.0, Palette.BONE, Palette.WALL_TOP, _t)
-			draw_string(font, Vector2(rx + 22, y + 6), "%02d" % int(it[1]), HORIZONTAL_ALIGNMENT_LEFT, -1, 18, Palette.UI_TEXT)
-			rx += 70.0
+			var c2 := Vector2(x + 4, 28)
+			draw_circle(c2 + Vector2(0, 2), 7.0, Palette.WAX_SHADOW)
+			draw_circle(c2, 6.0, Palette.WAX)
+			x += 18.0
 		var inv := player.inventory
-		var box := Rect2(4, 66, 58, 58)
-		draw_rect(box, Color(0.05, 0.03, 0.06, 0.8))
-		draw_rect(box, Palette.UI_BORDER, false, 2.0)
+		var box := Rect2(4, 56, 52, 52)
+		draw_rect(box, Color(0.05, 0.03, 0.06, 0.55))
+		draw_rect(box, Color(Palette.UI_BORDER, 0.7), false, 1.5)
 		if inv != null and inv.active_id != "":
 			var d := ContentDB.get_item(inv.active_id)
 			var ready := inv.active_charge >= inv.active_max
 			if ready:
-				draw_rect(box.grow(2), Color(Palette.UI_ACCENT, 0.5 + 0.3 * sin(_t * 4.0)), false, 2.0)
-			GlyphPainter.draw_item(self, d, box.get_center(), 18.0, _t)
-			var seg_w := 40.0 / maxf(1.0, float(inv.active_max))
+				draw_rect(box.grow(2), Color(Palette.UI_ACCENT, 0.45 + 0.3 * sin(_t * 4.0)), false, 2.0)
+			GlyphPainter.draw_item(self, d, box.get_center(), 16.0, _t)
 			for i in inv.active_max:
-				var sr := Rect2(70 + i * (seg_w + 3), 84, seg_w, 12)
-				draw_rect(sr, Palette.UI_ACCENT if i < inv.active_charge else Color(0.2, 0.15, 0.2, 0.9))
-			draw_string(font, Vector2(70, 78), "[Q] " + str(d.get("name", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Palette.UI_TEXT if ready else Palette.UI_DIM)
-		else:
-			draw_string(font, Vector2(70, 100), "Sin objeto activo", HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Palette.UI_DIM)
+				var pc := Vector2(66 + i * 12, 96)
+				draw_circle(pc, 4.0, Palette.UI_ACCENT if i < inv.active_charge else Color(0.25, 0.2, 0.25, 0.9))
+			draw_string(font, Vector2(64, 76), "Q  " + str(d.get("name", "")), HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Palette.UI_TEXT if ready else Palette.UI_DIM)
 		if player.crit_charges > 0:
-			draw_string(font, Vector2(70, 118), "Lucidez x%d" % player.crit_charges, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Palette.PLAYER_EYE)
+			draw_string(font, Vector2(64, 122), "lucidez ×%d" % player.crit_charges, HORIZONTAL_ALIGNMENT_LEFT, -1, 13, Palette.PLAYER_EYE)
 
 
-## Barra de jefe con marcas de fase.
+## Velas de la sala: encendidas y por encender.
+class _VotiveBar:
+	extends Control
+	var lit := 0
+	var total := 0
+	var _t := 0.0
+
+	func _ready() -> void:
+		mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	func _process(delta: float) -> void:
+		_t += delta
+		queue_redraw()
+
+	func _draw() -> void:
+		if total <= 0:
+			return
+		var gap := 34.0
+		var x0 := size.x * 0.5 - (total - 1) * gap * 0.5
+		for i in total:
+			var c := Vector2(x0 + i * gap, 30)
+			draw_rect(Rect2(c + Vector2(-5, -12), Vector2(10, 16)), Palette.WAX if i < lit else Palette.WAX.darkened(0.55))
+			if i < lit:
+				draw_circle(c + Vector2(0, -18), 12.0, Color(Palette.FLAME, 0.14))
+				GlyphPainter.flame(self, c + Vector2(0, -12), 7.0, _t + i)
+			else:
+				draw_line(c + Vector2(0, -12), c + Vector2(0, -17), Color(0.2, 0.17, 0.17), 2.0)
+
+
+## Barra de jefe fina con marcas de fase.
 class _BossBar:
 	extends Control
 	var boss_name := ""
@@ -331,22 +459,21 @@ class _BossBar:
 
 	func _draw() -> void:
 		var font := ThemeDB.fallback_font
-		var label := boss_name + ("   ·   Fase %s" % ["I", "II", "III", "IV"][clampi(phase - 1, 0, 3)] if phase > 1 else "")
-		var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
-		draw_string(font, Vector2((size.x - tw) * 0.5 + 1, 15), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color.BLACK)
-		draw_string(font, Vector2((size.x - tw) * 0.5, 14), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Palette.UI_TEXT)
-		var bar := Rect2(0, 22, size.x, 16)
-		draw_rect(bar, Color(0.05, 0.02, 0.04, 0.9))
+		var label := boss_name
+		var tw := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, 15).x
+		draw_string(font, Vector2((size.x - tw) * 0.5 + 1, 15), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Color.BLACK)
+		draw_string(font, Vector2((size.x - tw) * 0.5, 14), label, HORIZONTAL_ALIGNMENT_LEFT, -1, 15, Palette.WAX)
+		var bar := Rect2(0, 24, size.x, 7)
+		draw_rect(bar, Color(0.05, 0.02, 0.04, 0.85))
 		var ratio := clampf(hp / maxf(1.0, max_hp), 0.0, 1.0)
-		draw_rect(Rect2(bar.position, Vector2(bar.size.x * _shown, bar.size.y)), Color(1, 0.85, 0.7, 0.5))
-		draw_rect(Rect2(bar.position, Vector2(bar.size.x * ratio, bar.size.y)), Palette.BLOOD)
+		draw_rect(Rect2(bar.position, Vector2(bar.size.x * _shown, bar.size.y)), Color(1, 0.85, 0.7, 0.45))
+		draw_rect(Rect2(bar.position, Vector2(bar.size.x * ratio, bar.size.y)), Palette.WAX.lerp(Palette.BLOOD, 0.35))
 		for m in [0.66, 0.33]:
 			var x: float = bar.position.x + bar.size.x * m
-			draw_line(Vector2(x, bar.position.y), Vector2(x, bar.end.y), Color(0, 0, 0, 0.8), 2.0)
-		draw_rect(bar, Palette.UI_BORDER, false, 2.0)
+			draw_line(Vector2(x, bar.position.y - 2), Vector2(x, bar.end.y + 2), Color(0, 0, 0, 0.8), 2.0)
 
 
-## Fila de reliquias recientes.
+## Fila de recuerdos recientes.
 class _ItemsRow:
 	extends Control
 	var ids: Array = []
@@ -369,6 +496,6 @@ class _ItemsRow:
 		var x := 16.0
 		for i in range(start, ids.size()):
 			var d := ContentDB.get_item(str(ids[i]))
-			draw_circle(Vector2(x, 18), 15.0, Color(0, 0, 0, 0.45))
-			GlyphPainter.draw_item(self, d, Vector2(x, 18), 11.0, _t)
-			x += 32.0
+			draw_circle(Vector2(x, 18), 14.0, Color(0, 0, 0, 0.4))
+			GlyphPainter.draw_item(self, d, Vector2(x, 18), 10.0, _t)
+			x += 30.0

@@ -1,10 +1,24 @@
 class_name CandleLighting
 extends Node2D
-## Luz de vela del mundo. El HUD vive en otro CanvasLayer y conserva sus colores.
-## Una textura compartida y un número fijo de luces evitan costes por proyectil.
+## La luz del mundo, que en VIGILIA es la vida.
+##
+## - Una sala de combate empieza DORMIDA: penumbra densa. Solo hay la luz de la
+##   Espina (cuyo alcance depende de la llama que le queda), la de las velas
+##   votivas que encienda y lo que brilla por sí mismo (ojos, disparos, peligros).
+## - Al despertar (EventBus.room_awakened) la penumbra se retira con un fundido,
+##   los apliques del muro se encienden y la sala queda en una luz cálida.
+## - Con poca llama, la luz de la Espina se encoge, se enfría y tiembla.
+##
+## Presupuesto: 1 luz del jugador + hasta 3 velas votivas + 4 apliques = 8, el
+## límite por objeto del renderizador de compatibilidad. Textura compartida.
+## El HUD vive en otro CanvasLayer y conserva sus colores.
 
-const MAX_PILLAR_LIGHTS := 1
-const AMBIENT := Color(0.48, 0.46, 0.58)
+const DARK := Color(0.12, 0.11, 0.18)
+const AWAKE := Color(0.6, 0.55, 0.56)
+const AWAKE_WARD := Color(0.5, 0.56, 0.62)
+const PLAYER_SCALE_MIN := 1.55
+const PLAYER_SCALE_MAX := 3.3
+const FADE_TIME := 1.4
 
 static var _glow: GradientTexture2D
 
@@ -12,6 +26,10 @@ var world: CombatWorld
 var ambient: CanvasModulate
 var player_light: PointLight2D
 var room_lights: Array[PointLight2D] = []
+## 0 = sala dormida, 1 = despierta (interpolado durante el fundido).
+var wake := 1.0
+var _wake_target := 1.0
+var _awake_color := AWAKE
 var _time := 0.0
 var _strength := 0.0
 
@@ -19,10 +37,11 @@ var _strength := 0.0
 func _ready() -> void:
 	ambient = CanvasModulate.new()
 	add_child(ambient)
-	player_light = _make_light(Vector2.ZERO, 3.0)
-	player_light.color = Color(1.0, 0.87, 0.68)
+	player_light = _make_light(Vector2.ZERO, PLAYER_SCALE_MAX)
+	player_light.color = Color(1.0, 0.84, 0.62)
 	Settings.changed.connect(_apply_settings)
 	EventBus.room_entered.connect(_on_room_entered)
+	EventBus.room_awakened.connect(_on_room_awakened)
 	_apply_settings()
 
 
@@ -53,56 +72,74 @@ func _make_light(at: Vector2, size: float) -> PointLight2D:
 	return light
 
 
-func _on_room_entered(_room: RoomData) -> void:
+func _on_room_entered(room: RoomData) -> void:
 	for light in room_lights:
 		remove_child(light)
 		light.queue_free()
 	room_lights.clear()
 	if world == null or world.room == null:
 		return
-	var room := world.room
-	# Dos parejas de velas superiores comparten luz: como máximo 7 luces de
-	# sala + la del jugador, dentro del límite por objeto de OpenGL (8).
-	var sources: Array = []
-	if room.candles.size() >= 4:
-		sources.append((room.candles[0] + room.candles[1]) * 0.5)
-		sources.append((room.candles[2] + room.candles[3]) * 0.5)
-	for i in range(4, room.candles.size()):
-		sources.append(room.candles[i])
-	for candle in sources:
-		room_lights.append(_make_light(room.to_global(candle + Vector2(0, -16)), 2.0))
-	var pillars := 0
-	for y in RoomView.ROWS:
-		for x in RoomView.COLS:
-			if pillars < MAX_PILLAR_LIGHTS and room.grid.get_cell(Vector2i(x, y)) == RoomGrid.PILLAR:
-				var at := Vector2(x, y) * RoomView.TILE + Vector2(32, 10)
-				room_lights.append(_make_light(room.to_global(at), 1.25))
-				pillars += 1
+	var view := world.room
+	_awake_color = AWAKE_WARD if view.style == "ward" else AWAKE
+	wake = 1.0 if view.awake else 0.0
+	_wake_target = wake
+	# Apliques agrupados por pared: 4 luces cubren los 8 apliques.
+	var c: Array = view.candles
+	if c.size() >= 8:
+		var groups := [[c[0], c[1]], [c[2], c[3]], [c[4], c[6]], [c[5], c[7]]]
+		for g in groups:
+			var at: Vector2 = (g[0] + g[1]) * 0.5
+			var light := _make_light(view.to_global(at + Vector2(0, -16)), 2.4)
+			room_lights.append(light)
 	_apply_settings()
+	if room != null and not view.awake:
+		_wake_target = 0.0
+
+
+func _on_room_awakened(_room: RoomData, _by_light: bool) -> void:
+	_wake_target = 1.0
+	if world != null and world.room != null:
+		world.room.awaken()
 
 
 func _apply_settings() -> void:
 	_strength = float(Settings.get_value("video/lighting_strength"))
-	# En alto contraste la penumbra se suaviza para leer enemigos y obstáculos.
-	var darkness := _strength * (0.4 if Settings.high_contrast else 1.0)
-	ambient.color = Color.WHITE.lerp(AMBIENT, darkness)
 	player_light.enabled = _strength > 0.0
-	player_light.energy = _strength * 0.75
 	for light in room_lights:
 		light.enabled = _strength > 0.0
-		light.energy = _strength * 0.65
+	_update_ambient()
+
+
+## La penumbra efectiva: interpolada entre dormida y despierta, escalada por el
+## ajuste de intensidad. El alto contraste la suaviza para leer el combate.
+func _update_ambient() -> void:
+	var darkness := _strength * (0.45 if Settings.high_contrast else 1.0)
+	var target := DARK.lerp(_awake_color, wake)
+	ambient.color = Color.WHITE.lerp(target, darkness)
 
 
 func _process(delta: float) -> void:
 	_time += delta
+	if wake != _wake_target:
+		wake = move_toward(wake, _wake_target, delta / FADE_TIME)
+		_update_ambient()
+	var ratio := 1.0
 	if world != null and is_instance_valid(world.player):
-		player_light.global_position = world.player.global_position + Vector2(0, -18)
-		player_light.visible = world.player.alive
+		var pl := world.player
+		ratio = pl.flame_ratio()
+		player_light.global_position = pl.global_position + Vector2(0, -14)
+		player_light.visible = pl.alive
 	if _strength <= 0.0:
 		return
-	# Oscilación cosmética, sin consumir los flujos RNG de la partida.
+	var flick := 1.0
+	if Settings.flashes:
+		var low := 1.0 - smoothstep(0.2, 0.55, ratio)
+		flick += (0.03 + 0.07 * low) * sin(_time * 7.1) + (0.02 + 0.05 * low) * sin(_time * 12.7 + 0.8)
+	player_light.texture_scale = lerpf(PLAYER_SCALE_MIN, PLAYER_SCALE_MAX, ratio) * flick
+	player_light.energy = _strength * lerpf(0.75, 1.05, ratio)
+	player_light.color = Color(0.72, 0.8, 1.0).lerp(Color(1.0, 0.84, 0.62), smoothstep(0.15, 0.5, ratio))
 	for i in room_lights.size():
-		var flicker := 1.0
+		var f := 1.0
 		if Settings.flashes:
-			flicker += 0.035 * sin(_time * 3.1 + i * 1.7) + 0.02 * sin(_time * 7.3 + i)
-		room_lights[i].energy = _strength * 0.65 * flicker
+			f += 0.035 * sin(_time * 3.1 + i * 1.7) + 0.02 * sin(_time * 7.3 + i)
+		room_lights[i].energy = _strength * 0.7 * f * wake

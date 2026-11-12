@@ -30,7 +30,7 @@ const SHADOW := Color(0, 0, 0, 0.35)
 const PLAYER_BODY := Color("15101a")
 const PLAYER_EDGE := Color("6a4b58")
 const PLAYER_EYE := Color("ffd27a")
-const PLAYER_SHOT := Color("f2e3c6")
+const PLAYER_SHOT := Color("ffb35c")
 const ENEMY_SHOT := Color("ff5a3c")
 const ENEMY_SHOT_CORE := Color("ffe0c0")
 
@@ -42,6 +42,10 @@ const UI_DIM := Color("9c8d97")
 const UI_ACCENT := Color("ffd27a")
 const UI_DANGER := Color("ff5a5a")
 const UI_GOOD := Color("8fd36b")
+## Voz del Arrullo (el sueño que quiere que duermas): lila, suave.
+const WHISPER := Color("c9b8ff")
+## Voz de quien vela fuera: blanco cálido, como papel a la luz de una vela.
+const OUTSIDE_VOICE := Color("f3e7d3")
 
 const RARITY := {
 	"common": Color("c9c1b6"),

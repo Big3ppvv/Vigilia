@@ -119,9 +119,9 @@ func _dump_state() -> void:
 		for row in rd.layout:
 			print("[trace]     " + row)
 	print("[trace]   consumibles: %s  objetivo_bot: %s  puertas: %s" % [pks, (game.player.input as BotInput).last_goal if game.player.input is BotInput else "-", rd.doors])
-	print("[trace] t=%.0f piso=%d sala=%s tipo=%s despejada=%s combate=%s jugador=%s hp=%d llaves=%d enemigos=%s" % [
+	print("[trace] t=%.0f piso=%d sala=%s tipo=%s despejada=%s combate=%s jugador=%s llama=%d velas=%d/%d enemigos=%s" % [
 		game.run.elapsed, game.run.floor_index + 1, rd.coord, rd.type, rd.cleared, game.director.combat_active,
-		Vector2i(game.player.global_position), game.player.hp, game.player.keys, es])
+		Vector2i(game.player.global_position), game.player.hp, game.director.lit_votives(), game.director.votives.size(), es])
 
 
 func _shoot(tag: String) -> void:
@@ -145,6 +145,7 @@ func _finish(result: String) -> void:
 		"frames": _frames, "kills": game.run.kills, "rooms_cleared": game.run.rooms_cleared,
 		"rooms_visited_all_floors": _rooms_seen.size(), "rooms_on_last_floor": total_rooms,
 		"items": game.run.items_taken, "damage_dealt": int(game.run.damage_dealt), "damage_taken": game.run.damage_taken,
+		"rooms_by_light": game.run.rooms_by_light, "candles_lit": game.run.candles_lit, "dissolved": game.run.dissolved,
 		"killed_by": game.run.killed_by, "boss_fight_seen": _boss_seen,
 		"physics_ms_avg": snappedf(_phys_sum / maxf(1.0, _frames), 0.01), "physics_ms_max": snappedf(_phys_max, 0.01),
 		"process_ms_max": snappedf(_proc_max, 0.01),

@@ -1,12 +1,14 @@
 class_name LootManager
 extends RefCounted
-## Reparto de objetos y consumibles.
+## Reparto de recuerdos y consumibles.
 ##
 ## - Los pedestales de un piso se rellenan al generarlo, en orden de coordenada,
-##   con el flujo "f<N>:loot": la misma semilla da los mismos objetos.
-## - Pools sin duplicados: cada objeto generado se marca en run.seen_items.
-##   Si un pool se agota, se usa el objeto de respaldo (loot.json).
+##   con el flujo "f<N>:loot": la misma semilla da los mismos recuerdos.
+## - Pools sin duplicados: cada recuerdo generado se marca en run.seen_items.
+##   Si un pool se agota, se usa el recuerdo de respaldo (loot.json).
 ## - La suerte desplaza el peso hacia rarezas altas (luck_rarity_bonus).
+## - En la Cabecera (pool "altar") los recuerdos no se compran: cuestan llama
+##   MÁXIMA (altar_costs). Recordar gasta luz.
 
 var run: RunState
 
@@ -17,24 +19,12 @@ func _init(p_run: RunState) -> void:
 
 func fill_floor(layout: FloorLayout, luck: float) -> void:
 	var rng := run.floor_stream("loot")
-	# Consumibles sin repetición dentro del piso (barajado determinista).
-	var consumables: Array = ContentDB.loot.get("shop_consumables", []).duplicate()
-	rng.shuffle(consumables)
-	var cons_i := 0
 	for rd in layout.sorted_rooms():
 		for p in rd.pedestals:
-			if bool(p.get("consumable", false)):
-				if consumables.is_empty():
-					continue
-				var c: Dictionary = consumables[cons_i % consumables.size()]
-				cons_i += 1
-				p["kind"] = str(c["kind"])
-				p["price"] = int(c["price"])
-				continue
 			var id := roll_item(str(p.get("pool", "treasure")), rng, luck)
 			p["item_id"] = id
-			if str(p.get("pool", "")) == "shop":
-				p["price"] = price_for(id)
+			if str(p.get("pool", "")) == "altar":
+				p["price"] = altar_cost(id)
 	# Consumibles sueltos de salas secretas.
 	for rd in layout.sorted_rooms():
 		for pk in rd.pickups:
@@ -60,10 +50,12 @@ func roll_item(pool: String, rng: RngStream, luck: float) -> String:
 	return id
 
 
-func price_for(item_id: String) -> int:
+## Llama máxima que cuesta un recuerdo en la Cabecera (0 = gratis: los malditos
+## ya se cobran solos).
+static func altar_cost(item_id: String) -> int:
 	var def := ContentDB.get_item(item_id)
-	var prices: Dictionary = ContentDB.loot.get("item_prices", {})
-	return int(prices.get(str(def.get("rarity", "common")), 12))
+	var costs: Dictionary = ContentDB.loot.get("altar_costs", {})
+	return int(costs.get(str(def.get("rarity", "common")), 1))
 
 
 ## Devuelve el tipo de consumible o "" si la tirada falla.

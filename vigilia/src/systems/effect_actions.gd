@@ -27,8 +27,6 @@ static func execute(action_name: String, params: Dictionary, ctx: Dictionary, in
 			act_heal(params, ctx, inst, w)
 		"add_wax":
 			act_add_wax(params, ctx, inst, w)
-		"add_resource":
-			act_add_resource(params, ctx, inst, w)
 		"spawn_ally":
 			act_spawn_ally(params, ctx, inst, w)
 		"self_damage":
@@ -210,12 +208,6 @@ static func act_heal(params: Dictionary, _ctx: Dictionary, _inst: Dictionary, w:
 static func act_add_wax(params: Dictionary, _ctx: Dictionary, _inst: Dictionary, w: CombatWorld) -> void:
 	if w.player != null:
 		w.player.add_wax(int(params.get("amount", 1)))
-
-
-static func act_add_resource(params: Dictionary, _ctx: Dictionary, _inst: Dictionary, w: CombatWorld) -> void:
-	if w.player == null:
-		return
-	w.player.add_resources(int(params.get("coins", 0)), int(params.get("keys", 0)), int(params.get("bombs", 0)))
 
 
 static func act_spawn_ally(params: Dictionary, ctx: Dictionary, _inst: Dictionary, w: CombatWorld) -> void:

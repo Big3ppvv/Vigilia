@@ -1,8 +1,8 @@
 {
-	"version": 1,
+	"version": 2,
 	"_legend": {
 		".": "suelo",
-		"#": "roca (rompible con explosiones)",
+		"#": "cera endurecida (se rompe con explosiones)",
 		"X": "pilar (indestructible)",
 		"~": "charco de cera (ralentiza)",
 		"1": "aparición nivel 1",
@@ -10,8 +10,7 @@
 		"3": "aparición nivel 3",
 		"B": "jefe",
 		"I": "pedestal de objeto",
-		"S": "objeto en venta",
-		"H": "consumible en venta",
+		"S": "recuerdo en la Cabecera (cuesta llama máxima)",
 		"P": "consumible suelto",
 		"L": "inscripción"
 	},
@@ -457,10 +456,10 @@
 			]
 		},
 		{
-			"id": "s_usurero",
-			"type": "shop",
+			"id": "a_cabecera",
+			"type": "altar",
 			"difficulty": 0,
-			"name": "El Usurero",
+			"name": "La cabecera",
 			"biome": "wax",
 			"mirror": false,
 			"weight": 1.0,
@@ -468,7 +467,7 @@
 				"...............",
 				"...............",
 				"...............",
-				"...S..S..H..H..",
+				".....S...S.....",
 				"...............",
 				"...............",
 				"...............",

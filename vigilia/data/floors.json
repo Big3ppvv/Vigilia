@@ -1,15 +1,14 @@
 {
-	"version": 1,
-	"_comment": "La dificultad escala por COMPOSICIÓN (nuevos enemigos, overrides de comportamiento, campeones, densidad), no solo por vida.",
+	"version": 2,
+	"_comment": "La dificultad escala por COMPOSICIÓN (enemigos, comportamiento, campeones, densidad), no solo por vida. 'style' decide el aspecto (chapel: capilla de cera; ward: la sala del hospital soñada).",
 	"floors": [
 		{
-			"id": "umbral_1",
-			"name": "Umbral de Cera I",
+			"id": "capilla",
+			"name": "La capilla de cera",
 			"biome": "wax",
-			"music": "floor",
+			"music": "nana",
 			"rooms": [8, 10],
 			"treasure": 2,
-			"shop": 1,
 			"secret": true,
 			"branch_chance": 0.55,
 			"loop_chance": 0.18,
@@ -17,7 +16,6 @@
 			"min_boss_distance": 3,
 			"boss": "bell_warden",
 			"boss_reward": "choice2",
-			"treasure_locked": false,
 			"enemy_hp_mult": 1.0,
 			"enemy_speed_mult": 1.0,
 			"champion_chance": 0.06,
@@ -29,16 +27,26 @@
 				{"id": "moth", "weight": 1.2},
 				{"id": "bellringer", "weight": 0.8}
 			],
-			"enemy_overrides": {}
+			"enemy_overrides": {},
+			"altar": 1,
+			"style": "chapel",
+			"palette": {
+				"floor_a": "#2a1f22",
+				"floor_b": "#2e2225",
+				"floor_line": "#3a2b2c",
+				"wall": "#3b2a2a",
+				"wall_top": "#56403a",
+				"wall_dark": "#241818",
+				"accent": "#ffb347"
+			}
 		},
 		{
-			"id": "umbral_2",
-			"name": "Umbral de Cera II",
+			"id": "sala",
+			"name": "La sala",
 			"biome": "wax",
-			"music": "floor",
+			"music": "nana",
 			"rooms": [10, 12],
 			"treasure": 1,
-			"shop": 1,
 			"secret": true,
 			"branch_chance": 0.5,
 			"loop_chance": 0.22,
@@ -46,7 +54,6 @@
 			"min_boss_distance": 4,
 			"boss": "mother_candle",
 			"boss_reward": "single",
-			"treasure_locked": true,
 			"enemy_hp_mult": 1.15,
 			"enemy_speed_mult": 1.06,
 			"champion_chance": 0.15,
@@ -59,10 +66,17 @@
 				{"id": "bellringer", "weight": 1.0},
 				{"id": "reliquary", "weight": 1.6}
 			],
-			"enemy_overrides": {
-				"mourner": {"burst": 3},
-				"drip": {"land_ring": 4},
-				"wick": {"lunge_windup": 0.36}
+			"enemy_overrides": {"mourner": {"burst": 3}, "drip": {"land_ring": 4}, "wick": {"lunge_windup": 0.36}},
+			"altar": 1,
+			"style": "ward",
+			"palette": {
+				"floor_a": "#1f2a2b",
+				"floor_b": "#223031",
+				"floor_line": "#2c3c3d",
+				"wall": "#26302f",
+				"wall_top": "#3a4a48",
+				"wall_dark": "#151d1d",
+				"accent": "#9fd8ff"
 			}
 		}
 	]

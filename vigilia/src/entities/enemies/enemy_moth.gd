@@ -3,6 +3,8 @@ extends Enemy
 ## y periódicamente se lanza en PICADO telegrafiado. Reacciona al ENTORNO: si algo
 ## arde (enemigo quemado o fuego en el suelo) puede distraerse y orbitarlo.
 ## Interacción emergente con "Brasa Viva" sin una línea de código específica.
+## Las velas votivas encendidas son su luz favorita: se posan en la llama y,
+## si nadie las espanta, la APAGAN (VotiveCandle.snuff).
 
 var _orbit_r := 160.0
 var _sign := 1.0
@@ -10,6 +12,7 @@ var _dive_cd := 3.0
 var _dive_dir := Vector2.RIGHT
 var _distract_t := 0.0
 var _light_pos := Vector2.ZERO
+var _candle: VotiveCandle = null
 
 
 func on_setup() -> void:
@@ -23,9 +26,21 @@ func on_setup() -> void:
 func behave(dt: float) -> void:
 	_dive_cd -= dt
 	var center := target.global_position if target != null else RoomView.center()
+	var orbit_r := _orbit_r
 	if _distract_t > 0.0:
 		_distract_t -= dt
 		center = _light_pos
+		orbit_r = 50.0
+		if _candle != null:
+			if is_instance_valid(_candle) and _candle.lit:
+				center = _candle.global_position + Vector2(0, -28)
+				orbit_r = 14.0
+				_distract_t = maxf(_distract_t, 0.5)
+				if global_position.distance_to(center) < 34.0:
+					_candle.snuff(dt)
+			else:
+				_candle = null
+				_distract_t = 0.0
 	elif state == "orbit" and state_t > 1.0 and rng.chance(float(p.get("light_attraction", 0.35)) * dt):
 		var lp := _find_light()
 		if lp != Vector2.INF:
@@ -36,7 +51,7 @@ func behave(dt: float) -> void:
 		"orbit":
 			accel = 900.0
 			var jitter := Vector2(sin(anim_t * 7.3), cos(anim_t * 5.1)) * 50.0
-			desired_velocity = orbit(center, _orbit_r if _distract_t <= 0.0 else 50.0, spd, _sign) + jitter + separation(60.0)
+			desired_velocity = orbit(center, orbit_r, spd, _sign) + jitter + separation(60.0)
 			if _dive_cd <= 0.0 and _distract_t <= 0.0 and target != null:
 				change_state("windup")
 		"windup":
@@ -60,9 +75,20 @@ func behave(dt: float) -> void:
 				change_state("orbit")
 
 
-## Fuente de luz más cercana: enemigo ardiendo o fuego en el suelo.
+## Fuente de luz más cercana: una vela votiva encendida (preferida), un enemigo
+## ardiendo o fuego en el suelo.
 func _find_light() -> Vector2:
+	_candle = null
 	var best := Vector2.INF
+	var cd := 640.0 * 640.0
+	for v in world.votives:
+		if is_instance_valid(v) and v.lit:
+			var dv := global_position.distance_squared_to(v.global_position)
+			if dv < cd:
+				cd = dv
+				_candle = v
+	if _candle != null:
+		return _candle.global_position
 	var bd := 420.0 * 420.0
 	for e in world.enemies:
 		if e != self and is_instance_valid(e) and e.alive and e.status.has("burn"):
