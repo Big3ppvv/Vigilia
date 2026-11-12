@@ -222,6 +222,9 @@ func _step(p: Projectile, delta: float) -> bool:
 		return false
 	if p.team == Team.PLAYER:
 		return _collide_player_shot(p)
+	if not world.votives.is_empty() and world.votive_sanctuary(p.pos):
+		world.fx.puff(p.pos, Palette.FLAME_CORE, 3)
+		return false
 	return _collide_enemy_shot(p)
 
 

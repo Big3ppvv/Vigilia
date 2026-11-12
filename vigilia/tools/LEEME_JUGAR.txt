@@ -1,5 +1,5 @@
-VIGILIA — La Espina del Durmiente  (versión 0.1.0, Fase 1)
-=========================================================
+VIGILIA — una vela encendida junto a la cama  (versión 0.2.0, «Una noche»)
+==========================================================================
 
 CÓMO JUGAR
 - Windows: descomprime el zip y haz doble clic en VIGILIA.exe.
@@ -8,21 +8,25 @@ CÓMO JUGAR
 - Linux: descomprime, y en una terminal:  chmod +x VIGILIA.x86_64 && ./VIGILIA.x86_64
 
 No necesita instalar nada (ni Godot). Requiere una tarjeta gráfica con OpenGL 3.3.
+Mejor con auriculares.
 
 CONTROLES (se pueden cambiar en Ajustes -> Controles)
-  Moverse ............ WASD
-  Apuntar y disparar . Flechas, o ratón + clic izquierdo
-  Esquivar ........... Espacio   (rozar una bala al esquivar = "Lucidez": 3 críticos)
-  Tomar / comprar .... E
-  Objeto activo ...... Q
-  Bomba .............. F   (las explosiones abren muros agrietados: salas secretas)
-  Inventario y mapa .. Tab
-  Pausa .............. Esc
+  Moverse ................ WASD
+  Apuntar y disparar ..... Flechas, o ratón + clic izquierdo
+  Esquivar ............... Espacio   (rozar un disparo al esquivar = "Lucidez": 3 críticos)
+  Recordar (tomar) ....... E
+  Recuerdo activo ........ Q
+  Recuerdos y mapa ....... Tab
+  Pausa .................. Esc
+  Pasar texto ............ cualquier tecla (Esc salta la secuencia)
 
-OBJETIVO
-Atraviesa los dos pisos del Umbral de Cera, derrota al Campanero Mayor y a
-Madre Cirio, y abre el Párpado. Combina reliquias: sus efectos se encadenan.
-Ojo: al bajar de piso, el Sueño se adapta al daño que más usaste.
+LO ESENCIAL
+Tu vida es tu llama: con poca, ves menos y el sueño te canta para que te duermas.
+Las salas están dormidas: quédate junto a una vela apagada para encenderla.
+Si todas arden, la sala despierta. Cuidado con las polillas: apagan las velas.
+Cada partida es una noche. Si llegas al final, despiertas.
 
-Los ajustes y el historial se guardan en:
+Si la penumbra te molesta: Ajustes -> Vídeo -> "Penumbra y somnolencia".
+
+Los ajustes y las noches anteriores se guardan en:
   Windows: %APPDATA%\vigilia\     Linux: ~/.local/share/vigilia/

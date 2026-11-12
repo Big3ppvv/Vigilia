@@ -16,7 +16,7 @@ extends Node2D
 const DARK := Color(0.08, 0.075, 0.13)
 const AWAKE := Color(0.6, 0.55, 0.56)
 const AWAKE_WARD := Color(0.5, 0.56, 0.62)
-const PLAYER_SCALE_MIN := 1.55
+const PLAYER_SCALE_MIN := 1.85
 const PLAYER_SCALE_MAX := 3.3
 const FADE_TIME := 1.4
 
@@ -135,7 +135,10 @@ func _process(delta: float) -> void:
 	if Settings.flashes:
 		var low := 1.0 - smoothstep(0.2, 0.55, ratio)
 		flick += (0.03 + 0.07 * low) * sin(_time * 7.1) + (0.02 + 0.05 * low) * sin(_time * 12.7 + 0.8)
-	player_light.texture_scale = lerpf(PLAYER_SCALE_MIN, PLAYER_SCALE_MAX, ratio) * flick
+	var sopor := 1.0
+	if world != null and is_instance_valid(world.player) and world.player.status.has("drowsy"):
+		sopor = 0.72
+	player_light.texture_scale = lerpf(PLAYER_SCALE_MIN, PLAYER_SCALE_MAX, ratio) * flick * sopor
 	player_light.energy = _strength * lerpf(0.75, 1.05, ratio)
 	player_light.color = Color(0.72, 0.8, 1.0).lerp(Color(1.0, 0.84, 0.62), smoothstep(0.15, 0.5, ratio))
 	for i in room_lights.size():

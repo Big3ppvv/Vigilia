@@ -104,10 +104,13 @@ func setup(p_world: CombatWorld, char_def: Dictionary, engine: SynergyEngine) ->
 func grant_starting_items() -> void:
 	for id in character.get("start_items", []):
 		inventory.add_item(str(id))
+		world.run.seen_items[str(id)] = true
 	var act := str(character.get("start_active", ""))
 	if act != "":
 		inventory.add_item(act)
 		inventory.set_active_charged(bool(character.get("start_active_charged", true)))
+		# Lo que ya llevas no vuelve a aparecer en un pedestal.
+		world.run.seen_items[act] = true
 	world.run.items_taken.clear()
 	_emit_all()
 

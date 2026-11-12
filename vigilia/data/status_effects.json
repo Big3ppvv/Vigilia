@@ -64,6 +64,15 @@
 			"max_stacks": 1,
 			"speed_mult": 0.72,
 			"tags": ["wax"]
+		},
+		{
+			"id": "drowsy",
+			"name": "Sopor",
+			"color": "#c9b8ff",
+			"stacking": "refresh",
+			"max_stacks": 1,
+			"speed_mult": 0.78,
+			"tags": ["sleep"]
 		}
 	],
 	"reactions": [

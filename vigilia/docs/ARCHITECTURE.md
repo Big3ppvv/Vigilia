@@ -1,7 +1,20 @@
-# Arquitectura técnica — VIGILIA (Fase 1)
+# Arquitectura técnica — VIGILIA (v0.2 «Una noche»)
 
-Godot **4.7.2** (verificado) · GDScript con tipado estático · renderer *GL Compatibility* (2D, máxima compatibilidad).
-Código: ~10 800 líneas en 69 scripts (`src/`), ~1 400 de pruebas (`tests/`), ~1 500 líneas de contenido JSON (`data/`).
+Godot **4.6.3** (verificado) · GDScript con tipado estático · renderer *GL Compatibility* (2D, máxima compatibilidad).
+
+## Novedades de la v0.2 (resumen)
+| Sistema | Archivo | Qué hace |
+|---|---|---|
+| Velas votivas | `src/entities/votive_candle.gd` | Objetivo de sala: se encienden por proximidad (`kindle_speed`), debilitan sombras (`CombatWorld.in_votive_light`), deshacen disparos cercanos (`votive_sanctuary`), emiten `kindle`; las polillas las apagan (`snuff`). Las coloca `DungeonGenerator._place_votives` (después de las demás tiradas de la sala: no altera el determinismo previo). |
+| Despertar de sala | `src/game/room_director.gd` | Por la luz (`_awaken_by_light`: `Enemy.dissolve()`, sin `kill`) o por la fuerza; emite `EventBus.room_awakened`. |
+| Luz = vida | `src/fx/candle_lighting.gd` | Penumbra de salas dormidas y fundido al despertar; luz del jugador según `Player.flame_ratio()`; presupuesto de 8 luces. |
+| Velo del sueño | `src/fx/dream_veil.gd` | Post-proceso de pantalla (viñeta, somnolencia, pulso al recibir daño). |
+| Director del sueño | `src/game/dream_director.gd` | Susurros del Arrullo, voz de fuera, latido, líneas de jefes y mezcla de la música. RNG cosmético propio. |
+| Narrativa | `src/ui/story_overlay.gd`, `data/lore.json` | Texto sobre negro/blanco: intro de cada noche, interludio, cuenta atrás, despertar. `StoryOverlay.fast` para pruebas. |
+| Música | `src/audio/lullaby.gd` | La nana: partitura en código, síntesis aditiva en hilos, bucle perfecto; capas `nana:pad/box/pulse`, `menu`, `boss`. |
+| Interfaz | `src/ui/menu_background.gd`, `end_screen.gd`, `hud.gd` | La habitación (menú), la hoja de enfermería, el HUD de llamas y velas. |
+
+Eliminado: monedas, llaves, bombas (`bomb.gd`), tienda y puertas cerradas. La acción `add_resource` y el filtro `coins_min` ya no existen en el vocabulario.
 
 ## Principios
 1. **Contenido = datos.** Objetos, sinergias, enemigos, campeones, personajes, plantillas de sala, pisos, estados, reacciones, botín y lore viven en `data/*.json`. Añadir contenido no requiere tocar sistemas.
@@ -17,8 +30,8 @@ Código: ~10 800 líneas en 69 scripts (`src/`), ~1 400 de pruebas (`tests/`), ~
 | `ContentDB` | Carga, indexa y valida `data/*.json`. |
 | `Settings` | Opciones persistentes, acciones de entrada registradas en código, remapeo con intercambio de conflictos, validación de valores. |
 | `SaveManager` | Perfil versionado (`user://profile.json`): totales, historial, descubrimientos; escritura atómica con `.bak`, recuperación y migraciones. |
-| `Audio` | SFX sintetizados (27) + música generada en hilos; pool de reproductores con limitador; cierre ordenado. |
-| `GameManager` | Flujo de escenas y `RunState`; cierre idempotente de partida. |
+| `Audio` | SFX sintetizados + la nana por capas (Lullaby) mezclada en vivo (`set_music_param`: somnolencia, combate); no sintetiza música en headless; cierre ordenado. |
+| `GameManager` | Flujo de escenas y `RunState` (incluye el número de noche); cierre idempotente de partida. |
 
 ## Escena de juego (construida en código)
 ```
@@ -27,8 +40,8 @@ Game (ALWAYS)
 │  ├─ RoomLayer → RoomView (colisión de muros/obstáculos, puertas, dibujo estático) + _RoomFx (velas)
 │  ├─ FxDecals, HazardField (fuego/cera), EntityLayer (y-sort: jugador, enemigos, aliados, pedestales…)
 │  ├─ ProjectileSystem (todos los proyectiles en 1 nodo), FxSystem, CameraRig
-├─ CombatWorld · SynergyEngine · RoomDirector (PAUSABLE)
-├─ Viñeta (CanvasLayer 1) · HUD (10) · Overlays: inventario, pausa, final, depuración, fundido (20)
+├─ CombatWorld · SynergyEngine · RoomDirector · DreamDirector (PAUSABLE)
+├─ Velo del sueño (CanvasLayer 1) · HUD (10) · Overlays: inventario, pausa, hoja de la noche, depuración, fundido, StoryOverlay (20)
 ```
 
 ## Flujo de un disparo (ejemplo completo)
@@ -64,7 +77,7 @@ valor = clamp( ((base + Σflat) × max(0, 1 + Σpct) × Πmult) + Σfinal , min,
 ## Generación procedural (`DungeonGenerator`, lógica pura)
 1. Crecimiento en rejilla desde el origen; una celda nueva solo se acepta con un único vecino ocupado.
 2. Bucles entre salas normales (atajos) antes de colocar especiales.
-3. Jefe, tesoros y tienda como **hojas nuevas** (una sola puerta); el jefe en la hoja más lejana con distancia mínima.
+3. Jefe, tesoros y cabecera como **hojas nuevas** (una sola puerta); el jefe en la hoja más lejana con distancia mínima.
 4. Sala secreta adyacente a ≥ 2 salas normales, unida por **puertas ocultas**.
 5. Validación estructural; si falla, reintento con sub-semilla derivada del número de intento.
 6. Población por sala con RNG derivado de la coordenada (independiente del orden de visita): plantilla ponderada por dificultad/profundidad, espejado, enemigos por nivel, campeones, pedestales.
@@ -108,12 +121,13 @@ src/core/        SeedUtil, RngStream, StatDefs, StatBlock, DamageInfo, Team, Pal
 src/world/       DungeonGenerator, FloorLayout, RoomData, RoomGrid, RoomView, HazardField
 src/combat/      CombatWorld, ProjectileSystem, Projectile, DamageSystem, StatusComponent
 src/systems/     SynergyEngine, EffectActions, EffectVocab, ItemSystem, LootManager, ToleranceSystem, RunState, FloorParams
-src/entities/    player/ (Player, InputSource, HumanInput), enemies/ (base + 6 + jefe), allies/, pickups/, exit_portal
-src/game/        Game (controlador de escena), RoomDirector
-src/ui/          UIKit (tema), ScaledRoot (escala de UI), Hud, Minimap, InventoryPanel, PauseMenu, SettingsPanel, EndScreen, MainMenu, MenuBackground
-src/audio/       SfxSynth (síntesis procedural)
+src/entities/    player/ (Player, InputSource, HumanInput), enemies/ (base + 7 + jefe), allies/, pickups/, votive_candle, exit_portal
+src/game/        Game (controlador de escena y de la noche), RoomDirector, DreamDirector
+src/fx/          FxSystem, CameraRig, CandleLighting (luz = vida), DreamVeil (somnolencia)
+src/ui/          UIKit (tema), ScaledRoot (escala de UI), Hud, Minimap, InventoryPanel, PauseMenu, SettingsPanel, EndScreen (hoja de enfermería), MainMenu, MenuBackground (la habitación), StoryOverlay
+src/audio/       SfxSynth (efectos), Lullaby (la nana)
 src/debug/       DebugOverlay, BotInput (piloto automático), Prof (perfilador)
-tests/           test_runner + 7 suites unitarias/integración, smoke/ (partidas completas), stress/
+tests/           test_runner + 9 suites unitarias/integración, smoke/ (noches completas), stress/
 tools/           screenshot_tour (capturas reales con render)
 docs/            diseño, arquitectura, sinergias, guía de contenido, hoja de ruta, problemas conocidos, informe de pruebas, capturas
 ```

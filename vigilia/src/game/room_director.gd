@@ -207,7 +207,8 @@ func _on_room_cleared(by_light: bool) -> void:
 	if current.type == "boss":
 		game.on_boss_room_cleared()
 	else:
-		var kind: String = game.loot.roll_pickup("room_clear", world.drop_rng, world.player_luck())
+		# Despertar con luz siempre deja algo: compensa renunciar a las bajas.
+		var kind: String = game.loot.roll_pickup("room_clear", world.drop_rng, world.player_luck(), by_light)
 		if kind != "":
 			world.spawn_pickup(kind, view.grid.nearest_walkable_pos(RoomView.center()))
 	world.engine.emit("room_clear", {"depth": 0, "room_type": current.type, "by_light": by_light, "tags": PackedStringArray(["room_clear"])})

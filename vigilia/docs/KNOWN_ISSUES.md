@@ -1,34 +1,32 @@
-# Problemas conocidos y limitaciones (Fase 1.5)
+# Problemas conocidos y limitaciones (v0.2 «Una noche»)
 
 Ordenados por impacto. Lo que no se ha podido verificar se indica como tal.
 
-## Fase 1.5: verificación actual
-La revisión actual se ejecutó con Godot 4.6.3: **73 pruebas pasan**, seis partidas de humo llegan al segundo piso, el estrés no descarta proyectiles y se regeneraron las 14 capturas con OpenGL por software. La CI repite las comprobaciones en GitHub. Ver resultados y límites de la medición en `TEST_REPORT.md`.
+## Sin verificar (lo más importante)
+- **Ninguna persona ha jugado esta versión.** La reestructuración es una apuesta de diseño argumentada (ver `DESIGN.md`), no un resultado. El siguiente paso obligatorio es la prueba con personas de `ROADMAP.md`.
+- **Equilibrio medido solo con el bot.** El bot apunta perfecto y la penumbra no le afecta: gana 5/6 noches encendiendo velas con criterio. Una persona lo tendrá más difícil; no se sabe cuánto.
+- **Legibilidad de la penumbra** en pantallas reales y para personas con baja visión. Mitigación disponible: Ajustes → Vídeo → «Penumbra y somnolencia» (0 la desactiva) y alto contraste.
+- **La música**: se verificó que es correcta (alturas, bucle sin clics, sin recortes), no que suene bien a un oído humano.
+- **Rendimiento en GPU real**: el velo del sueño lee la pantalla y la iluminación usa hasta 8 luces; solo se midió CPU (headless) y render por software.
+- **Windows real y otras versiones de Godot**: no probados en esta versión.
 
-Efectos secundarios conocidos de la Fase 1.5:
-- **Las semillas ya no reproducen las partidas anteriores**: hay 42 objetos en los pools y el piso 1 tiene otro tesoro, así que cambian el mapa del piso 1 y los objetos de ambos pisos (el mapa del piso 2 conserva su estructura). Las semillas guardadas en el historial no son comparables con las nuevas.
-- **El balance se ha movido a favor del jugador** (≈6,6 objetos por partida frente a 3,45, ~24 % más curación por sala). La Tolerancia del Sueño compensa en parte (castiga las builds monotemáticas en el piso 2), pero hace falta probar con personas antes de ajustar la vida de los jefes.
+## Efectos secundarios de la reestructuración
+- **Las semillas de la v0.1 no reproducen las noches de la v0.2**: el generador pasó a la versión 2 (cabecera, velas, sin cerraduras). El historial antiguo se conserva pero sus semillas no son comparables.
+- **Los perfiles antiguos se leen sin problema**; las noches se cuentan a partir de las partidas ya registradas.
+- **Ajustes guardados**: la acción «bomba» desaparece; si existía en `settings.cfg`, se ignora. La intensidad de la penumbra guardada se respeta (el valor por defecto nuevo, 0,9, solo afecta a perfiles nuevos).
 
-## Sin verificar
-- **Balance con jugadores humanos.** Todo el balance se ha calibrado con un bot de puntería perfecta (gana ~2/3 de las partidas). Un humano apunta peor pero explora más. Requiere pruebas de juego reales.
-- **Rendimiento en GPU real.** Solo se midió CPU (headless) y render por software. Los 60 FPS en hardware medio son el objetivo, no una medición.
-- **Ejecutable de Windows**: exportado con las plantillas oficiales pero sin ejecutar en un Windows real (Wine 9.0 no puede ejecutar ni siquiera la plantilla oficial de Godot 4.7.2). Sin firma digital: SmartScreen puede avisar. El ejecutable Linux sí está verificado con una partida completa.
-- **Otras versiones de Godot.** Esta revisión usa 4.6.3; las cifras anteriores de 4.7.2 corresponden al informe histórico. No se verificaron las demás versiones.
-- **Determinismo entre plataformas/versiones.** Verificado en la misma máquina y build; no entre sistemas (coma flotante).
-
-## Alcance de la fase (no son defectos, pero conviene tenerlos presentes)
-- 1 personaje, 1 bioma, 2 pisos, 42 objetos (23 en la Fase 1), 6 enemigos + guardián + jefe, 27 plantillas de sala (objetivo final: 16 / 10 / ~12 / 500+ / 120 / 30 / 300).
-- La luz de vela es dinámica, sin sombras de oclusión. Hay hasta ocho luces por sala (incluida la del jugador); las velas de los pilares comparten un presupuesto limitado. Intensidad regulable en Ajustes → Vídeo.
-- Arte procedural provisional (sin sprites ni animación por fotogramas); audio sintetizado sencillo.
-- Solo español (sin sistema de traducción).
-- Sin guardado a mitad de partida ni repeticiones (la simulación ya es determinista con entradas idénticas, falta grabarlas).
+## Alcance (no son defectos)
+- 1 personaje, 2 pisos, 43 recuerdos, 7 sombras + 2 jefes, 27 plantillas de sala.
+- Arte procedural (sin sprites ni animación por fotogramas); voces solo en texto.
+- Solo español.
+- Sin guardado a mitad de noche ni repeticiones.
 - Mando con asignaciones fijas (solo teclado/ratón es remapeable).
-- Estados pendientes del diseño: electricidad/mojado, miedo, confusión, maleficio, corrupción, luz/oscuridad.
 
 ## Defectos menores conocidos
-- Pico de hasta ~36 ms en el primer segundo de la prueba de estrés (creación masiva de enemigos coincidiendo con la síntesis de música en segundo plano).
-- El *hitstop* usa `Engine.time_scale` global (desactivable en Accesibilidad); afecta también a temporizadores cosméticos durante 50 ms.
-- El HUD muestra solo las últimas 12 reliquias (el inventario completo está en Tab).
-- El monitor `Performance.TIME_PHYSICS_PROCESS` da valores no fiables con `--fixed-fps` en headless; las pruebas usan tiempo de pared.
+- Pico de hasta ~47 ms en el primer segundo de la prueba de estrés (creación masiva de sombras).
+- El *hitstop* usa `Engine.time_scale` global (desactivable en Accesibilidad).
+- El HUD muestra solo los últimos 12 recuerdos (el inventario completo está en Tab).
+- El inventario (Tab) aún muestra estadísticas con números: es la única pantalla que conserva la vista de hoja de cálculo, a propósito, para quien quiera optimizar.
+- La carta de un recuerdo recién tomado puede quedar visible unos segundos detrás de la pausa.
+- El bot no busca secretos ni enciende velas con una sombra encima (herramienta de verificación, no IA de compañero).
 - Al añadir un `class_name` nuevo hay que reimportar (`godot --headless --path . --import`) antes de ejecutar desde consola.
-- El bot de pruebas no usa bombas ni busca secretos (herramienta de verificación, no IA de compañero).

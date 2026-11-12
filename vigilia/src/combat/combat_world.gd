@@ -113,6 +113,21 @@ func in_votive_light(pos: Vector2) -> bool:
 	return false
 
 
+## Las ovejas de la cuenta se numeran a lo largo de toda la noche.
+func next_sheep_number() -> int:
+	var n := int(run.flags.get("sheep_count", 0)) + 1
+	run.flags["sheep_count"] = n
+	return n
+
+
+## ¿Deshace la luz de una vela este disparo del sueño? (refugio junto a la llama)
+func votive_sanctuary(pos: Vector2) -> bool:
+	for v in votives:
+		if is_instance_valid(v) and v.lit and pos.distance_squared_to(v.global_position + Vector2(0, -20)) <= VotiveCandle.SANCTUARY * VotiveCandle.SANCTUARY:
+			return true
+	return false
+
+
 func live_enemy_count() -> int:
 	var n := 0
 	for e in enemies:

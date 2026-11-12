@@ -194,7 +194,7 @@ func test_moth_swarm_transformation() -> void:
 	assert_false(game.player.inventory.active_synergies.has("moth_swarm"), "con 2 no se activa")
 	give(["wing_dust"])
 	var inv: ItemSystem = game.player.inventory
-	assert_true(inv.active_synergies.has("moth_swarm"), "3 reliquias de polilla")
+	assert_true(inv.active_synergies.has("moth_swarm"), "3 recuerdos de polilla")
 	assert_eq(w.familiars.size(), 2, "dos polillas lunares")
 	assert_gt_zero(float(inv.projectile_props.get("wave_amp", 0.0)), "astillas que aletean")
 	assert_near(game.player.stats.get_stat("fire_rate"), fr0 * 1.1, 0.001, "+10% cadencia")
@@ -204,7 +204,7 @@ func test_moth_swarm_transformation() -> void:
 func test_duplicate_active_does_not_create_synergies() -> void:
 	var inv: ItemSystem = game.player.inventory
 	give(["ember_bellows", "ember_bellows", "ember_bellows"])
-	assert_eq(int(inv.tag_counts.get("fire", 0)), 1, "una sola reliquia de fuego equipada")
+	assert_eq(int(inv.tag_counts.get("fire", 0)), 1, "un solo recuerdo de fuego equipado")
 	assert_false(inv.active_synergies.has("pyre"), "las copias del activo no crean Pira")
 	give(["live_ember", "ash_rosary"])
 	assert_true(inv.active_synergies.has("pyre"), "dos pasivos y el activo sí completan Pira")

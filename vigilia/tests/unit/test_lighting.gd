@@ -113,3 +113,11 @@ func test_player_light_follows_without_consuming_combat_rng() -> void:
 	assert_eq(stream.get_state(), state, "la luz no altera la simulación")
 	assert_eq((game.projectiles.material as CanvasItemMaterial).light_mode, CanvasItemMaterial.LIGHT_MODE_UNSHADED, "proyectiles legibles")
 	assert_eq((game.player.material as CanvasItemMaterial).light_mode, CanvasItemMaterial.LIGHT_MODE_UNSHADED, "la llama brilla por sí misma")
+
+
+func test_drowsiness_shrinks_light() -> void:
+	lighting._process(0.016)
+	var awake_scale := lighting.player_light.texture_scale
+	game.world.apply_status(game.player, "drowsy", 1, 3.0, 1.0, 0, Team.ENEMY)
+	lighting._process(0.016)
+	assert_true(lighting.player_light.texture_scale < awake_scale * 0.8, "el sopor encoge la luz")

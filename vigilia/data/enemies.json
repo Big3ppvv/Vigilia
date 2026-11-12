@@ -13,7 +13,7 @@
 			"tags": ["wax", "fire"],
 			"drop_chance": 0.05,
 			"params": {"lunge_range": 170, "lunge_windup": 0.42, "lunge_speed": 360, "lunge_time": 0.28, "recover": 0.55},
-			"lore": "Velas pequeñas que el Durmiente encendió para no tener miedo. Ya no recuerdan de qué."
+			"lore": "Velas pequeñas que alguien encendió para no tener miedo. Ya no recuerdan de qué."
 		},
 		{
 			"id": "mourner",
@@ -25,7 +25,17 @@
 			"speed": 92,
 			"contact_damage": 1,
 			"tags": ["wax", "grief"],
-			"params": {"min_range": 220, "max_range": 410, "aim_time": 0.8, "lock_time": 0.22, "cooldown_min": 2.2, "cooldown_max": 3.2, "shot_speed": 400, "burst": 1, "burst_spread": 14},
+			"params": {
+				"min_range": 220,
+				"max_range": 410,
+				"aim_time": 0.8,
+				"lock_time": 0.22,
+				"cooldown_min": 2.2,
+				"cooldown_max": 3.2,
+				"shot_speed": 400,
+				"burst": 1,
+				"burst_spread": 14
+			},
 			"lore": "Lloran cera por alguien que no despierta. Apuntan con la pena."
 		},
 		{
@@ -38,7 +48,16 @@
 			"speed": 120,
 			"contact_damage": 1,
 			"tags": ["wax"],
-			"params": {"split_count": 2, "max_generation": 1, "hop_windup": 0.32, "hop_time": 0.42, "hop_distance": 130, "child_hp_mult": 0.4, "child_scale": 0.66, "land_ring": 0},
+			"params": {
+				"split_count": 2,
+				"max_generation": 1,
+				"hop_windup": 0.32,
+				"hop_time": 0.42,
+				"hop_distance": 130,
+				"child_hp_mult": 0.4,
+				"child_scale": 0.66,
+				"land_ring": 0
+			},
 			"lore": "Cera que cayó del techo del sueño y aprendió a arrastrarse."
 		},
 		{
@@ -52,7 +71,20 @@
 			"contact_damage": 1,
 			"tags": ["bell", "support"],
 			"drop_chance": 0.15,
-			"params": {"ring_interval": 4.2, "ring_count": 10, "ring_speed": 140, "shield_radius": 230, "shield_amount": 8, "summon_interval": 7.5, "summon_count": 2, "summon_id": "wick", "summon_cap": 3, "keep_distance": 300, "aimed_volley": 0, "ring_double": false},
+			"params": {
+				"ring_interval": 4.2,
+				"ring_count": 10,
+				"ring_speed": 140,
+				"shield_radius": 230,
+				"shield_amount": 8,
+				"summon_interval": 7.5,
+				"summon_count": 2,
+				"summon_id": "wick",
+				"summon_cap": 3,
+				"keep_distance": 300,
+				"aimed_volley": 0,
+				"ring_double": false
+			},
 			"lore": "Su campana no tiene badajo. Suena igual. Al oírla, la cera se endurece sobre sus hermanos."
 		},
 		{
@@ -67,7 +99,18 @@
 			"knockback_resist": 0.85,
 			"tags": ["relic", "armored"],
 			"drop_chance": 0.2,
-			"params": {"turn_speed": 1.25, "front_arc_deg": 70, "front_mult": 0.25, "back_arc_deg": 140, "back_mult": 1.35, "attack_interval": 2.8, "fan_count": 3, "fan_spread": 30, "radial_count": 8, "shot_speed": 230},
+			"params": {
+				"turn_speed": 1.25,
+				"front_arc_deg": 70,
+				"front_mult": 0.25,
+				"back_arc_deg": 140,
+				"back_mult": 1.35,
+				"attack_interval": 2.8,
+				"fan_count": 3,
+				"fan_spread": 30,
+				"radial_count": 8,
+				"shot_speed": 230
+			},
 			"lore": "Una vitrina que camina. Lo que guarda dentro aún late. Protege su frente; olvida su espalda."
 		},
 		{
@@ -81,13 +124,49 @@
 			"contact_damage": 1,
 			"flying": true,
 			"tags": ["moth", "flying"],
-			"params": {"orbit_min": 130, "orbit_max": 190, "dive_min": 2.4, "dive_max": 3.6, "dive_windup": 0.5, "dive_speed": 430, "dive_time": 0.45, "recover": 0.6, "light_attraction": 0.35},
-			"lore": "Buscan la luz porque no recuerdan otra forma de rezar. Las distrae cualquier cosa que arda."
+			"params": {
+				"orbit_min": 130,
+				"orbit_max": 190,
+				"dive_min": 2.4,
+				"dive_max": 3.6,
+				"dive_windup": 0.5,
+				"dive_speed": 430,
+				"dive_time": 0.45,
+				"recover": 0.6,
+				"light_attraction": 0.35
+			},
+			"lore": "Buscan la luz porque no recuerdan otra forma de rezar. Si se posan en una vela, la apagan."
+		},
+		{
+			"id": "sheep",
+			"name": "Oveja de la cuenta",
+			"script": "res://src/entities/enemies/enemy_sheep.gd",
+			"tier": 2,
+			"hp": 14,
+			"radius": 17,
+			"speed": 78,
+			"contact_damage": 0,
+			"tags": ["sleep", "dream"],
+			"drop_chance": 0.06,
+			"params": {
+				"keep_distance": 230,
+				"hop_min": 2.6,
+				"hop_max": 3.8,
+				"crouch_time": 0.42,
+				"hop_time": 0.62,
+				"hop_distance": 150,
+				"z_count": 5,
+				"z_speed": 95,
+				"z_range": 300,
+				"drowsy_time": 2.6
+			},
+			"blood": "#d8d4e0",
+			"lore": "Las ovejas que cuentas para dormirte. El sueño les pone número. Nadie sabe qué pasa al llegar a cien."
 		},
 		{
 			"id": "bell_warden",
 			"name": "Campanero Mayor",
-			"title": "Guardián del Umbral",
+			"title": "El que da las horas",
 			"boss": true,
 			"script": "res://src/entities/enemies/enemy_bellringer.gd",
 			"tier": 3,
@@ -97,13 +176,27 @@
 			"contact_damage": 1,
 			"knockback_resist": 0.9,
 			"tags": ["bell", "boss"],
-			"params": {"ring_interval": 2.6, "ring_count": 16, "ring_speed": 150, "shield_radius": 0, "shield_amount": 0, "summon_interval": 6.5, "summon_count": 2, "summon_id": "wick", "summon_cap": 4, "keep_distance": 250, "aimed_volley": 3, "ring_double": true, "enrage_at": 0.4},
-			"lore": "Toca a muerto por cada espina que cruza el Umbral."
+			"params": {
+				"ring_interval": 2.6,
+				"ring_count": 16,
+				"ring_speed": 150,
+				"shield_radius": 0,
+				"shield_amount": 0,
+				"summon_interval": 6.5,
+				"summon_count": 2,
+				"summon_id": "wick",
+				"summon_cap": 4,
+				"keep_distance": 250,
+				"aimed_volley": 3,
+				"ring_double": true,
+				"enrage_at": 0.4
+			},
+			"lore": "Da las doce cada vez que alguien cruza. Aquí siempre son las doce."
 		},
 		{
 			"id": "mother_candle",
 			"name": "Madre Cirio",
-			"title": "La que gotea",
+			"title": "La que arropa",
 			"boss": true,
 			"script": "res://src/entities/enemies/boss_mother_candle.gd",
 			"tier": 3,
@@ -140,10 +233,8 @@
 				"summon_cap": 4,
 				"cooldown": [1.35, 1.05, 0.85]
 			},
-			"inventory_reactions": [
-				{"tag": "wick", "effect": "no_summon", "text": "«¿Hija mía? Llevas mi mecha...»"}
-			],
-			"lore": "Gotea sobre sus hijos para que no tengan frío."
+			"inventory_reactions": [{"tag": "wick", "effect": "no_summon", "text": "«¿Hija mía? Llevas mi mecha...»"}],
+			"lore": "Gotea sobre ti para que no tengas frío. Cree que dormir para siempre es una forma de amor."
 		}
 	]
 }

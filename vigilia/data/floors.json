@@ -25,7 +25,8 @@
 				{"id": "drip", "weight": 2.0},
 				{"id": "mourner", "weight": 2.0},
 				{"id": "moth", "weight": 1.2},
-				{"id": "bellringer", "weight": 0.8}
+				{"id": "bellringer", "weight": 0.8},
+				{"id": "sheep", "weight": 0.9}
 			],
 			"enemy_overrides": {},
 			"altar": 1,
@@ -64,7 +65,8 @@
 				{"id": "mourner", "weight": 2.0},
 				{"id": "moth", "weight": 1.5},
 				{"id": "bellringer", "weight": 1.0},
-				{"id": "reliquary", "weight": 1.6}
+				{"id": "reliquary", "weight": 1.6},
+				{"id": "sheep", "weight": 1.7}
 			],
 			"enemy_overrides": {"mourner": {"burst": 3}, "drip": {"land_ring": 4}, "wick": {"lunge_windup": 0.36}},
 			"altar": 1,

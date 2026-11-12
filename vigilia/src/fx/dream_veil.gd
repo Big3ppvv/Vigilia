@@ -83,6 +83,8 @@ func _process(delta: float) -> void:
 	if game != null and game.player != null:
 		var pl: Player = game.player
 		target = target_for(pl.flame_ratio(), pl.hp, pl.alive)
+		if pl.alive and pl.status.has("drowsy"):
+			target = maxf(target, 0.45)
 	drowsy = move_toward(drowsy, target, delta * 0.7)
 	_pulse = maxf(0.0, _pulse - delta * 2.4)
 	var strength := float(Settings.get_value("video/lighting_strength"))

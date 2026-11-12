@@ -10,6 +10,8 @@ extends InputSource
 
 var game: Node
 var stats := {"items_taken": 0, "dodges": 0, "kindle_trips": 0}
+## false: el bot ignora las velas (solo combate), para comparar estrategias.
+var kindle := true
 ## Último objetivo de exploración (diagnóstico).
 var last_goal := ""
 var _move := Vector2.ZERO
@@ -90,7 +92,9 @@ func _combat(pl: Player, w: CombatWorld, target: Node2D) -> void:
 	var to := (target.global_position - pl.global_position).normalized()
 	var mv := Vector2.ZERO
 	var candle := _nearest_unlit_votive(pl, w)
-	if candle != null and pl.hp >= 3:
+	# Como haría una persona: enciende cuando no tiene una sombra encima.
+	var calm := d > 150.0 or w.live_enemy_count() <= 1
+	if kindle and candle != null and pl.hp >= 3 and calm:
 		# Encender la vela mientras sigue disparando: es la otra forma de ganar la sala.
 		if pl.global_position.distance_to(candle.global_position) > VotiveCandle.LIGHT_RANGE * 0.6:
 			mv = _path_dir(pl, candle.global_position)

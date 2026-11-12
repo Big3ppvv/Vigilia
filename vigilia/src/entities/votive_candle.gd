@@ -6,18 +6,22 @@ extends Node2D
 ## enciende (la Espina le presta su fuego). Una vela encendida:
 ##   - ilumina su entorno y DEBILITA a las sombras dentro de su luz
 ##     (CombatWorld.in_votive_light: +25% de daño recibido y movimiento lento);
+##   - deshace los disparos del sueño que pasan junto a la llama (SANCTUARY):
+##     cada vela encendida es un pequeño refugio;
 ##   - emite el disparador "kindle" (los recuerdos de luz reaccionan).
 ## Si todas arden, la sala DESPIERTA: las sombras que queden se disipan.
 ## Las polillas, atraídas por la luz, pueden apagarlas (snuff()).
-## Despertar la sala por la luz es más rápido pero renuncia a lo que dan las
-## bajas (efectos "al matar", botín): es una decisión, no un atajo gratis.
+## Despertar la sala por la luz renuncia a lo que dan las bajas (efectos "al
+## matar", botín de cada sombra), pero la luz siempre deja algo (RoomDirector).
 
 signal lit_changed(candle: VotiveCandle, lit: bool)
 
 const LIGHT_RANGE := 60.0
-const LIGHT_TIME := 1.15
+const LIGHT_TIME := 0.85
 const DECAY := 0.55
 const AURA := 150.0
+## Los disparos del sueño que pasan tan cerca de la llama se deshacen.
+const SANCTUARY := 62.0
 const SNUFF_TIME := 1.4
 
 static var _emissive: CanvasItemMaterial

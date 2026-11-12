@@ -26,6 +26,7 @@ var _last_floor := -1
 var _boss_seen := false
 var trace := false
 var boss_only := false
+var no_kindle := false
 var _trace_t := 0.0
 
 
@@ -46,6 +47,8 @@ func _ready() -> void:
 			trace = true
 		elif a == "--boss-only":
 			boss_only = true
+		elif a == "--no-kindle":
+			no_kindle = true
 	SaveManager.load_profile("user://smoke_profile.json")
 	# Las secuencias narrativas (cuenta atrás, despertar) se reproducen al instante.
 	StoryOverlay.fast = true
@@ -55,6 +58,7 @@ func _ready() -> void:
 	await get_tree().process_frame
 	game.bot_mode = true
 	game.set_autopilot(true)
+	(game.player.input as BotInput).kindle = not no_kindle
 	game.player.god_mode = god
 	for id in give_items:
 		if str(id) != "":

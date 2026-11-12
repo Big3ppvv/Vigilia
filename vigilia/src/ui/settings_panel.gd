@@ -84,7 +84,7 @@ func _video_tab() -> Control:
 	v.add_theme_constant_override("separation", 14)
 	_row(v, "Pantalla completa", _check("video/fullscreen"))
 	_row(v, "Sincronización vertical", _check("video/vsync"))
-	_row(v, "Luz y penumbra (0: desactivadas)", _slider("video/lighting_strength", 0.0, 1.0, 0.05))
+	_row(v, "Penumbra y somnolencia (0: desactivadas)", _slider("video/lighting_strength", 0.0, 1.0, 0.05))
 	_row(v, "Mostrar FPS", _check("debug/show_fps"))
 	return v
 

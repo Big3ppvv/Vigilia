@@ -1,60 +1,74 @@
-# Informe de pruebas — revisión 0.1.1, Fase 1.5
+# Informe de pruebas — v0.2.0 «Una noche»
 
-Verificación del 11 de noviembre de 2026 (America/Buenos_Aires). Godot **4.6.3.stable.official**, Linux x86_64. Capturas con OpenGL Compatibility, Mesa llvmpipe y Xorg con pantalla virtual. Los datos del jugador se aislaron mediante `XDG_DATA_HOME`, `XDG_CONFIG_HOME` y `XDG_CACHE_HOME`.
+Verificación del 12 de noviembre de 2026. Godot **4.6.3.stable.official**, Linux x86_64. Capturas con OpenGL Compatibility (Mesa llvmpipe) en una pantalla virtual (Xvfb). Datos del jugador aislados con `XDG_DATA_HOME`, `XDG_CONFIG_HOME` y `XDG_CACHE_HOME`.
 
-El [informe de la Fase 1](TEST_REPORT_PHASE1.md) se conserva como histórico; sus cifras de rendimiento y exportación no describen esta revisión.
+Los informes anteriores ([Fase 1](TEST_REPORT_PHASE1.md)) se conservan como histórico: sus cifras corresponden a otra versión y a otra máquina.
 
-## Pruebas automáticas: 73/73
+## Pruebas automáticas: 86/86
 
-`tools/run_tests.sh` termina con código 0. [Informe JSON completo](verification/unit_report.json).
+`tools/run_tests.sh` termina con código 0 en ~7 s. [Informe JSON](verification/unit_report.json).
 
-| Suite | Pruebas | Cobertura |
+| Suite | Pruebas | Novedades de esta versión |
 |---|---|---|
-| rng | 8 | Semillas, flujos independientes, rangos y distribución |
-| stats | 8 | Orden de modificadores, límites, temporales y valores inválidos |
-| dungeon | 9 | 600 pisos, determinismo, conectividad, secretos y tesoros |
-| content | 4 | Contenido sin errores ni avisos, vocabulario y compilación de scripts |
-| save | 12 | Configuración, migraciones, validación anidada, fecha de creación y recuperación que conserva la copia válida |
-| synergy | 14 | Reacciones, transformaciones, recursión, etiquetas de activos y previsión de reemplazos |
-| combat | 15 | Daño, jefes, botín, secretos y carga del activo conservada al reconstruir pedestales |
-| lighting | 3 | Límite de luces, cambio de sala, accesibilidad, seguimiento y RNG intacto |
+| audio | 2 | La partitura de la nana es coherente (16 compases completos, un acorde por compás); la pista dura exactamente 16 compases, hace bucle y suena |
+| combat | 22 | Encender todas las velas despierta la sala y disipa las sombras sin contar bajas; abatirlas enciende las velas solas; la luz debilita; las polillas apagan velas; la Cabecera cobra llama máxima y nunca deja menos de 2; las brasas abren muros agrietados; las ovejas se numeran y su sopor frena |
+| content | 4 | Contenido sin errores ni avisos con los recuerdos, sinergias, sombras y textos nuevos |
+| dungeon | 10 | 2-3 velas por sala de combate, en suelo libre, sin pisar apariciones y repartidas; sin puertas cerradas |
+| lighting | 6 | Salas dormidas en penumbra que despiertan; la luz del jugador encoge con la llama y con el sopor; límite de 8 luces en el peor caso; accesibilidad; RNG intacto |
+| rng, save, stats, synergy | 42 | Sin cambios de comportamiento |
 
-El caso de configuración deliberadamente corrupta emite `ERROR: ConfigFile parse error`: es parte de la prueba de recuperación. No hay `SCRIPT ERROR:`. El wrapper rechaza errores de GDScript incluso si el motor devuelve 0. Se comprobó con un script inválido en ejecución; también se comprobó la importación fallida y que un filtro sin pruebas devuelve 2.
+## Partidas con el piloto automático
 
-## Seis partidas con el piloto automático
+`tools/run_smoke.sh SEMILLA`, sin invulnerabilidad, mismas seis semillas de referencia que la versión anterior. [Informes JSON](verification/smoke_report.json).
 
-`tools/run_smoke.sh SEMILLA`, sin invulnerabilidad. Todas llegan al segundo piso y terminan sin timeout ni errores de script: cuatro victorias y dos muertes durante el combate final. [Informes JSON](verification/smoke_report.json).
+| Semilla | Resultado | Piso | Tiempo | Bajas | Disipadas | Velas encendidas | Salas despertadas con luz |
+|---|---|---|---|---|---|---|---|
+| FINAL001 | Despierta | 2 | 282.9 s | 120 | 4 | 22 | 2 / 18 |
+| FINAL002 | Despierta | 2 | 285.9 s | 92 | 21 | 24 | 7 / 14 |
+| FINAL003 | Despierta | 2 | 279.5 s | 83 | 15 | 23 | 5 / 14 |
+| FINAL004 | Despierta | 2 | 298.1 s | 97 | 18 | 27 | 8 / 14 |
+| FINAL005 | Se duerme ante el Campanero | 1 | 88.6 s | 43 | 0 | 5 | 0 / 2 |
+| FINAL006 | Despierta | 2 | 395.8 s | 143 | 21 | 38 | 5 / 21 |
 
-| Semilla | Resultado | Piso | Tiempo simulado | Bajas | Reliquias distintas recogidas |
-|---|---|---|---|---|---|
-| FINAL001 | Victoria | 2 | 260.2 s | 111 | 4 |
-| FINAL002 | Muerte ante Madre Cirio | 2 | 308.0 s | 107 | 2 |
-| FINAL003 | Victoria | 2 | 276.3 s | 119 | 7 |
-| FINAL004 | Victoria | 2 | 284.2 s | 136 | 5 |
-| FINAL005 | Muerte ante Madre Cirio | 2 | 417.4 s | 138 | 2 |
-| FINAL006 | Victoria | 2 | 332.2 s | 152 | 8 |
+Además: la CI juega `CI-SMOKE` con invulnerabilidad y exige despertar (lo cumple).
 
-El piloto no sustituye a pruebas con personas. Estos resultados verifican transiciones, jefes y finalización; no demuestran que el balance sea adecuado para jugadores humanos. La CI usa además una semilla fija con `--god` y exige victoria.
+### Equilibrio de la mecánica central (comparación de estrategias del bot)
+
+| Estrategia del bot, 6 semillas | Gana |
+|---|---|
+| Versión anterior (0.1, solo combate) | 4/6 |
+| 0.2, solo combate (`--no-kindle`) | 3/6 |
+| 0.2, primera versión de las velas (encender sin mirar) | 1/6 |
+| 0.2, velas ajustadas, encender cuando no tiene una sombra encima | **5/6** |
+
+La primera versión de las velas era una trampa: encender exponía demasiado. Se corrigió con tres cambios (encender en 0,85 s, la luz deshace los disparos junto a la llama y despertar con luz siempre deja recompensa). **Advertencia:** el bot apunta perfecto y la penumbra no le afecta; estas cifras comparan estrategias entre sí, no miden la dificultad para una persona.
 
 ## Estrés
 
-`tools/run_stress.sh`, 1200 frames por escenario. Tiempo de pared del frame completo, usando las muestras `frame_ms_*` del [informe JSON](verification/stress_report.json).
+`tools/run_stress.sh`, 1200 frames por escenario, tiempo de pared del frame completo. [Informe JSON](verification/stress_report.json). Para comparar con rigor se ejecutó también la versión anterior **en esta misma máquina**:
 
-| Escenario | Media | p50 | p95 | Máximo |
-|---|---|---|---|---|
-| Horda (47 enemigos) | 4.60 ms | 4.46 ms | 6.05 ms | 34.76 ms |
-| Lluvia (2047 proyectiles) | 7.85 ms | 7.71 ms | 8.73 ms | 31.24 ms |
+| Escenario | v0.1 (misma máquina, 2 ejecuciones) | v0.2 |
+|---|---|---|
+| Horda (48 sombras, 781 explosiones) | media 6.0–6.2 ms | media 6.5 ms, p95 9.1 ms |
+| Lluvia (2047 proyectiles) | media 10.2–10.4 ms | media 10.5 ms, p95 14.2 ms |
 
-Cero proyectiles descartados. La horda produjo 775 explosiones y 295 bajas. Los picos de arranque siguen superando el presupuesto de 16,67 ms; estas cifras no garantizan 60 FPS. Los campos `physics_ms_*` del monitor de Godot no se usan para estas conclusiones porque `--fixed-fps` los distorsiona. El estrés es headless: no mide el coste de GPU de la iluminación.
+Sin proyectiles descartados. Sin regresión relevante: el coste nuevo (capa luminosa de ojos por sombra, consultas de luz de velas) cabe en el margen de ruido. Los picos de arranque siguen por encima de 16,67 ms. El estrés es headless: no mide el coste de GPU de la iluminación ni del velo del sueño.
 
-## Capturas y luz de vela
+## Música (verificación objetiva)
 
-Se regeneraron las 14 [capturas del recorrido](screenshots/) con render real: menú, selección, sala inicial, combate, inventario, pausa, ajustes, tienda, tres fases del jefe y muerte. Se inspeccionaron la sala inicial y los láseres del jefe para comprobar ambiente, jugador, HUD y peligros legibles.
+No se puede escuchar desde el entorno de pruebas, así que se renderizaron las pistas a WAV y se analizaron:
+- Sin recorte en ninguna pista; picos entre 0,40 y 0,90.
+- Empalme del bucle sin clic: el salto entre la última y la primera muestra es menor que el percentil 99 de los saltos entre muestras consecutivas.
+- La melodía suena con las alturas de la partitura (FFT al inicio de cada nota: La5, Fa5, Sol5, Fa5, Mi5, Fa5, Re5, Mi5… Do#5, Re5; error ≤ 7 cents).
+- Coste de síntesis en hilos de trabajo: 0,2–3,9 s por pista; en modo headless no se sintetiza.
 
-La iluminación usa una textura compartida y hasta ocho luces por objeto. La intensidad se ajusta en Vídeo, el alto contraste suaviza la penumbra y desactivar destellos detiene la oscilación de las luces. Los proyectiles, efectos y zonas de peligro son emisivos. No hay sombras de oclusión.
+## Capturas
 
-## GitHub Actions y límites pendientes
+Las 19 [capturas del recorrido](screenshots/) se generaron con render real (`tools/screenshots.sh`) y se revisaron a ojo: la habitación, la voz de fuera, sala dormida, encender una vela, la sala despierta, la carta de un recuerdo, la Cabecera, inventario, pausa, ovejas de la cuenta, el Arrullo con poca llama, Madre Cirio (fases 1 y 3), la cuenta atrás, la hoja de la noche, el despertar y la hoja del despertar.
 
-El workflow `verify.yml` instala Godot 4.6.3 con SHA512 verificado, importa el proyecto, ejecuta la suite, comprueba el filtro sin coincidencias, exige victoria del bot invulnerable y ejecuta estrés. Publica logs y JSON como artifacts durante 14 días.
-
-No se generaron ejecutables de lanzamiento nuevos. Quedan pendientes las pruebas con 3–5 personas, una GPU física, Windows real y otras versiones del motor.
+## Lo que no se ha verificado
+- **Nadie ha jugado esta versión.** Es la prueba que falta y la única que importa ahora (ver [`ROADMAP.md`](ROADMAP.md)).
+- La legibilidad de la penumbra con personas y en pantallas reales.
+- El coste de GPU real del velo del sueño y de la iluminación.
+- Que la música suene bien a oídos humanos (solo se verificó que es correcta).
+- Windows real y otras versiones del motor.

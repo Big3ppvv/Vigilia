@@ -103,7 +103,7 @@ func _refresh() -> void:
 	for sid in StatDefs.DISPLAY_ORDER:
 		lines.append("%s:  %s" % [StatDefs.label(sid), StatDefs.format_value(sid, pl.stats.get_stat(sid))])
 	lines.append("")
-	lines.append("Vida: %d/%d   Cera: %d" % [pl.hp, pl.max_hp(), pl.wax])
+	lines.append("Llama: %d/%d   Cera: %d" % [pl.hp, pl.max_hp(), pl.wax])
 	lines.append("Semilla: " + SeedUtil.format_seed(game.run.seed_string))
 	_stats_label.text = "\n".join(lines)
 	var syn: Array = []

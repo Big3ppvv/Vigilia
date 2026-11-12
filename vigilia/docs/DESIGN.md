@@ -1,106 +1,70 @@
-# VIGILIA — La Espina del Durmiente
-## Documento de diseño (Fase 1)
+# VIGILIA — documento de diseño (v0.2, «Una noche»)
 
-> Este documento distingue explícitamente entre lo **implementado y verificado** (marcado ✅) y lo **diseñado pero pendiente** (marcado 🔜). Nada de lo marcado 🔜 existe todavía en el juego.
+> **Vigilia** significa dos cosas: estar despierto y *velar* a alguien. El juego trata de las dos.
 
----
+## 1. Por qué se reestructuró
 
-## 1. Nombre e identidad
+La versión 0.1 funcionaba (73 pruebas, CI, determinismo) pero **no decía nada**. Su estructura era la de un clon reconocible del género: rejilla de salas, contador de monedas, llaves y bombas, tienda, sala secreta que se abre con bombas, corazones, objeto activo con cargas por sala. El tema —un sueño, una vela, alguien que no despierta— vivía en los textos de sabor y en ningún verbo. La primera persona que lo jugó dijo que no le gustó nada.
 
-**VIGILIA** — *La Espina del Durmiente*. Roguelite 2D top-down de acción, exploración y construcción de builds.
+Diagnóstico: el problema no era técnico ni de pulido. Era de **identidad**: las mecánicas no expresaban el tema, la presentación era una hoja de cálculo (porcentajes en pantalla, números de daño, jerga de rareza) y no había ningún momento escrito.
 
-### Premisa
-Algo inmenso duerme, y su sueño es un mundo: **el Somnario**, una catedral-organismo de cera, carne y memoria estratificada en capas. Tú eres **la Espina**: una astilla de lucidez clavada en ese sueño, la única cosa despierta en él. El sueño intenta **arrullarte** hasta disolverte; sus defensas son criaturas hechas de nanas, duelo y cera.
+## 2. Premisa
 
-### Interpretaciones (deliberadamente ambiguas)
-1. **La infección**: eres un cuerpo extraño; matar al Durmiente es tu naturaleza.
-2. **La última lucidez**: eres el pensamiento que intenta despertar a alguien en coma (pistas: una ventana, una silla junto a la cama, una voz que cuenta hasta diez, un latido que marca el ritmo de los jefes).
-3. **El duelo**: el Durmiente sueña con alguien que perdió; tú eres el recuerdo que se niega a ser olvidado.
+Hace mucho que no despiertas. Cada noche alguien se sienta junto a tu cama, te habla y deja **una vela encendida en la mesita**. Dentro del sueño, tú eres esa llama: lo único que sigue despierto. El sueño —**el Arrullo**— no es malvado: quiere que descanses, que dejes de luchar, que te duermas para siempre.
 
-La historia se reconstruye con fragmentos: textos de reliquias, inscripciones de salas secretas, epitafios de la pantalla de muerte, lore de enemigos y el texto del final. ✅ (fragmentos presentes en `data/lore.json`, `items.json`, `enemies.json`)
+- **Cada partida es una noche.** Empieza con la voz de quien vela, sobre negro, con el pitido del monitor. Se numera («Noche 7»).
+- **Apagarse es dormirse.** El Arrullo cuenta hacia atrás («Diez. Nueve. Ocho…») y la voz de fuera se despide: «Mañana vuelvo». La siguiente partida es, literalmente, la noche siguiente.
+- **Ganar es despertar.** Fundido a blanco: la habitación real, la vela en la mesita, alguien dormido en la silla con una mandarina a medio pelar.
 
-### Estética
-Oscura, surrealista y grotesca, pero legible: cera derretida, penumbra violácea, latón, luz de vela. Todo el arte de la Fase 1 es **procedural y original** (dibujado por código), sustituible por sprites sin tocar la lógica. ✅
+La relación es deliberadamente ambigua (la voz menciona a «mamá», así que probablemente es un hermano o hermana) y **la Espina no tiene género**: todos los textos usan construcciones neutras.
 
-### Finales
-- ✅ **El Párpado se abre** (final funcional de la Fase 1, tras Madre Cirio).
-- 🔜 *Despertar* (el mundo termina), *Arrullo* (te disuelves y desbloqueas un personaje), *Vigilia eterna* (te conviertes en el nuevo Durmiente) y finales secretos ligados a la ruta y a la Tolerancia acumulada.
+## 3. Pilares (mecánica = tema)
 
----
-
-## 2. Concepto central y diferencial
-
-La complejidad debe surgir de **interacciones reales**, no de una lista de rasgos aislados. Cuatro pilares lo concretan:
-
-| Pilar | Qué es | Estado |
+| Pilar | Qué es | Por qué tiene alma |
 |---|---|---|
-| **Motor de efectos por etiquetas** | Cada reliquia es *disparador → filtro → acciones* en datos. Las acciones generan eventos con etiquetas que otras reliquias escuchan. Ninguna combinación está programada a mano. | ✅ verificado con 12 pruebas |
-| **Tolerancia del Sueño** | El mundo *aprende* de ti: al bajar de piso, los enemigos resisten las etiquetas que dominaron tu daño y se vuelven vulnerables a las que nunca usaste. Ninguna build monotemática es óptima para siempre; pivotar se recompensa sistémicamente. | ✅ verificado (pruebas + HUD) |
-| **Lucidez** (mecánica de personaje) | Rozar un proyectil enemigo durante la esquiva carga críticos garantizados: la habilidad del jugador se convierte en daño. | ✅ verificado |
-| **Decisiones irreversibles legibles** | Las reliquias se toman con *Interactuar* tras leerlas; algunos pedestales son "elige una" y el resto se desvanece. Pactos que cuestan vida. Objetos activos que se intercambian. | ✅ |
+| **La luz es la vida** | La vida es una llama: su tamaño, su luz y lo que alcanzas a ver dependen de cuánta te queda. Con poca llama se enfría hacia el azul, tiembla, la imagen se desatura y se cierra como unos párpados, suena el latido y el Arrullo susurra («Aquí no duele.»). | Perder vida se *siente* como dormirse, no como bajar un contador. |
+| **Las velas votivas** | Cada sala de combate está dormida (penumbra real) y esconde 2-3 velas apagadas. Quedarse junto a una la enciende. Su luz debilita a las sombras y deshace los disparos que pasan junto a la llama. Si todas arden, **la sala despierta**: las sombras se disipan, vuelve la luz, se encienden los apliques. | Ganar una sala es traer luz, no solo matar. Es una elección real (ver §4). |
+| **Recordar cuesta luz** | No hay monedas, llaves ni bombas. Los objetos son **recuerdos** del mundo real filtrados por el sueño (mandarinas, unas gafas de leer, una radiografía, el reloj de la enfermera). En la **Cabecera**, la enfermera de noche te deja recordar a cambio de **llama máxima**. | La economía y la ficción son la misma cosa. |
+| **El Sueño aprende** | Al bajar de piso, las sombras resisten el tipo de daño que más usaste. Ya no se muestra con porcentajes: el Arrullo lo dice («Ya conozco tu fuego.»). | El sistema sigue siendo el diferencial, pero contado desde dentro. |
+| **Dos voces** | La **voz de fuera** (blanco cálido) se cuela al despertar una sala («…aprieta mi mano si me oyes…»). El **Arrullo** (lila) habla cuando te apagas y por boca de los jefes. Madre Cirio, la jefa final, es el amor que asfixia: «Quédate. Te hago una cama de cera, para que no tengas frío.» | El juego tiene alguien a quien volver y algo que te retiene. |
 
-**Diferencia frente a los referentes**: Isaac apila efectos con reglas ad hoc por combinación; aquí las combinaciones son consecuencia de una gramática común (etiquetas + eventos + profundidad), y el mundo reacciona a la build (Tolerancia), algo que ninguno de los referentes hace de forma sistémica.
+## 4. La decisión de cada sala
 
----
+Una sala despierta de dos maneras:
 
-## 3. Bucle principal
+- **Por la luz** (encender todas las velas): las sombras restantes se **disipan**. No cuentan como bajas: no activan efectos «al matar» ni sueltan botín propio. A cambio, la luz **siempre deja algo** (ascua o cera) y cada vela encendida es un refugio.
+- **Por la fuerza** (no queda ninguna sombra): las velas se encienden solas. Activa todos los efectos de muerte y el botín de cada sombra.
 
-| Escala | Bucle | Estado |
-|---|---|---|
-| **Micro** (segundos) | Leer telegrafiados → posicionarse/esquivar (rozar para Lucidez) → disparar → explotar sinergias | ✅ |
-| **Sala** (30–60 s) | Entrar → puertas se sellan → aparición telegrafiada → combate → sala despejada → recompensa, carga del activo | ✅ |
-| **Piso** (5–8 min) | Explorar grafo no lineal → tesoros/tienda/secretos → decisiones de recursos (llaves, óbolos, bombas) → guardián → Párpado | ✅ |
-| **Partida** (Fase 1: 2 pisos, ~10–15 min humano) | Construir build → el Sueño se adapta → pivotar → jefe final → final | ✅ |
-| **Meta** | Historial, totales, descubrimientos (reliquias, sinergias, enemigos) | ✅ parcial; 🔜 desbloqueos, enciclopedia, desafíos |
+Las **polillas** buscan la luz: si se posan en una vela encendida, la apagan. Proteger una vela es una situación de combate nueva.
 
----
+**Medición (bot de pruebas, 6 semillas fijas):** sin encender velas gana 3/6; encendiéndolas cuando no tiene una sombra encima, 5/6. La primera versión de la mecánica era una trampa (1/6) y se corrigió: encender tarda 0,85 s (antes 1,15 s), la luz deshace disparos cercanos y despertar con luz garantiza recompensa. El bot apunta mejor que una persona y no le afecta la penumbra: estas cifras comparan estrategias, no miden la dificultad humana.
 
-## 4. Mecánicas fundamentales
+## 5. Bucles
 
-### Control ✅
-WASD moverse · Ratón (clic izq.) o flechas apuntar/disparar · Espacio esquivar · E interactuar · Q objeto activo · F bomba · Tab inventario/mapa · Esc pausa. Todo remapeable y persistente; mando con asignaciones fijas.
+| Escala | Bucle |
+|---|---|
+| Segundos | Leer telegrafiados en la penumbra (ojos que brillan, disparos luminosos) → esquivar (rozar un disparo = Lucidez, 3 críticos) → disparar brasas → decidir si te acercas a una vela. |
+| Sala (30-60 s) | Entras en una sala dormida → luchas y/o enciendes velas → la sala despierta (luz, acorde en re mayor, a veces la voz de fuera) → recompensa. |
+| Piso (5-8 min) | Explorar el grafo → tesoros (elegir 1 de 2 recuerdos) → la Cabecera (recordar a cambio de llama) → muros agrietados que dejan escapar luz (ceden a tus brasas) → jefe. |
+| Noche (~10-15 min) | La capilla de cera → interludio con la voz → la sala (el hospital soñado) → Madre Cirio → despertar. |
+| Entre noches | La habitación (menú) cuenta las noches. La hoja de enfermería resume cada una. El historial guarda las noches anteriores. |
 
-### Estadísticas ✅
-27 estadísticas con límites, enteras o continuas. Orden de operaciones canónico: `((base + Σplano) × (1 + Σ%) × Π mult) + Σfinal`, luego acotado. Modificadores permanentes, temporales, condicionales y escalables (p. ej. "+3 % de daño por óbolo, máx. 45 %").
+## 6. Contenido
 
-### Combate ✅
-Proyectiles con perforación, rebote, teledirección, división, ondulación, caída de daño, estados al impactar; explosiones con fuego amigo opcional; críticos; empuje; armadura (plana y direccional); escudos; invulnerabilidad; *hitstop* y sacudida configurables.
+- **Pisos**: *La capilla de cera* (losas, ladrillo, velas; jefe: el Campanero Mayor, «Las doce. Aquí siempre son las doce.») y *La sala* (baldosas, taquillas, cortinas, luz de luna, puertas batientes; jefa: Madre Cirio, «La que arropa»).
+- **Sombras**: Mecha, Plañidera, Gotera, Campanero, Relicario, Polilla (apaga velas) y **Oveja de la cuenta**: las ovejas que cuentas para dormirte, numeradas a lo largo de la noche; saltan como una valla y sueltan «z» que dan *sopor* (te frenan y encogen tu luz).
+- **Recuerdos**: 43 (39 heredados con nombre y texto nuevos, 4 nuevos que enganchan con las velas: Mandarinas, Reloj de la enfermera, Dibujo con ceras, La radio de la sala). 16 sinergias de conjunto (nuevas: *Lumbre compartida* y *Horario de visitas*).
+- **Interfaz**: la habitación del hospital de noche como menú (ventana con luna y lluvia, monitor que late a 66 pulsaciones, una silla con una rebeca, la vela en la mesita con mandarinas y un vaso de agua); hoja de enfermería al terminar; HUD de llamas en lugar de corazones.
+- **Música**: una nana original en re menor, 3/4, a 66 pulsos (el ritmo del monitor), sintetizada por código en capas: pad, caja de música y latido. Con poca llama la caja de música sube: el sueño te canta. Al morir, la nana se ralentiza y baja de tono hasta el silencio.
 
-### Estados y reacciones ✅
-Veneno (acumula), Quemadura, Sangrado (más daño si el objetivo se mueve), Escarcha (ralentiza movimiento **y** acciones, incluidos temporizadores de jefes), Aturdimiento, Encerado. Reacción por datos: **Escarcha + Quemadura = Choque térmico**.
+## 7. Lo que se descartó y por qué
 
-### Enemigos (6 arquetipos con IA distinta) ✅
-| Enemigo | Arquetipo | Rasgo sistémico |
-|---|---|---|
-| Mecha | Perseguidor | Navega por campo de flujo; embestida telegrafiada que fija dirección |
-| Plañidera | Francotiradora | Mantiene banda de distancia; línea de apuntado que se fija antes del disparo |
-| Gotera | Saltadora divisible | Se parte al morir; en el piso 2 salpica al aterrizar |
-| Campanero | Invocador/apoyo | Endurece con cera a aliados cercanos (escudo); invoca Mechas |
-| Relicario | Tanque | Armadura **direccional**: el frente absorbe 75 %, la espalda recibe +35 % |
-| Polilla | Voladora | Orbita y se lanza en picado; **se distrae con cualquier cosa que arda** |
+| Descartado | Motivo |
+|---|---|
+| Monedas, llaves, bombas, tienda | Firma de otro juego; no expresaban nada del tema. |
+| Porcentajes de Tolerancia en el HUD | Convertían el sistema más original en una hoja de cálculo. |
+| Destello rojo al recibir daño | La llama no sangra: titila. Ahora la imagen se oscurece y se enfría. |
+| Hoja de ruta hacia 500 objetos, 120 enemigos, 30 jefes | El alma no sale de la cantidad. Ver ROADMAP. |
 
-Variantes campeonas (5) que cambian el **comportamiento**: estela de fuego, división al morir, velo de invisibilidad, represalia radial, colosal.
-
-### Jefes ✅
-- **Campanero Mayor** (guardián del piso 1): mismo script que el Campanero con datos distintos (anillo doble, ráfaga dirigida, furia al 40 %).
-- **Madre Cirio** (jefe final): 3 fases, 8 patrones, transformación de arena por fase, reacción al posicionamiento, vulnerabilidad explotable (embestida contra muro = aturdida, ×1,5 daño), reacción al inventario (si llevas una *mecha*, no invoca a sus hijas).
-
-### Economía ✅
-Óbolos, llaves (tesoros cerrados en el piso 2), bombas (rompen rocas y revelan muros agrietados), cuentas de vida y de cera (escudos). Tienda con precios por rareza y consumibles sin repetición.
-
-### Secretos ✅
-Sala secreta por piso, accesible solo por muros agrietados (pista visual) que se abren con **cualquier** explosión: bombas, o astillas explosivas — interacción emergente entre una reliquia de combate y la exploración.
-
----
-
-## 5. Arquitectura técnica (resumen)
-Godot 4.x · GDScript tipado · contenido 100 % en JSON validado al arrancar · sistemas desacoplados por un bus de eventos (UI) y un motor de efectos con presupuesto (combate) · generación procedural pura y determinista · simulación separada de la presentación · RNG por flujos etiquetados. Detalle completo en [`ARCHITECTURE.md`](ARCHITECTURE.md).
-
-## 6. Estructura de carpetas
-Ver [`ARCHITECTURE.md` §Estructura](ARCHITECTURE.md#estructura-de-carpetas).
-
-## 7. Plan de implementación
-Ver [`ROADMAP.md`](ROADMAP.md): Fase 1 completada y verificada; fases 2–6 con alcance concreto y criterios de salida.
-
-### Biomas previstos (🔜, solo el primero existe)
-1. ✅ Umbral de Cera · 2. Jardín de Pelo · 3. Coro de Pulmones · 4. Biblioteca de Piel · 5. Mercado de Dientes · 6. Claustro de Médula · 7. Mar de Leche Negra · 8. Relojería sin Horas · 9. Corteza Soñante · 10. El Párpado (final).
+## 8. Arquitectura
+Sin cambios de fondo: contenido en JSON validado al arrancar, motor de efectos por etiquetas, simulación determinista por flujos de RNG, presentación separada. Detalle en [`ARCHITECTURE.md`](ARCHITECTURE.md).

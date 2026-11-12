@@ -197,7 +197,7 @@ func test_explosion_reveals_secret_door() -> void:
 	assert_false(view.door_is_passable(dir), "oculta: no transitable")
 	var secret: RoomData = layout.get_room(target_room.doors[dir]["to"])
 	assert_false(secret.known, "la secreta aún no está en el mapa")
-	var info := DamageInfo.create(1.0, Team.PLAYER, ["explosion", "bomb"])
+	var info := DamageInfo.create(1.0, Team.PLAYER, ["explosion"])
 	w.explode(RoomView.door_edge_center(dir) + Vector2(FloorLayout.DIRS[dir]) * -40.0, 60.0, info, Palette.FLAME, false)
 	assert_false(bool(target_room.doors[dir]["hidden"]), "la explosión abre el muro agrietado")
 	assert_true(secret.known, "la sala secreta aparece en el mapa")
@@ -431,3 +431,15 @@ func test_embers_crack_open_secret_wall() -> void:
 	assert_true(w.room.on_wall_struck(at), "el último golpe")
 	assert_false(bool(target_room.doors[dir]["hidden"]), "el muro cede")
 	assert_true(secret.known, "la sala secreta aparece en el mapa")
+
+
+## Las ovejas de la cuenta se numeran a lo largo de la noche y su sopor frena.
+func test_counting_sheep_numbers_and_drowsiness() -> void:
+	var a := w.spawn_enemy("sheep", Vector2(300, 200), {"spawn_time": 9999.0})
+	var b := w.spawn_enemy("sheep", Vector2(600, 200), {"spawn_time": 9999.0})
+	assert_eq(int(b.get("number")), int(a.get("number")) + 1, "el sueño cuenta las ovejas")
+	var pl: Player = game.player
+	var base_speed := pl.status.speed_mult()
+	w.apply_status(pl, "drowsy", 1, 2.0, 1.0, 0, Team.ENEMY)
+	assert_true(pl.status.has("drowsy"))
+	assert_true(pl.status.speed_mult() < base_speed, "el sopor frena")

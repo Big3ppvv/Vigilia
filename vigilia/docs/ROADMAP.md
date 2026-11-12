@@ -1,73 +1,47 @@
 # Hoja de ruta
 
-## Fase 1 — Núcleo jugable ✅ (completada y verificada)
-| Requisito | Estado | Evidencia |
-|---|---|---|
-| Personaje controlable, movimiento fluido, disparos, colisiones | ✅ | partidas con bot, capturas |
-| Sistema de daño y vida | ✅ | `test_combat` |
-| 6 enemigos distintos | ✅ 6 + guardián | 6 IA distintas, campeones con comportamiento |
-| 1 jefe con varias fases | ✅ | 3 fases, 8 patrones, `test_boss_phases_and_arena_transform` |
-| Generación de habitaciones y transiciones | ✅ | 600 pisos validados; fundidos y persistencia de estado |
-| 20 objetos funcionales | ✅ 23 (20 pasivos + 3 activos) | `test_content`, `test_synergy` |
-| 5 sinergias comprobables | ✅ 9 con prueba (7 emergentes + 2 de conjunto) | `docs/SYNERGIES.md` |
-| Menú, HUD, pantalla de muerte, reinicio | ✅ | capturas |
-| Guardado de configuración | ✅ | `test_save` |
+## Lección de la versión 0.1
 
-**Adelantado de fases posteriores**: tienda, sala secreta, llaves/bombas, estados + reacción elemental, Tolerancia del Sueño, campeones, historial y perfil versionado, inventario con mapa, accesibilidad completa, piloto automático, estrés y perfilador.
+La 0.1 se verificó con rigor en todo lo fácil de medir (corrección, determinismo, rendimiento) y en nada de lo que decide si un juego es bueno. Su hoja de ruta apuntaba a 16 personajes, 10 biomas, 500 objetos, 120 enemigos y 30 jefes. La primera persona que la jugó dijo que no le gustó nada.
 
-## Fase 1.5 — Que el juego cumpla su promesa (en curso)
+Conclusiones que gobiernan esta hoja de ruta:
+1. **Ninguna fase avanza sin jugarla con personas.** El bot sirve para detectar roturas y comparar estrategias, no para medir si algo emociona.
+2. **El alma no escala con la cantidad.** Antes que más contenido: que lo que hay diga algo.
+3. **La infraestructura ya basta** (pruebas, CI, determinismo, estrés). No se amplía hasta que el juego lo pida.
 
-### Diagnóstico
-La Fase 1 verificó con rigor lo que es fácil de medir (corrección, determinismo, rendimiento) y nada de lo que decide si el juego es bueno: **ninguna partida la ha jugado una persona**. Y el pilar central —construir una build con sinergias— casi no aparece en una partida real:
+## 0.2 «Una noche» — hecho (esta versión)
+Reestructura completa de identidad y bucle. Detalle en [`DESIGN.md`](DESIGN.md).
+- Cada partida es una noche: voz de quien vela, Arrullo, cuenta atrás, despertar.
+- La luz es la vida; somnolencia, latido, susurros.
+- Velas votivas como objetivo de sala; polillas que las apagan; refugio de luz.
+- Sin monedas, llaves, bombas ni tienda; la Cabecera cobra llama máxima.
+- Recuerdos en lugar de reliquias; dos estilos de piso; ovejas de la cuenta.
+- La nana por capas; menú-habitación; hoja de enfermería.
+- 86 pruebas en verde, partidas con bot, estrés sin regresión. Ver [`TEST_REPORT.md`](TEST_REPORT.md).
 
-| Medida (simulación de 20 000 partidas con el modelo de botín real, 2 pisos) | Fase 1 | Fase 1.5 |
-|---|---|---|
-| Objetos por partida | 3,45 | 6,6 |
-| Óbolos por sala (precio de un objeto: 8–25 → 6–20) | 0,50 | 1,17 |
-| Partidas con alguna sinergia antes del jefe final (jugador que elige al azar) | 15 % | 60 % |
-| Ídem, jugador que elige pensando en su build | 19 % | 84 % |
-| Ídem al terminar el piso 1 (jugador que construye) | 10 % | 48 % |
+## 0.3 — Prueba con personas (siguiente; bloquea todo lo demás)
+**Objetivo:** saber si la reestructuración funciona, con datos, no con intuición.
 
-El modelo (sala secreta encontrada el 50 % de las veces, llave para el tesoro del piso 2 el 85 %, ~6,5 bajas con botín por sala) es una aproximación: sirve para comparar antes y después, no sustituye a partidas reales.
+Protocolo (5 personas, al menos 3 que no conozcan el proyecto; 20-30 min cada una, sin ayuda):
+1. Grabar pantalla y voz pensando en alto. No explicar nada.
+2. Medir: ¿entienden las velas sin la pista?, ¿cuántas salas despiertan con luz?, ¿dónde mueren?, ¿leen la intro o la saltan?, ¿la penumbra frustra o atrae?, ¿vuelven a jugar una segunda noche sin que se lo pidan?
+3. Preguntar al final solo tres cosas: qué recuerdan, qué les molestó, qué esperaban que pasara al despertar.
 
-Con la economía de la Fase 1 la tienda era decorativa (≈10 óbolos por partida) y en 4 de cada 5 partidas la fantasía del juego no se manifestaba nunca. Además, el cartel de activación de una sinergia quedaba tapado **en el mismo frame** por el del objeto recogido: el momento clave del juego no se veía.
+Criterio de salida: al menos 3 de 5 juegan una segunda noche por su cuenta, y la mayoría enciende velas a propósito. Si no se cumple, se corrige el bucle antes de añadir nada.
 
-### Hecho (verificado en Godot 4.6.3)
-1. **Economía y elecciones**: el tesoro ofrece *elegir 1 de 2* (el pedestal avisa: «las demás se desvanecen»); piso 1 con 2 tesoros (generador portado a Python: 0 respaldos en 20 000 semillas); toda sala secreta tiene objeto; más óbolos y precios más bajos.
-2. **Contenido solo con datos**: 19 objetos nuevos (23 → 42, primer legendario) organizados en familias de etiquetas, y 11 sinergias de conjunto nuevas (4 → 15). Valida el criterio de la Fase 2 («añadir contenido solo con datos»).
-3. **Legibilidad de la build**: el pedestal muestra qué sinergias haría avanzar el objeto («Pira 2/3, ¡completa Miasma!»); aviso de progreso al recogerlo; sección «En progreso» en el inventario; cola de carteles (el de la sinergia ya no se pisa) y efecto visual al activarla.
-4. **Sensación de juego**: estallido visible al abatir enemigos, micro-pausa en bajas de campeón/jefe y en la Lucidez, fogonazo y retroceso visual del disparo, chispa en los críticos, pulso de sala despejada.
-5. **Correcciones del motor**: los estados que transporta un proyectil ignoraban «daño/duración de estados» y las cargas extra; la Lucidez *reducía* los críticos acumulados si superaban 6.
-6. **Intercambio de activos fiable**: etiquetas sin duplicados, previsión de sinergias que descuenta el activo saliente y carga conservada al dejar y recoger el pedestal.
-7. **Persistencia**: validación de perfiles anidados y recuperación que conserva la copia válida y el archivo dañado.
-8. **Luz de vela**: penumbra ambiental, luz que acompaña al jugador y luces cálidas en la sala, regulables y con opciones de accesibilidad. Proyectiles y avisos de peligro conservan su brillo.
-9. **Verificación continua**: GitHub Actions con importación, 73 pruebas, partida con bot, estrés e informes. Errores de script y filtros sin pruebas producen salida de fallo.
+Ajustes previstos según resultados (no antes): tiempo de encendido, radio de luz por llama, intensidad por defecto de la penumbra, frecuencia de los susurros, curación por sala.
 
-### Criterio de salida
-1. ✅ Suite completa en verde (73 pruebas), 6 partidas de humo y estrés re-medido con el código nuevo; 14 capturas nuevas. Evidencia en `TEST_REPORT.md`.
-2. **Prueba de juego con 3–5 personas** (no el bot): ¿se forma una build?, ¿se entiende la elección?, ¿dónde mueren? Ajustar precios, botín y vida de jefes con esos datos.
-3. ✅ **Identidad visual**: oscuridad y luz de vela dinámica implementadas y comprobadas con capturas reales. Falta valorar su legibilidad con personas y medir en una GPU física.
+## 0.4 — Profundizar lo que funcione
+Solo lo que la prueba con personas respalde. Candidatos:
+- **Más velas con carácter**: velas que se apagan solas, velas que hay que proteger hasta el final, salas donde la luz es el único modo de ganar.
+- **La voz de fuera reacciona**: frases según lo que pasó la noche anterior (dónde moriste, qué recordaste).
+- **Tercer piso, el Párpado**: el umbral del despertar, donde la habitación real se filtra del todo.
+- **Final alternativo** si te quedas dormido a propósito ante Madre Cirio.
 
-> Recomendación: no empezar la Fase 2 (repeticiones, localización, guardado a mitad de partida) hasta cumplir este criterio. Es infraestructura para un núcleo cuya diversión aún no se ha medido con personas.
+## Fuera de alcance por ahora
+Multijugador, editores, localización, guardado a mitad de partida, repeticiones, más personajes. Se reconsideran cuando haya un núcleo que la gente quiera repetir.
 
-## Fase 2 — Arquitectura de contenido (siguiente)
-Criterio de salida: añadir 10 objetos, 3 enemigos y 15 salas **solo con datos** y sin regresiones en la suite.
-1. Guardado seguro entre pisos (instantánea de `RunState` + inventario) y continuar partida.
-2. Grabación de entradas por frame → repeticiones deterministas (la simulación ya lo permite).
-3. Estados: mojado + electricidad (propagación), miedo, confusión, maleficio, corrupción, luz/oscuridad; 4–6 reacciones nuevas.
-4. Armas alternativas como "perfiles de ataque": cuerpo a cuerpo, carga, láser, orbitales.
-5. Salas especiales: sacrificio, altar, apuesta, desafío, maldición, mercader oculto.
-6. Sistema de desbloqueos con condiciones (`unlocks.json`) y registro.
-7. Localización (claves + CSV).
-
-## Fase 3 — Vertical slice
-3 personajes, 3 biomas, 60 objetos, 20 enemigos, 4 jefes, 30+ sinergias, progresión persistente, ruta completa con final. **Prueba de juego con humanos obligatoria** antes de seguir escalando.
-
-## Fase 4 — Expansión sistémica
-Medidor de **Vigilia** (despertar del Durmiente) que altera pisos, rutas alternativas, finales múltiples, transformaciones adicionales, secretos encadenados, salas que evolucionan.
-
-## Fase 5 — Expansión de contenido
-Escalar hacia los objetivos (16 personajes, 10 biomas, 500 pasivos, 120 enemigos, 30 jefes, 300 salas) con herramientas: editor de salas, editor de objetos, simulador de builds (el piloto automático es la base).
-
-## Fase 6 — Pulido y balance
-Telemetría de partidas, análisis de builds dominantes, rendimiento en GPU real, arte definitivo, audio, accesibilidad ampliada.
+## Riesgos conocidos
+- **La penumbra puede frustrar** a quien no la busque. Mitigación: intensidad regulable en Ajustes → Vídeo; alto contraste la suaviza; ojos y disparos siempre luminosos.
+- **El texto puede saltarse.** La narrativa no debe depender de leer: por eso la luz, la música y el latido cuentan lo mismo sin palabras.
+- **Equilibrio medido solo con bot.** Ver la advertencia de [`TEST_REPORT.md`](TEST_REPORT.md).
