@@ -93,7 +93,7 @@ func interact(pl: Player) -> bool:
 		Audio.play("coin")
 	else:
 		var d := ContentDB.get_item(item_id)
-		pl.inventory.add_item(item_id)
+		pl.inventory.add_item(item_id, int(entry.get("active_charge", -1)))
 		EventBus.banner.emit(str(d.get("name", item_id)), str(d.get("desc", "")), Palette.rarity_color(str(d.get("rarity", "common"))))
 		Audio.play("item")
 		world.fx.burst(global_position + Vector2(0, -24), Palette.rarity_color(str(d.get("rarity", "common"))), 24, 220.0, 3.0, 0.7)

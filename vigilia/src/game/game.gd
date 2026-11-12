@@ -120,6 +120,16 @@ func _build_world() -> void:
 	world.camera = camera
 	world.entity_layer = entity_layer
 	world.game = self
+	var lighting := CandleLighting.new()
+	lighting.name = "CandleLighting"
+	lighting.world = world
+	world_root.add_child(lighting)
+	# Los avisos de peligro y los números de daño conservan su legibilidad.
+	var emissive := CanvasItemMaterial.new()
+	emissive.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	projectiles.material = emissive
+	hazards.material = emissive
+	fx.material = emissive
 	projectiles.world = world
 	hazards.world = world
 	engine.world = world
@@ -347,13 +357,15 @@ func on_pedestal_group_taken(ped: ItemPedestal) -> void:
 			n.vanish()
 
 
-func drop_item_pedestal(item_id: String, pos: Vector2) -> void:
+func drop_item_pedestal(item_id: String, pos: Vector2, active_charge: int = -1) -> void:
 	if director.current == null:
 		return
 	var p := pos.clamp(Vector2(40, 40), Vector2(920, 536))
 	if world.room != null and not world.room.grid.is_walkable(RoomGrid.world_to_tile(p)):
 		p = world.room.grid.nearest_walkable_pos(p)
 	var entry := {"pos": p, "pool": "", "price": 0, "item_id": item_id, "taken": false, "group": -1, "consumable": false}
+	if active_charge >= 0:
+		entry["active_charge"] = active_charge
 	director.current.pedestals.append(entry)
 	var node := ItemPedestal.new()
 	node.position = p

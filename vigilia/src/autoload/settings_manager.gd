@@ -39,6 +39,7 @@ const DEFAULTS := {
 	"audio/music": 0.5,
 	"video/fullscreen": false,
 	"video/vsync": true,
+	"video/lighting_strength": 0.8,
 	"access/screen_shake": 1.0,
 	"access/flashes": true,
 	"access/reduced_particles": false,
@@ -53,6 +54,7 @@ const RANGES := {
 	"audio/master": [0.0, 1.0],
 	"audio/sfx": [0.0, 1.0],
 	"audio/music": [0.0, 1.0],
+	"video/lighting_strength": [0.0, 1.0],
 	"access/screen_shake": [0.0, 1.0],
 	"access/ui_scale": [0.75, 1.5],
 }

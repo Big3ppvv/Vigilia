@@ -32,17 +32,21 @@ El modelo (sala secreta encontrada el 50 % de las veces, llave para el tesoro de
 
 Con la economía de la Fase 1 la tienda era decorativa (≈10 óbolos por partida) y en 4 de cada 5 partidas la fantasía del juego no se manifestaba nunca. Además, el cartel de activación de una sinergia quedaba tapado **en el mismo frame** por el del objeto recogido: el momento clave del juego no se veía.
 
-### Hecho (verificado estáticamente, pendiente de verificar en el motor)
+### Hecho (verificado en Godot 4.6.3)
 1. **Economía y elecciones**: el tesoro ofrece *elegir 1 de 2* (el pedestal avisa: «las demás se desvanecen»); piso 1 con 2 tesoros (generador portado a Python: 0 respaldos en 20 000 semillas); toda sala secreta tiene objeto; más óbolos y precios más bajos.
 2. **Contenido solo con datos**: 19 objetos nuevos (23 → 42, primer legendario) organizados en familias de etiquetas, y 11 sinergias de conjunto nuevas (4 → 15). Valida el criterio de la Fase 2 («añadir contenido solo con datos»).
 3. **Legibilidad de la build**: el pedestal muestra qué sinergias haría avanzar el objeto («Pira 2/3, ¡completa Miasma!»); aviso de progreso al recogerlo; sección «En progreso» en el inventario; cola de carteles (el de la sinergia ya no se pisa) y efecto visual al activarla.
 4. **Sensación de juego**: estallido visible al abatir enemigos, micro-pausa en bajas de campeón/jefe y en la Lucidez, fogonazo y retroceso visual del disparo, chispa en los críticos, pulso de sala despejada.
 5. **Correcciones del motor**: los estados que transporta un proyectil ignoraban «daño/duración de estados» y las cargas extra; la Lucidez *reducía* los críticos acumulados si superaban 6.
+6. **Intercambio de activos fiable**: etiquetas sin duplicados, previsión de sinergias que descuenta el activo saliente y carga conservada al dejar y recoger el pedestal.
+7. **Persistencia**: validación de perfiles anidados y recuperación que conserva la copia válida y el archivo dañado.
+8. **Luz de vela**: penumbra ambiental, luz que acompaña al jugador y luces cálidas en la sala, regulables y con opciones de accesibilidad. Proyectiles y avisos de peligro conservan su brillo.
+9. **Verificación continua**: GitHub Actions con importación, 73 pruebas, partida con bot, estrés e informes. Errores de script y filtros sin pruebas producen salida de fallo.
 
 ### Criterio de salida
-1. Suite completa en verde (63 pruebas), 6 partidas de humo y estrés re-medido con el código nuevo; capturas nuevas.
+1. ✅ Suite completa en verde (73 pruebas), 6 partidas de humo y estrés re-medido con el código nuevo; 14 capturas nuevas. Evidencia en `TEST_REPORT.md`.
 2. **Prueba de juego con 3–5 personas** (no el bot): ¿se forma una build?, ¿se entiende la elección?, ¿dónde mueren? Ajustar precios, botín y vida de jefes con esos datos.
-3. **Identidad visual**: oscuridad real y luz de vela dinámica (el juego se llama *Vigilia* y hoy la sala está iluminada de forma plana). No se implementa a ciegas: requiere poder ver el resultado.
+3. ✅ **Identidad visual**: oscuridad y luz de vela dinámica implementadas y comprobadas con capturas reales. Falta valorar su legibilidad con personas y medir en una GPU física.
 
 > Recomendación: no empezar la Fase 2 (repeticiones, localización, guardado a mitad de partida) hasta cumplir este criterio. Es infraestructura para un núcleo cuya diversión aún no se ha medido con personas.
 

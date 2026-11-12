@@ -1,0 +1,519 @@
+{
+	"engine": "4.6.3-stable (official)",
+	"failed": 0,
+	"ms": 3313,
+	"results": [
+		{
+			"errors": [],
+			"ms": 142,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_mitigation_math"
+		},
+		{
+			"errors": [],
+			"ms": 14,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_crit_roll_is_deterministic"
+		},
+		{
+			"errors": [],
+			"ms": 13,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_tolerance_adapts_to_dominant_tag"
+		},
+		{
+			"errors": [],
+			"ms": 13,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_tolerance_needs_meaningful_sample"
+		},
+		{
+			"errors": [],
+			"ms": 26,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_enemies_of_next_floor_inherit_tolerance"
+		},
+		{
+			"errors": [],
+			"ms": 18,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_reliquary_directional_armor"
+		},
+		{
+			"errors": [],
+			"ms": 13,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_player_damage_rules"
+		},
+		{
+			"errors": [],
+			"ms": 15,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_graze_grants_lucidity"
+		},
+		{
+			"errors": [],
+			"ms": 142,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_boss_phases_and_arena_transform"
+		},
+		{
+			"errors": [],
+			"ms": 14,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_boss_reacts_to_wick_inventory"
+		},
+		{
+			"errors": [],
+			"ms": 18,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_loot_fill_is_deterministic"
+		},
+		{
+			"errors": [],
+			"ms": 26,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_explosion_reveals_secret_door"
+		},
+		{
+			"errors": [],
+			"ms": 24,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_pickups_never_rest_inside_obstacles"
+		},
+		{
+			"errors": [],
+			"ms": 14,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_active_swap_drops_pedestal_without_duplicating_history"
+		},
+		{
+			"errors": [],
+			"ms": 18,
+			"ok": true,
+			"suite": "test_combat.gd",
+			"test": "test_active_pedestal_round_trip_preserves_charge"
+		},
+		{
+			"errors": [],
+			"ms": 9,
+			"ok": true,
+			"suite": "test_content.gd",
+			"test": "test_content_has_no_errors"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_content.gd",
+			"test": "test_phase1_content_targets"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_content.gd",
+			"test": "test_every_action_in_vocabulary_is_implemented"
+		},
+		{
+			"errors": [],
+			"ms": 21,
+			"ok": true,
+			"suite": "test_content.gd",
+			"test": "test_all_scripts_compile"
+		},
+		{
+			"errors": [],
+			"ms": 1302,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_many_seeds_are_valid"
+		},
+		{
+			"errors": [],
+			"ms": 117,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_same_seed_produces_identical_floor"
+		},
+		{
+			"errors": [],
+			"ms": 226,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_different_seeds_produce_different_floors"
+		},
+		{
+			"errors": [],
+			"ms": 5,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_floors_of_same_run_differ"
+		},
+		{
+			"errors": [],
+			"ms": 128,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_boss_is_far_leaf_and_specials_are_leaves"
+		},
+		{
+			"errors": [],
+			"ms": 121,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_secret_room_only_reachable_through_hidden_doors"
+		},
+		{
+			"errors": [],
+			"ms": 92,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_extra_treasure_modifier_changes_generation"
+		},
+		{
+			"errors": [],
+			"ms": 2,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_locked_treasure_doors"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_dungeon.gd",
+			"test": "test_mirroring_keeps_templates_valid"
+		},
+		{
+			"errors": [],
+			"ms": 16,
+			"ok": true,
+			"suite": "test_lighting.gd",
+			"test": "test_room_lights_are_bounded_and_replaced"
+		},
+		{
+			"errors": [],
+			"ms": 13,
+			"ok": true,
+			"suite": "test_lighting.gd",
+			"test": "test_lighting_can_be_disabled_and_respects_accessibility"
+		},
+		{
+			"errors": [],
+			"ms": 13,
+			"ok": true,
+			"suite": "test_lighting.gd",
+			"test": "test_player_light_follows_without_consuming_combat_rng"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_fnv_reference_values"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_seed_text_normalization"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_random_seed_uses_alphabet"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_same_seed_same_sequence"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_derived_streams_are_independent"
+		},
+		{
+			"errors": [],
+			"ms": 2,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_ranges_and_bounds"
+		},
+		{
+			"errors": [],
+			"ms": 23,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_weighted_pick_distribution"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_rng.gd",
+			"test": "test_shuffle_is_permutation_and_deterministic"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_settings_roundtrip"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_settings_values_are_validated"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_settings_corrupt_file_resets"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_rebind_swaps_conflicts"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_profile_roundtrip_and_backup"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_profile_corruption_recovers_from_backup"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_profile_total_loss_resets_safely"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_migration_v1_to_v2"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_profile_creation_date_survives_json_roundtrip"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_profile_repairs_nested_types_before_use"
+		},
+		{
+			"errors": [],
+			"ms": 2,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_profile_recovery_preserves_valid_backup"
+		},
+		{
+			"errors": [],
+			"ms": 2,
+			"ok": true,
+			"suite": "test_save.gd",
+			"test": "test_profile_limits_history_and_accepts_json_numbers"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_order_of_operations"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_negative_pct_floors_at_zero_multiplier"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_clamp_and_integer_rounding"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_invalid_values_are_sanitized"
+		},
+		{
+			"errors": [],
+			"ms": 1,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_temporary_modifiers_expire"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_conditional_and_scaling_modifiers"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_remove_by_source"
+		},
+		{
+			"errors": [],
+			"ms": 0,
+			"ok": true,
+			"suite": "test_stats.gd",
+			"test": "test_snapshot_contains_all_stats"
+		},
+		{
+			"errors": [],
+			"ms": 18,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_split_plus_explode"
+		},
+		{
+			"errors": [],
+			"ms": 145,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_explosion_poison_communion_chain"
+		},
+		{
+			"errors": [],
+			"ms": 18,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_pact_triggers_singing_wound"
+		},
+		{
+			"errors": [],
+			"ms": 18,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_pact_respects_min_hp"
+		},
+		{
+			"errors": [],
+			"ms": 16,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_thermal_shock_reaction"
+		},
+		{
+			"errors": [],
+			"ms": 68,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_frost_and_ember_items_produce_reactions"
+		},
+		{
+			"errors": [],
+			"ms": 17,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_burning_death_explosion_poisons"
+		},
+		{
+			"errors": [],
+			"ms": 15,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_moth_swarm_transformation"
+		},
+		{
+			"errors": [],
+			"ms": 16,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_duplicate_active_does_not_create_synergies"
+		},
+		{
+			"errors": [],
+			"ms": 17,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_preview_active_replacement_matches_equipped_build"
+		},
+		{
+			"errors": [],
+			"ms": 16,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_drowned_wick_negative_synergy"
+		},
+		{
+			"errors": [],
+			"ms": 49,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_bounce_then_homing_hits"
+		},
+		{
+			"errors": [],
+			"ms": 14,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_recursion_guard_terminates"
+		},
+		{
+			"errors": [],
+			"ms": 18,
+			"ok": true,
+			"suite": "test_synergy.gd",
+			"test": "test_event_budget_defers_overflow"
+		}
+	],
+	"total": 73
+}

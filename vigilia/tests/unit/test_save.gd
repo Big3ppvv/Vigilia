@@ -122,3 +122,68 @@ func test_migration_v1_to_v2() -> void:
 	SaveManager.load_profile(PROFILE_TEST)
 	assert_eq(int(SaveManager.profile["totals"]["runs"]), 3, "migrado al cargar")
 	assert_eq(int(SaveManager.profile["totals"]["kills"]), 0, "claves nuevas completadas")
+
+
+func test_profile_creation_date_survives_json_roundtrip() -> void:
+	SaveManager.load_profile(PROFILE_TEST)
+	SaveManager.profile["created_unix"] = 1700000000
+	SaveManager.save_profile()
+	SaveManager.load_profile(PROFILE_TEST)
+	assert_eq(SaveManager.profile["created_unix"], 1700000000, "JSON float conserva la fecha original")
+	SaveManager.save_profile()
+	SaveManager.load_profile(PROFILE_TEST)
+	assert_eq(SaveManager.profile["created_unix"], 1700000000, "estable en cargas sucesivas")
+
+
+func test_profile_repairs_nested_types_before_use() -> void:
+	var malformed := {
+		"version": [], "created_unix": {},
+		"totals": {"runs": [], "kills": "muchos", "play_time": null, "best_floor": -5},
+		"history": [null, 4, "roto", {"result": [], "floor": {}, "kills": null, "time": [], "items": {}, "seed": null}],
+		"discovered": {"items": {"wax": 2.0, "broken": [], "negative": -1}, "enemies": []},
+	}
+	assert_true(FileUtil.atomic_write_text(PROFILE_TEST, JSON.stringify(malformed)))
+	SaveManager.load_profile(PROFILE_TEST)
+	assert_eq(SaveManager.profile["history"].size(), 1, "se descartan entradas ajenas a un resumen")
+	var entry: Dictionary = SaveManager.profile["history"][0]
+	assert_eq(entry["floor"], 0)
+	assert_eq(entry["seed"], "")
+	assert_eq(entry["items"], [])
+	assert_eq(SaveManager.profile["discovered"]["items"], {"wax": 2})
+	assert_eq(SaveManager.profile["discovered"]["enemies"], {})
+	SaveManager.record_run({"result": "death", "kills": 3, "time": 5.0, "floor": 1, "items": []})
+	assert_eq(SaveManager.profile["totals"]["runs"], 1, "el perfil reparado permite terminar una partida")
+	assert_eq(SaveManager.profile["totals"]["kills"], 3)
+	assert_near(SaveManager.profile["totals"]["play_time"], 5.0)
+	assert_true(SaveManager.mark_discovered("items", "wax") == false)
+	assert_eq(SaveManager.profile["discovered"]["items"]["wax"], 3)
+
+
+func test_profile_recovery_preserves_valid_backup() -> void:
+	SaveManager.load_profile(PROFILE_TEST)
+	SaveManager.record_run({"result": "death", "kills": 5, "time": 10.0, "floor": 1, "items": []})
+	SaveManager.record_run({"result": "victory", "kills": 7, "time": 20.0, "floor": 2, "items": []})
+	var backup := FileUtil.read_text(PROFILE_TEST + ".bak")
+	var corrupt := "{ perfil truncado"
+	for attempt in 2:
+		var f := FileAccess.open(PROFILE_TEST, FileAccess.WRITE)
+		f.store_string(corrupt)
+		f.close()
+		SaveManager.load_profile(PROFILE_TEST)
+		assert_eq(SaveManager.load_report, "recovered_from_backup", "recuperación %d" % attempt)
+		assert_eq(FileUtil.read_text(PROFILE_TEST + ".bak"), backup, "la copia válida permanece intacta")
+		assert_eq(FileUtil.read_text(PROFILE_TEST + ".corrupt"), corrupt, "se conserva el principal dañado")
+		assert_eq(SaveManager.profile["totals"]["runs"], 1)
+
+
+func test_profile_limits_history_and_accepts_json_numbers() -> void:
+	var history: Array = []
+	for i in SaveManager.MAX_HISTORY + 8:
+		history.append({"kills": i, "floor": 2, "time": 3.5, "items": ["wax", null, 4]})
+	assert_true(FileUtil.atomic_write_text(PROFILE_TEST, JSON.stringify({"history": history, "totals": {"runs": 108, "play_time": 25.5}})))
+	SaveManager.load_profile(PROFILE_TEST)
+	assert_eq(SaveManager.profile["history"].size(), SaveManager.MAX_HISTORY)
+	assert_eq(SaveManager.profile["history"][0]["kills"], 0, "se conserva el orden del historial")
+	assert_eq(SaveManager.profile["history"][0]["items"], ["wax"])
+	assert_eq(SaveManager.profile["totals"]["runs"], 108, "no se borran enteros deserializados como float")
+	assert_near(SaveManager.profile["totals"]["play_time"], 25.5)

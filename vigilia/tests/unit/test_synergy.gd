@@ -200,6 +200,41 @@ func test_moth_swarm_transformation() -> void:
 	assert_near(game.player.stats.get_stat("fire_rate"), fr0 * 1.1, 0.001, "+10% cadencia")
 
 
+## Una ranura activa aporta sus etiquetas una sola vez, aunque recojamos copias.
+func test_duplicate_active_does_not_create_synergies() -> void:
+	var inv: ItemSystem = game.player.inventory
+	give(["ember_bellows", "ember_bellows", "ember_bellows"])
+	assert_eq(int(inv.tag_counts.get("fire", 0)), 1, "una sola reliquia de fuego equipada")
+	assert_false(inv.active_synergies.has("pyre"), "las copias del activo no crean Pira")
+	give(["live_ember", "ash_rosary"])
+	assert_true(inv.active_synergies.has("pyre"), "dos pasivos y el activo sí completan Pira")
+	give(["broken_bell"])
+	assert_eq(int(inv.tag_counts.get("fire", 0)), 2, "al soltar el activo desaparece su etiqueta")
+	assert_false(inv.active_synergies.has("pyre"), "Pira se desactiva al perder su tercer objeto")
+	give(["ember_bellows"])
+	assert_eq(int(inv.tag_counts.get("fire", 0)), 3)
+	assert_true(inv.active_synergies.has("pyre"), "recuperar el activo restaura la sinergia")
+
+
+## La vista previa no puede contar un segundo ejemplar de la misma ranura activa.
+func test_preview_active_replacement_matches_equipped_build() -> void:
+	var inv: ItemSystem = game.player.inventory
+	give(["live_ember", "ember_bellows"])
+	assert_eq(inv.preview_progress("ember_bellows"), "", "el mismo activo no hace avanzar Pira")
+	assert_true(inv.preview_progress("ash_rosary").contains("¡completa Pira!"), "un pasivo nuevo sí la completaría")
+	assert_eq(int(inv.tag_counts.get("fire", 0)), 2, "consultar el pedestal no modifica la build")
+	assert_false(inv.active_synergies.has("pyre"))
+	give(["tallow_pact"])
+	var preview := inv.preview_progress("sacrifice_candle")
+	assert_true(preview.contains("¡completa Transfusión!"), "el activo nuevo completa sangre")
+	assert_true(preview.contains("¡completa Cilicio!"), "el activo nuevo completa sacrificio")
+	give(["sacrifice_candle"])
+	assert_true(inv.active_synergies.has("transfusion"))
+	assert_true(inv.active_synergies.has("cilice"))
+	assert_eq(int(inv.tag_counts.get("fire", 0)), 1, "la etiqueta de fuego del activo anterior se retira")
+	assert_eq(inv.preview_progress("sacrifice_candle"), "", "consultar otra copia no aporta progreso")
+
+
 ## 7) Sinergia negativa "Mecha Ahogada": un objeto modifica a otro.
 func test_drowned_wick_negative_synergy() -> void:
 	give(["candle_frost", "candle_powder"])

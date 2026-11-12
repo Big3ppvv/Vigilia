@@ -36,6 +36,10 @@ func _run() -> void:
 			if filter == "" or fname.find(filter) >= 0:
 				files.append(fname)
 	files.sort()
+	if files.is_empty():
+		push_error("No se encontraron suites de pruebas (filtro: '%s')" % filter)
+		Audio.quit_game(2)
+		return
 	var t0 := Time.get_ticks_msec()
 	var total := 0
 	var failed := 0
@@ -74,10 +78,12 @@ func _run() -> void:
 		suite.queue_free()
 		await get_tree().process_frame
 	var elapsed := Time.get_ticks_msec() - t0
+	if total == 0:
+		push_error("Las suites seleccionadas no contienen métodos test_*")
 	print("\n=== %d pruebas, %d fallidas, %d ms ===" % [total, failed, elapsed])
 	var report := {"total": total, "failed": failed, "ms": elapsed, "engine": Engine.get_version_info()["string"], "results": _results}
 	var f := FileAccess.open("user://test_report.json", FileAccess.WRITE)
 	if f != null:
 		f.store_string(JSON.stringify(report, "\t"))
 		f.close()
-	Audio.quit_game(1 if failed > 0 else 0)
+	Audio.quit_game(2 if total == 0 else (1 if failed > 0 else 0))

@@ -3,20 +3,20 @@
 Roguelite 2D top-down de acción y construcción de builds, en **Godot 4** (GDScript).
 Eres una espina de lucidez clavada en el sueño de un dios; el sueño intenta arrullarte hasta disolverte… y **aprende de cómo luchas**.
 
-**Estado: Fase 1 (núcleo jugable) completa y verificada** — 63 pruebas automáticas, partidas completas jugadas por un piloto automático, prueba de estrés y capturas reales. Ver [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md).
+**Estado: Fase 1.5 verificada en el motor** — 73 pruebas automáticas, seis partidas con piloto automático, estrés y capturas reales. Incluye 42 objetos, 15 sinergias y luz de vela dinámica regulable. Ver [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md).
 
-**Fase 1.5 en curso** — que el juego cumpla su promesa: economía y elecciones para que las builds se formen (de un 15–19 % a un 60–84 % de partidas con sinergia, según simulación), 42 objetos y 15 sinergias, progreso de la build visible y más respuesta al combate. **Verificada estáticamente, pendiente de ejecutar en el motor**: ver [`docs/ROADMAP.md`](docs/ROADMAP.md) y [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
+Esta revisión corrige las sinergias falsas y las recargas gratis al intercambiar activos, refuerza la recuperación del perfil y añade verificaciones en GitHub Actions. El balance con personas sigue pendiente: ver [`docs/ROADMAP.md`](docs/ROADMAP.md) y [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
 
 ![Jefe final, fase 3](docs/screenshots/12_jefe_fase3_laseres.png)
 
 ## Requisitos
-- **Godot 4.7.2** (verificado). Escrito evitando APIs posteriores a 4.3, pero **no probado** en versiones anteriores.
+- **Godot 4.6.3** (verificado en esta revisión y utilizado en CI). Otras versiones no forman parte de esta verificación.
 - Sin dependencias, addons ni assets externos: arte y audio se generan por código.
 
 ## Jugar sin instalar nada
 Descarga `VIGILIA_Windows.zip` o `VIGILIA_Linux.zip`, descomprime y ejecuta `VIGILIA.exe` / `VIGILIA.x86_64` (un único archivo con todo el juego). Modo exhibición: `VIGILIA -- --demo [--seed=XXXX]` juega solo con el piloto automático.
 
-Para regenerar los ejecutables: plantillas de exportación de Godot 4.7.2 instaladas y
+Los ejecutables publicados anteriormente corresponden a la Fase 1. Para regenerarlos con esta revisión, instala las plantillas de exportación de la misma versión de Godot que uses y ejecuta:
 ```bash
 godot --headless --path . --export-release "Windows" dist/windows/VIGILIA.exe
 godot --headless --path . --export-release "Linux" dist/linux/VIGILIA.x86_64
@@ -45,11 +45,15 @@ godot --headless --path . --export-release "Linux" dist/linux/VIGILIA.x86_64
 
 ## Pruebas y herramientas
 ```bash
-tools/run_tests.sh            # 63 pruebas (headless)
+tools/run_tests.sh            # 73 pruebas (headless)
 tools/run_smoke.sh SEMILLA    # partida completa con piloto automático (--god, --trace, --boss-only)
 tools/run_stress.sh           # estrés: 40+ enemigos / 2000 proyectiles
 tools/screenshots.sh          # capturas reales (usa Xvfb si no hay pantalla)
 ```
+
+La CI ejecuta las pruebas, una partida con el bot y el estrés en cada push o pull request. La importación y los errores de GDScript hacen fallar la ejecución; un filtro de pruebas sin coincidencias devuelve código 2.
+
+La intensidad de luz y penumbra se regula en **Ajustes → Vídeo** (0 desactiva el efecto). El alto contraste suaviza la oscuridad y desactivar destellos elimina la oscilación de las luces. Proyectiles, peligros, números de daño y HUD conservan su legibilidad.
 
 ## Documentación
 - [`docs/DESIGN.md`](docs/DESIGN.md) — identidad, concepto diferencial, bucles, mecánicas.

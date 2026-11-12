@@ -1,0 +1,92 @@
+name: Verificar VIGILIA
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: verify-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  godot:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    defaults:
+      run:
+        shell: bash
+        working-directory: vigilia
+    env:
+      GODOT_RELEASE: 4.6.3-stable
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Instalar Godot oficial y verificar SHA512
+        env:
+          XDG_DATA_HOME: ${{ runner.temp }}/vigilia-data
+          XDG_CONFIG_HOME: ${{ runner.temp }}/vigilia-config
+          XDG_CACHE_HOME: ${{ runner.temp }}/vigilia-cache
+        run: |
+          echo "XDG_DATA_HOME=$XDG_DATA_HOME" >> "$GITHUB_ENV"
+          echo "XDG_CONFIG_HOME=$XDG_CONFIG_HOME" >> "$GITHUB_ENV"
+          echo "XDG_CACHE_HOME=$XDG_CACHE_HOME" >> "$GITHUB_ENV"
+          mkdir -p "$RUNNER_TEMP/godot" "$XDG_DATA_HOME" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME" "$RUNNER_TEMP/reports"
+          cd "$RUNNER_TEMP/godot"
+          archive="Godot_v${GODOT_RELEASE}_linux.x86_64.zip"
+          release_url="https://github.com/godotengine/godot/releases/download/${GODOT_RELEASE}"
+          curl --fail --location --retry 3 --output "$archive" "$release_url/$archive"
+          curl --fail --location --retry 3 --output SHA512-SUMS.txt "$release_url/SHA512-SUMS.txt"
+          awk -v archive="$archive" '$2 == archive' SHA512-SUMS.txt > selected.sha512
+          test -s selected.sha512
+          sha512sum --check selected.sha512
+          unzip -q "$archive"
+          mv "Godot_v${GODOT_RELEASE}_linux.x86_64" godot
+          chmod +x godot
+          echo "$RUNNER_TEMP/godot" >> "$GITHUB_PATH"
+          ./godot --version
+
+      - name: Importar y ejecutar todas las pruebas
+        run: timeout 90s bash tools/run_tests.sh 2>&1 | tee "$RUNNER_TEMP/reports/unit.log"
+
+      - name: Rechazar filtros sin pruebas
+        run: |
+          set +e
+          timeout 30s godot --headless --fixed-fps 60 --path . res://tests/test_runner.tscn -- --filter=__no_suite__ > "$RUNNER_TEMP/reports/empty-filter.log" 2>&1
+          result=$?
+          set -e
+          cat "$RUNNER_TEMP/reports/empty-filter.log"
+          test "$result" -eq 2
+
+      - name: Completar una partida con piloto automático
+        run: |
+          timeout 120s bash tools/run_smoke.sh CI-SMOKE --god 2>&1 | tee "$RUNNER_TEMP/reports/smoke.log"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          path = Path(os.environ["XDG_DATA_HOME"]) / "vigilia" / "smoke_CI-SMOKE.json"
+          report = json.loads(path.read_text())
+          if report["result"] != "victory":
+              raise SystemExit(f"El piloto invulnerable no ganó: {report['result']}")
+          PY
+
+      - name: Medir horda y lluvia de proyectiles
+        run: timeout 90s bash tools/run_stress.sh 2>&1 | tee "$RUNNER_TEMP/reports/stress.log"
+
+      - name: Conservar informes y logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: godot-reports
+          path: |
+            ${{ runner.temp }}/reports/
+            ${{ runner.temp }}/vigilia-data/vigilia/test_report.json
+            ${{ runner.temp }}/vigilia-data/vigilia/smoke_*.json
+            ${{ runner.temp }}/vigilia-data/vigilia/stress_report.json
+          if-no-files-found: warn
+          retention-days: 14

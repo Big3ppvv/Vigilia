@@ -1,0 +1,252 @@
+[
+  {
+    "boss_fight_seen": true,
+    "bot": {
+      "dodges": 32,
+      "items_taken": 4
+    },
+    "damage_dealt": 2216,
+    "damage_taken": 4,
+    "engine": {
+      "actions": 301,
+      "deferred": 0,
+      "depth_capped": 0,
+      "dropped": 0,
+      "events": 3292,
+      "frame_peak": 3,
+      "processed": 319
+    },
+    "floor_reached": 2,
+    "frames": 15646,
+    "game_time_s": 260.2,
+    "god": false,
+    "items": [
+      "belfry_echo",
+      "wick_crown",
+      "finger_reliquary",
+      "frost_tear"
+    ],
+    "killed_by": "",
+    "kills": 111,
+    "physics_ms_avg": 4.9,
+    "physics_ms_max": 17.9,
+    "process_ms_max": 33.85,
+    "projectiles_dropped": 0,
+    "projectiles_peak": 54,
+    "result": "victory",
+    "rooms_cleared": 16,
+    "rooms_on_last_floor": 16,
+    "rooms_visited_all_floors": 20,
+    "seed": "FINAL001",
+    "tolerance": {}
+  },
+  {
+    "boss_fight_seen": true,
+    "bot": {
+      "dodges": 68,
+      "items_taken": 2
+    },
+    "damage_dealt": 2225,
+    "damage_taken": 12,
+    "engine": {
+      "actions": 293,
+      "deferred": 0,
+      "depth_capped": 0,
+      "dropped": 0,
+      "events": 3353,
+      "frame_peak": 6,
+      "processed": 415
+    },
+    "floor_reached": 2,
+    "frames": 18558,
+    "game_time_s": 308.0,
+    "god": false,
+    "items": [
+      "live_ember",
+      "split_splinter"
+    ],
+    "killed_by": "Madre Cirio",
+    "kills": 107,
+    "physics_ms_avg": 3.91,
+    "physics_ms_max": 17.05,
+    "process_ms_max": 18.19,
+    "projectiles_dropped": 0,
+    "projectiles_peak": 80,
+    "result": "death",
+    "rooms_cleared": 11,
+    "rooms_on_last_floor": 16,
+    "rooms_visited_all_floors": 15,
+    "seed": "FINAL002",
+    "tolerance": {}
+  },
+  {
+    "boss_fight_seen": true,
+    "bot": {
+      "dodges": 39,
+      "items_taken": 7
+    },
+    "damage_dealt": 2385,
+    "damage_taken": 5,
+    "engine": {
+      "actions": 373,
+      "deferred": 0,
+      "depth_capped": 0,
+      "dropped": 0,
+      "events": 2673,
+      "frame_peak": 5,
+      "processed": 598
+    },
+    "floor_reached": 2,
+    "frames": 16616,
+    "game_time_s": 276.3,
+    "god": false,
+    "items": [
+      "powder_thimble",
+      "singing_wound",
+      "candle_powder",
+      "bitten_coin",
+      "rusty_nail",
+      "gilded_tooth",
+      "black_bead"
+    ],
+    "killed_by": "",
+    "kills": 119,
+    "physics_ms_avg": 3.65,
+    "physics_ms_max": 12.36,
+    "process_ms_max": 15.95,
+    "projectiles_dropped": 0,
+    "projectiles_peak": 54,
+    "result": "victory",
+    "rooms_cleared": 18,
+    "rooms_on_last_floor": 16,
+    "rooms_visited_all_floors": 24,
+    "seed": "FINAL003",
+    "tolerance": {}
+  },
+  {
+    "boss_fight_seen": true,
+    "bot": {
+      "dodges": 33,
+      "items_taken": 6
+    },
+    "damage_dealt": 2668,
+    "damage_taken": 7,
+    "engine": {
+      "actions": 303,
+      "deferred": 0,
+      "depth_capped": 0,
+      "dropped": 0,
+      "events": 2467,
+      "frame_peak": 5,
+      "processed": 488
+    },
+    "floor_reached": 2,
+    "frames": 17088,
+    "game_time_s": 284.2,
+    "god": false,
+    "items": [
+      "amber_lens",
+      "candle_powder",
+      "flagellant_cord",
+      "candle_stub",
+      "singing_wound"
+    ],
+    "killed_by": "",
+    "kills": 136,
+    "physics_ms_avg": 5.6,
+    "physics_ms_max": 34.88,
+    "process_ms_max": 28.71,
+    "projectiles_dropped": 0,
+    "projectiles_peak": 48,
+    "result": "victory",
+    "rooms_cleared": 17,
+    "rooms_on_last_floor": 16,
+    "rooms_visited_all_floors": 23,
+    "seed": "FINAL004",
+    "tolerance": {}
+  },
+  {
+    "boss_fight_seen": true,
+    "bot": {
+      "dodges": 57,
+      "items_taken": 2
+    },
+    "damage_dealt": 2725,
+    "damage_taken": 11,
+    "engine": {
+      "actions": 297,
+      "deferred": 0,
+      "depth_capped": 0,
+      "dropped": 0,
+      "events": 3804,
+      "frame_peak": 7,
+      "processed": 637
+    },
+    "floor_reached": 2,
+    "frames": 25120,
+    "game_time_s": 417.4,
+    "god": false,
+    "items": [
+      "bone_hook",
+      "frost_tear"
+    ],
+    "killed_by": "Madre Cirio",
+    "kills": 138,
+    "physics_ms_avg": 8.47,
+    "physics_ms_max": 40.51,
+    "process_ms_max": 40.3,
+    "projectiles_dropped": 0,
+    "projectiles_peak": 47,
+    "result": "death",
+    "rooms_cleared": 14,
+    "rooms_on_last_floor": 15,
+    "rooms_visited_all_floors": 18,
+    "seed": "FINAL005",
+    "tolerance": {}
+  },
+  {
+    "boss_fight_seen": true,
+    "bot": {
+      "dodges": 27,
+      "items_taken": 11
+    },
+    "damage_dealt": 2939,
+    "damage_taken": 6,
+    "engine": {
+      "actions": 706,
+      "deferred": 0,
+      "depth_capped": 0,
+      "dropped": 0,
+      "events": 3579,
+      "frame_peak": 7,
+      "processed": 1107
+    },
+    "floor_reached": 2,
+    "frames": 19968,
+    "game_time_s": 332.2,
+    "god": false,
+    "items": [
+      "candle_powder",
+      "finger_reliquary",
+      "singing_wound",
+      "wick_crown",
+      "wing_dust",
+      "bitten_coin",
+      "bone_flute",
+      "pyre_heart"
+    ],
+    "killed_by": "",
+    "kills": 152,
+    "physics_ms_avg": 8.69,
+    "physics_ms_max": 44.11,
+    "process_ms_max": 20.45,
+    "projectiles_dropped": 0,
+    "projectiles_peak": 59,
+    "result": "victory",
+    "rooms_cleared": 20,
+    "rooms_on_last_floor": 15,
+    "rooms_visited_all_floors": 28,
+    "seed": "FINAL006",
+    "tolerance": {}
+  }
+]

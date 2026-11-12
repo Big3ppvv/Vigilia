@@ -52,13 +52,13 @@ func count(id: String) -> int:
 	return int(stacks.get(id, 0))
 
 
-func add_item(id: String) -> bool:
+func add_item(id: String, saved_charge: int = -1) -> bool:
 	var def := ContentDB.get_item(id)
 	if def.is_empty():
 		push_warning("ItemSystem: objeto desconocido '%s'" % id)
 		return false
 	if str(def["type"]) == "active":
-		_set_active(id, def)
+		_set_active(id, def, saved_charge)
 		_after_acquire(id, def)
 		return true
 	items.append(id)
@@ -98,16 +98,25 @@ func _after_acquire(id: String, def: Dictionary) -> void:
 	EventBus.item_acquired.emit(id, int(stacks.get(id, 1)))
 
 
-func _set_active(id: String, def: Dictionary) -> void:
-	if active_id != "" and active_id != id:
+func _set_active(id: String, def: Dictionary, saved_charge: int = -1) -> void:
+	var same_active := active_id == id
+	var previous_charge := active_charge
+	if active_id != "":
 		var old_def := ContentDB.get_item(active_id)
 		for t in old_def.get("tags", []):
 			tag_counts[t] = maxi(0, int(tag_counts.get(t, 0)) - 1)
-		if player.world.game != null and player.world.game.has_method("drop_item_pedestal"):
-			player.world.game.drop_item_pedestal(active_id, player.global_position + Vector2(0, 40))
+		if active_id != id and player.world.game != null and player.world.game.has_method("drop_item_pedestal"):
+			player.world.game.drop_item_pedestal(active_id, player.global_position + Vector2(0, 40), active_charge)
 	active_id = id
 	active_max = maxi(1, int(ceil(float(def.get("charge", 1)) * (1.0 - player.stats.get_stat("cooldown_reduction")))))
-	active_charge = active_max
+	# Un activo nuevo llega cargado. Los soltados conservan su carga, y volver a
+	# registrar el que ya está equipado no regala una recarga.
+	if saved_charge >= 0:
+		active_charge = clampi(saved_charge, 0, active_max)
+	elif same_active:
+		active_charge = mini(previous_charge, active_max)
+	else:
+		active_charge = active_max
 	for t in def.get("tags", []):
 		tag_counts[t] = int(tag_counts.get(t, 0)) + 1
 	_emit_active()
@@ -202,18 +211,23 @@ static func _combine(target: Dictionary, key: String, value: Variant, mode: Stri
 # ---------------------------------------------------------------------------
 
 func requirements_met(req: Dictionary) -> bool:
+	return _requirements_met(req, tag_counts, has_item)
+
+
+## Comparte las reglas entre la build actual y la que anticipa el pedestal.
+func _requirements_met(req: Dictionary, counts: Dictionary, owns_item: Callable) -> bool:
 	var tags: Dictionary = req.get("tags", {})
 	for t in tags:
-		if int(tag_counts.get(t, 0)) < int(tags[t]):
+		if int(counts.get(t, 0)) < int(tags[t]):
 			return false
 	for id in req.get("items_all", []):
-		if not has_item(str(id)):
+		if not owns_item.call(str(id)):
 			return false
 	var anyc: Dictionary = req.get("items_any_count", {})
 	if not anyc.is_empty():
 		var n := 0
 		for id in anyc.get("items", []):
-			if has_item(str(id)):
+			if owns_item.call(str(id)):
 				n += 1
 		if n < int(anyc.get("count", 1)):
 			return false
@@ -318,6 +332,18 @@ func preview_progress(item_id: String) -> String:
 	if def.is_empty():
 		return ""
 	var item_tags: Array = def.get("tags", [])
+	var counts := tag_counts.duplicate()
+	var preview_active := active_id
+	if str(def.get("type", "")) == "active":
+		# El activo ocupa una sola ranura: sus etiquetas sustituyen las del anterior,
+		# incluso si el pedestal ofrece otra copia del que ya llevamos.
+		for t in ContentDB.get_item(active_id).get("tags", []):
+			counts[t] = maxi(0, int(counts.get(t, 0)) - 1)
+		preview_active = item_id
+	for t in item_tags:
+		counts[t] = int(counts.get(t, 0)) + 1
+	var owns_item := func(id: String) -> bool:
+		return stacks.has(id) or id == preview_active or id == item_id
 	var parts: Array = []
 	for sid in ContentDB.synergy_ids:
 		if active_synergies.has(sid):
@@ -327,13 +353,15 @@ func preview_progress(item_id: String) -> String:
 			continue
 		var req: Dictionary = sy.get("requires", {})
 		var req_tags: Dictionary = req.get("tags", {})
+		var completes := _requirements_met(req, counts, owns_item)
 		for t in req_tags:
-			if not item_tags.has(t):
+			var have := int(counts.get(t, 0))
+			if not item_tags.has(t) or have <= int(tag_counts.get(t, 0)):
 				continue
-			var have := int(tag_counts.get(t, 0)) + 1
 			var need := int(req_tags[t])
-			if have >= need:
+			if completes:
 				parts.append("¡completa %s!" % str(sy.get("name", sid)))
+				break
 			else:
 				parts.append("%s %d/%d" % [str(sy.get("name", sid)), have, need])
 	return ", ".join(parts)

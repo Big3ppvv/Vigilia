@@ -238,3 +238,47 @@ func test_active_swap_drops_pedestal_without_duplicating_history() -> void:
 	pl.inventory.add_item(start_active)
 	pl.inventory.add_item("ember_bellows")
 	assert_eq(w.run.items_taken.count("ember_bellows"), 1, "historial sin duplicados")
+
+
+## Cambiar de ranura no sustituye las salas necesarias para recargar un activo.
+func test_active_pedestal_round_trip_preserves_charge() -> void:
+	var pl: Player = game.player
+	var inv := pl.inventory
+	var start_active := inv.active_id
+	inv.set_active_charged(false)
+	inv.add_charge(1)
+	var partial_charge := inv.active_charge
+	game.drop_item_pedestal("ember_bellows", pl.global_position)
+	var offered := _find_active_pedestal("ember_bellows")
+	assert_true(offered != null, "hay un activo nuevo para elegir")
+	if offered == null:
+		return
+	assert_true(offered.interact(pl))
+	assert_eq(inv.active_charge, inv.active_max, "un activo nuevo sí llega cargado")
+	inv.set_active_charged(false)
+	# Volver a cargar la sala reconstruye los pedestales desde su estado guardado.
+	game.director.enter_room(game.director.current.coord, -1)
+	await get_tree().process_frame
+	var previous := _find_active_pedestal(start_active)
+	assert_true(previous != null, "el activo anterior sigue en la sala")
+	if previous == null:
+		return
+	assert_true(previous.interact(pl))
+	assert_eq(inv.active_charge, partial_charge, "recupera la carga parcial que tenía al soltarlo")
+	await get_tree().process_frame
+	var empty := _find_active_pedestal("ember_bellows")
+	assert_true(empty != null)
+	if empty == null:
+		return
+	assert_true(empty.interact(pl))
+	assert_eq(inv.active_charge, 0, "el activo agotado sigue agotado tras el intercambio")
+	assert_false(inv.use_active(), "intercambiar no concede otro uso gratis")
+	inv.add_item("ember_bellows")
+	assert_eq(inv.active_charge, 0, "registrar de nuevo el activo equipado tampoco recarga")
+
+
+func _find_active_pedestal(item_id: String) -> ItemPedestal:
+	for n in get_tree().get_nodes_in_group("pedestals"):
+		if n is ItemPedestal and n.item_id == item_id and not n.taken and not n.is_queued_for_deletion():
+			return n
+	return null

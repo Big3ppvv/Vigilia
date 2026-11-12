@@ -3,6 +3,9 @@
 # Variable GODOT para usar otro binario (por defecto: godot en el PATH).
 set -euo pipefail
 cd "$(dirname "$0")/.."
-GODOT="${GODOT:-godot}"
-"$GODOT" --headless --path . --import >/dev/null 2>&1 || true
-"$GODOT" --headless --fixed-fps 60 --path . res://tests/test_runner.tscn -- ${1:+--filter=$1}
+bash tools/import_project.sh
+test_args=()
+if [[ -n "${1:-}" ]]; then
+  test_args+=("--filter=$1")
+fi
+bash tools/run_godot_checked.sh --headless --fixed-fps 60 --path . res://tests/test_runner.tscn -- "${test_args[@]}"

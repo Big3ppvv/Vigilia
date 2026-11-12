@@ -28,7 +28,7 @@ static func atomic_write_text(path: String, text: String, keep_backup: bool = tr
 			var cerr := dir.copy(path, path + ".bak")
 			if cerr != OK:
 				push_warning("FileUtil: no se pudo crear copia de seguridad de '%s' (%s)" % [path, error_string(cerr)])
-		dir.remove(path)
+	# rename sustituye el destino sin dejar un intervalo en el que no existe.
 	var err := dir.rename(tmp, path)
 	if err != OK:
 		push_error("FileUtil: no se pudo renombrar '%s' -> '%s' (%s)" % [tmp, path, error_string(err)])

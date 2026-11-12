@@ -112,6 +112,10 @@ func _measure(label: String, keeper: Callable) -> Dictionary:
 	proc.sort()
 	var r := {
 		"frames": frames,
+		"frame_ms_avg": snappedf(_avg(real), 0.01),
+		"frame_ms_p50": snappedf(real[real.size() / 2], 0.01),
+		"frame_ms_p95": snappedf(real[int(real.size() * 0.95)], 0.01),
+		"frame_ms_max": snappedf(real[real.size() - 1], 0.01),
 		"physics_ms_avg": snappedf(_avg(phys), 0.01),
 		"physics_ms_p95": snappedf(phys[int(phys.size() * 0.95)], 0.01),
 		"physics_ms_max": snappedf(phys[phys.size() - 1], 0.01),
