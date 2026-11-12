@@ -93,10 +93,11 @@ func test_secret_room_only_reachable_through_hidden_doors() -> void:
 
 func test_extra_treasure_modifier_changes_generation() -> void:
 	var params := _params(0)
+	var expected := int(params.get("treasure", 1)) + 1
 	params["extra_treasure"] = 1
 	for s in 40:
 		var layout := DungeonGenerator.generate(SeedUtil.seed_to_int("X%03d" % s), params)
-		assert_eq(layout.rooms_of_type("treasure").size(), 2, "tesoro extra")
+		assert_eq(layout.rooms_of_type("treasure").size(), expected, "tesoro extra")
 
 
 func test_locked_treasure_doors() -> void:

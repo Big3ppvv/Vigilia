@@ -316,4 +316,4 @@ static func act_chain(params: Dictionary, ctx: Dictionary, _inst: Dictionary, w:
 
 static func act_crit_charges(params: Dictionary, _ctx: Dictionary, _inst: Dictionary, w: CombatWorld) -> void:
 	if w.player != null:
-		w.player.crit_charges += int(params.get("amount", 1))
+		w.player.add_crit_charges(int(params.get("amount", 1)))

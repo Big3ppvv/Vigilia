@@ -34,6 +34,25 @@ Otras emergentes presentes (observadas en partidas, sin prueba dedicada):
 | `drowned_wick` *Mecha Ahogada* | **Negativa** (secreta) | Escarcha de Vela + Pólvora de Cirio | **Un objeto modifica a otro**: −30 % radio de explosión, pero las explosiones escarchan | `test_drowned_wick_negative_synergy` |
 | `resonant_belfry` *Campanario Resonante* | Combo (secreta) | Eco del Campanario + Campana Rota | cada rebote libera una onda expansiva | — |
 
+### Añadidas en la Fase 1.5 (diseñadas y validadas estáticamente; **sin verificar aún en el motor**)
+Las sinergias por etiquetas no son secretas: el pedestal, el aviso al recoger y el inventario muestran su progreso. Ninguna se activa con las combinaciones de objetos que usan las pruebas, salvo *Miasma* en E2, revisada aserción por aserción (más cargas de veneno solo refuerzan «7 envenenados» y «todos mueren»; no toca el tope de 4 aliados ni hiere al jugador).
+
+| Id | Tipo | Requisito | Efecto |
+|---|---|---|---|
+| `pyre` *Pira* | Transformación | 3 × `fire` | todas tus astillas Queman y se tiñen de naranja; +25 % daño de estados |
+| `powder_saint` *Santo de la Pólvora* | Transformación | 3 × `explosion` | explosiones +30 % radio y +20 % daño |
+| `clairvoyance` *Clarividencia* | Transformación | 3 × `crit` | +0,75 al multiplicador crítico; astillas doradas |
+| `miasma` *Miasma* | Combo | 2 × `poison` | Veneno y Sangrado aplican +1 carga; +15 % daño de estados |
+| `frostbite` *Congelación* | Combo | 2 × `ice` | golpear a un escarchado puede aturdirlo 0,8 s (no jefes; 1 por segundo) |
+| `hemophilia` *Hemofilia* | Combo | 2 × `bleed` | los críticos encadenan sangre a 2 enemigos |
+| `avarice` *Avaricia* | Combo | 2 × `greed` | +1 óbolo cada 8 bajas; +1 suerte |
+| `wax_carapace` *Coraza de Cera* | Combo | 2 × `wax` | al recibir un golpe estallas en cera (no te hiere); 50 % de +1 cera al despejar |
+| `funeral_procession` *Cortejo Fúnebre* | Combo | 2 × `undead` | Ánimas +50 % de duración y +2 de tope |
+| `cilice` *Cilicio* | Combo | 2 × `sacrifice` | cada autolesión: +0,15 de daño permanente |
+| `lucid_dance` *Danza Lúcida* | Combo | 2 × `dodge` | cada esquiva concede 1 crítico garantizado (tope común: 9) |
+
+Cadenas emergentes nuevas que el diseño busca (sin prueba dedicada todavía): *Corazón de Pira* + *Brasa Viva* (muerte ardiendo → explosión + anillo de brasas → más muertes ardiendo, acotado por la profundidad 4); *Velo de Plañidera* + *Comunión Rancia* (el veneno se contagia y cada muerte envenenada puede alzar un Ánima); *Cordón del Flagelante* + *Herida que Canta* + *Cilicio* (la autolesión dispara el anillo y suma daño permanente); *Lágrima Helada* + *Escarcha de Vela* (rayos helados encadenados desde enemigos escarchados).
+
 ## Protecciones (verificadas)
 | Riesgo | Protección | Prueba |
 |---|---|---|

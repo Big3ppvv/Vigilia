@@ -10,6 +10,11 @@ var _banner_box: VBoxContainer
 var _banner_title: Label
 var _banner_sub: Label
 var _banner_t := 0.0
+## Un cartel "retenido" (activación de sinergia o cola pendiente) no se pisa: los
+## carteles que llegan mientras se muestra esperan su turno. Antes, el cartel de
+## la sinergia quedaba tapado EN EL MISMO FRAME por el del objeto recogido.
+var _banner_sticky := false
+var _banner_queue: Array = []
 var _toasts: VBoxContainer
 var _prompt_panel: PanelContainer
 var _prompt_title: Label
@@ -82,6 +87,8 @@ func setup(p_game: Node) -> void:
 	_prompt_panel.offset_top = -132
 	_prompt_panel.offset_bottom = -76
 	_prompt_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Crece hacia arriba si el detalle ocupa más líneas (no invade la barra de jefe).
+	_prompt_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
 	var pv := VBoxContainer.new()
 	pv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_prompt_title = UIKit.label("", 18, Palette.UI_ACCENT)
@@ -143,6 +150,7 @@ func setup(p_game: Node) -> void:
 	EventBus.item_acquired.connect(func(_id: String, _s: int) -> void: _items_row.refresh(game.player))
 	EventBus.room_entered.connect(_on_room_entered)
 	EventBus.floor_entered.connect(_on_floor_entered)
+	EventBus.synergy_activated.connect(_on_synergy_activated)
 
 
 func set_layout(l: FloorLayout) -> void:
@@ -165,10 +173,24 @@ func _on_floor_entered(_index: int, floor_name: String) -> void:
 
 
 func _on_banner(title: String, subtitle: String, color: Color) -> void:
+	if _banner_sticky and _banner_t > 0.0:
+		if _banner_queue.size() < 3:
+			_banner_queue.append([title, subtitle, color])
+		return
+	_show_banner(title, subtitle, color)
+
+
+## ItemSystem emite el cartel de la sinergia y DESPUÉS esta señal: lo retiene.
+func _on_synergy_activated(_sid: String) -> void:
+	_banner_sticky = true
+
+
+func _show_banner(title: String, subtitle: String, color: Color) -> void:
 	_banner_title.text = title
 	_banner_title.add_theme_color_override("font_color", color)
 	_banner_sub.text = subtitle
 	_banner_t = 3.2
+	_banner_sticky = false
 
 
 func _on_toast(text: String, color: Color) -> void:
@@ -213,6 +235,12 @@ func _process(delta: float) -> void:
 	if _banner_t > 0.0:
 		_banner_t -= delta
 		_banner_box.modulate.a = clampf(_banner_t / 0.6, 0.0, 1.0) * clampf((3.2 - _banner_t) / 0.25, 0.0, 1.0)
+	elif not _banner_queue.is_empty():
+		var b: Array = _banner_queue.pop_front()
+		var col: Color = b[2]
+		_show_banner(str(b[0]), str(b[1]), col)
+		# La cola se vacía en orden: mientras quede algo, el cartel actual no se pisa.
+		_banner_sticky = not _banner_queue.is_empty()
 	else:
 		_banner_box.modulate.a = 0.0
 	for l in _toasts.get_children():

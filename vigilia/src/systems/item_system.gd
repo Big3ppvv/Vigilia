@@ -12,6 +12,15 @@ extends RefCounted
 ## El objeto activo ocupa una ranura aparte; al recoger otro se suelta el anterior
 ## en un pedestal (decisión del jugador, no pérdida silenciosa).
 
+## Nombre visible de cada etiqueta que puede pedir una sinergia (avisos de progreso,
+## inventario y pedestales).
+const TAG_LABELS := {
+	"fire": "fuego", "explosion": "explosión", "poison": "veneno", "ice": "hielo",
+	"bleed": "sangrado", "blood": "sangre", "crit": "crítico", "greed": "codicia",
+	"wax": "cera", "undead": "no-muertos", "sacrifice": "sacrificio", "dodge": "esquiva",
+	"moth": "polilla", "summon": "invocación", "projectile": "astilla", "bell": "campana",
+}
+
 var player: Player
 var engine: SynergyEngine
 var items: Array = []
@@ -83,6 +92,7 @@ func _after_acquire(id: String, def: Dictionary) -> void:
 		player.world.run.items_taken.append(id)
 	SaveManager.mark_discovered("items", id)
 	check_synergies()
+	_announce_progress(def)
 	player.on_inventory_changed()
 	engine.emit("item_acquired", {"item_id": id, "depth": 0, "tags": PackedStringArray(def.get("tags", []))})
 	EventBus.item_acquired.emit(id, int(stacks.get(id, 1)))
@@ -244,6 +254,13 @@ func _activate_synergy(sid: String, sy: Dictionary) -> void:
 	EventBus.banner.emit("%s: %s" % [kind_label, str(sy["name"])], str(sy.get("desc", "")) + ("  (¡nuevo descubrimiento!)" if first else ""), Palette.UI_ACCENT)
 	EventBus.synergy_activated.emit(sid)
 	Audio.play("synergy")
+	# El momento clave del juego merece verse, no solo leerse en el inventario.
+	var w := player.world
+	if w != null and w.fx != null:
+		w.fx.ring(player.global_position, 80.0, Palette.UI_ACCENT, 0.6, 5.0)
+		w.fx.ring(player.global_position, 150.0, Palette.UI_ACCENT, 0.9, 3.0)
+		w.fx.burst(player.global_position, Palette.UI_ACCENT, 28, 320.0, 3.5, 0.8)
+		w.shake(0.35)
 
 
 func _deactivate_synergy(sid: String) -> void:
@@ -258,6 +275,81 @@ func _deactivate_synergy(sid: String) -> void:
 	_synergy_familiars.erase(sid)
 	_recompute_props()
 	player.on_stats_changed()
+
+
+# ---------------------------------------------------------------------------
+# Legibilidad de la build: progreso hacia sinergias de conjunto por etiquetas
+# ---------------------------------------------------------------------------
+
+static func tag_label(tag: String) -> String:
+	return str(TAG_LABELS.get(tag, tag))
+
+
+## Sinergias por etiquetas (no secretas, aún inactivas) con progreso parcial.
+## Con `only_tag`, solo las que dependen de esa etiqueta.
+## Devuelve [{"name", "tag", "have", "need"}], de la más cercana a la más lejana.
+func synergy_progress(only_tag: String = "") -> Array:
+	var out: Array = []
+	for sid in ContentDB.synergy_ids:
+		if active_synergies.has(sid):
+			continue
+		var sy: Dictionary = ContentDB.synergies[sid]
+		if bool(sy.get("secret", false)):
+			continue
+		var req: Dictionary = sy.get("requires", {})
+		var req_tags: Dictionary = req.get("tags", {})
+		for t in req_tags:
+			var tag := str(t)
+			if only_tag != "" and tag != only_tag:
+				continue
+			var have := int(tag_counts.get(tag, 0))
+			var need := int(req_tags[t])
+			if have > 0 and have < need:
+				out.append({"name": str(sy.get("name", sid)), "tag": tag, "have": have, "need": need})
+	out.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a["need"]) - int(a["have"]) < int(b["need"]) - int(b["have"]))
+	return out
+
+
+## Para el pedestal, ANTES de decidir: qué sinergias haría avanzar o completaría
+## este objeto ("Pira 2/3, ¡completa Miasma!"). Cadena vacía si ninguna.
+func preview_progress(item_id: String) -> String:
+	var def := ContentDB.get_item(item_id)
+	if def.is_empty():
+		return ""
+	var item_tags: Array = def.get("tags", [])
+	var parts: Array = []
+	for sid in ContentDB.synergy_ids:
+		if active_synergies.has(sid):
+			continue
+		var sy: Dictionary = ContentDB.synergies[sid]
+		if bool(sy.get("secret", false)):
+			continue
+		var req: Dictionary = sy.get("requires", {})
+		var req_tags: Dictionary = req.get("tags", {})
+		for t in req_tags:
+			if not item_tags.has(t):
+				continue
+			var have := int(tag_counts.get(t, 0)) + 1
+			var need := int(req_tags[t])
+			if have >= need:
+				parts.append("¡completa %s!" % str(sy.get("name", sid)))
+			else:
+				parts.append("%s %d/%d" % [str(sy.get("name", sid)), have, need])
+	return ", ".join(parts)
+
+
+## Tras obtener un objeto, avisa del progreso de las sinergias que dependen de sus
+## etiquetas ("Pira: fuego 2/3"): la build se hace legible mientras se forma.
+func _announce_progress(def: Dictionary) -> void:
+	var shown := 0
+	for t in def.get("tags", []):
+		for pr in synergy_progress(str(t)):
+			if shown >= 2:
+				return
+			var msg := "%s: %s %d/%d" % [str(pr["name"]), tag_label(str(pr["tag"])), int(pr["have"]), int(pr["need"])]
+			EventBus.toast.emit(msg, Palette.UI_ACCENT)
+			shown += 1
 
 
 ## Lista de familiares vivos (se recolocan al cambiar de sala).

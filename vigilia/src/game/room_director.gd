@@ -147,6 +147,10 @@ func _on_room_cleared() -> void:
 	current.cleared = true
 	view.set_doors_open(true)
 	Audio.play("door")
+	# Pulso de "sala despejada": cierre visible del bucle de la sala.
+	var pp := world.player.global_position
+	world.fx.ring(pp, 110.0, Palette.WAX, 0.55, 3.0)
+	world.fx.ring(pp, 190.0, Color(Palette.WAX, 0.6), 0.8, 2.0)
 	world.run.rooms_cleared += 1
 	world.player.inventory.add_charge(1)
 	if current.type == "boss":

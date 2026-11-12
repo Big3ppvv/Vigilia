@@ -61,6 +61,176 @@
 					}
 				]
 			}
+		},
+		{
+			"id": "pyre",
+			"name": "Pira",
+			"type": "transformation",
+			"desc": "Tres reliquias de fuego: todas tus astillas Queman y arden en naranja. +25% daño de estados.",
+			"secret": false,
+			"requires": {"tags": {"fire": 3}},
+			"grants": {
+				"projectile": {"color": "#ff8c3a", "statuses": [{"id": "burn", "stacks": 1, "duration": 2.0}]},
+				"stats": [{"stat": "status_damage", "op": "pct", "value": 0.25}]
+			}
+		},
+		{
+			"id": "powder_saint",
+			"name": "Santo de la Pólvora",
+			"type": "transformation",
+			"desc": "Tres reliquias explosivas: tus explosiones son un 30% más grandes y un 20% más dañinas.",
+			"secret": false,
+			"requires": {"tags": {"explosion": 3}},
+			"grants": {
+				"mechanics": {"explosion_radius_mult": 1.3, "explosion_damage_mult": 1.2}
+			}
+		},
+		{
+			"id": "clairvoyance",
+			"name": "Clarividencia",
+			"type": "transformation",
+			"desc": "Tres reliquias de crítico: +0.75 al multiplicador crítico y tus astillas brillan en oro.",
+			"secret": false,
+			"requires": {"tags": {"crit": 3}},
+			"grants": {
+				"projectile": {"color": "#ffcc4d"},
+				"stats": [{"stat": "crit_mult", "op": "flat", "value": 0.75}]
+			}
+		},
+		{
+			"id": "miasma",
+			"name": "Miasma",
+			"type": "combo",
+			"desc": "Dos reliquias de veneno: el Veneno y el Sangrado que aplicas suman 1 carga más. +15% daño de estados.",
+			"secret": false,
+			"requires": {"tags": {"poison": 2}},
+			"grants": {
+				"mechanics": {"status_stacks_add": 1},
+				"stats": [{"stat": "status_damage", "op": "pct", "value": 0.15}]
+			}
+		},
+		{
+			"id": "frostbite",
+			"name": "Congelación",
+			"type": "combo",
+			"desc": "Dos reliquias de hielo: golpear a un enemigo escarchado puede congelarlo 0.8 s (no a los jefes; como mucho uno por segundo).",
+			"secret": false,
+			"requires": {"tags": {"ice": 2}},
+			"grants": {
+				"effects": [
+					{
+						"trigger": "hit",
+						"filter": {"tags_all": ["projectile"], "target_status_any": ["chill"], "target_is_boss": false},
+						"chance": 0.3,
+						"icd": 1.0,
+						"action": "apply_status",
+						"params": {"status": "stun", "stacks": 1, "duration": 0.8}
+					}
+				]
+			}
+		},
+		{
+			"id": "hemophilia",
+			"name": "Hemofilia",
+			"type": "combo",
+			"desc": "Dos reliquias de sangrado: tus críticos salpican sangre que salta a 2 enemigos cercanos.",
+			"secret": false,
+			"requires": {"tags": {"bleed": 2}},
+			"grants": {
+				"effects": [
+					{
+						"trigger": "hit",
+						"filter": {"crit": true, "tags_all": ["projectile"]},
+						"action": "chain",
+						"params": {"jumps": 2, "range": 160, "damage_mult": 0.45, "tags": ["bleed", "blood"], "color": "#b3243b"}
+					}
+				]
+			}
+		},
+		{
+			"id": "avarice",
+			"name": "Avaricia",
+			"type": "combo",
+			"desc": "Dos reliquias de codicia: cada 8 enemigos abatidos ganas 1 óbolo. +1 suerte.",
+			"secret": false,
+			"requires": {"tags": {"greed": 2}},
+			"grants": {
+				"stats": [{"stat": "luck", "op": "flat", "value": 1}],
+				"effects": [
+					{
+						"trigger": "kill",
+						"every": 8,
+						"action": "add_resource",
+						"params": {"coins": 1}
+					}
+				]
+			}
+		},
+		{
+			"id": "wax_carapace",
+			"name": "Coraza de Cera",
+			"type": "combo",
+			"desc": "Dos reliquias de cera: al recibir un golpe estallas en cera hirviente (no te hiere). 50% de ganar 1 cera al despejar una sala.",
+			"secret": false,
+			"requires": {"tags": {"wax": 2}},
+			"grants": {
+				"effects": [
+					{
+						"trigger": "hurt",
+						"filter": {"tags_none": ["self"]},
+						"action": "explode",
+						"params": {"radius": 96, "damage_mult": 1.5, "base": "player", "tags": ["explosion", "wax"], "color": "#e8d9a8"}
+					},
+					{
+						"trigger": "room_clear",
+						"chance": 0.5,
+						"action": "add_wax",
+						"params": {"amount": 1}
+					}
+				]
+			}
+		},
+		{
+			"id": "funeral_procession",
+			"name": "Cortejo Fúnebre",
+			"type": "combo",
+			"desc": "Dos reliquias de no-muertos: tus Ánimas duran un 50% más y puedes tener 2 más a la vez.",
+			"secret": false,
+			"requires": {"tags": {"undead": 2}},
+			"grants": {
+				"mechanics": {"ally_duration_mult": 1.5, "ally_cap_add": 2}
+			}
+		},
+		{
+			"id": "cilice",
+			"name": "Cilicio",
+			"type": "combo",
+			"desc": "Dos reliquias de sacrificio: cada vez que te hieres a ti mismo ganas +0.15 de daño permanente.",
+			"secret": false,
+			"requires": {"tags": {"sacrifice": 2}},
+			"grants": {
+				"effects": [
+					{
+						"trigger": "hurt",
+						"filter": {"tags_all": ["self"]},
+						"action": "permanent_stat",
+						"params": {"stat": "damage", "op": "flat", "value": 0.15}
+					}
+				]
+			}
+		},
+		{
+			"id": "lucid_dance",
+			"name": "Danza Lúcida",
+			"type": "combo",
+			"desc": "Dos reliquias de esquiva: cada esquiva te concede 1 crítico garantizado.",
+			"secret": false,
+			"requires": {"tags": {"dodge": 2}},
+			"grants": {
+				"effects": [
+					{"trigger": "dodge", "action": "crit_charges", "params": {"amount": 1}}
+				]
+			}
 		}
 	]
 }

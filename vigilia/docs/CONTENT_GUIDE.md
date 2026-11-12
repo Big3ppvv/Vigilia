@@ -27,6 +27,13 @@ Todo el contenido vive en `data/*.json`. Al arrancar, `ContentDB` lo valida; cua
 - **Disparadores, filtros y acciones**: `src/systems/effect_vocab.gd` (con descripción). `acquire` y `use` se ejecutan una vez (al obtener / al usar el activo).
 - **Glifos disponibles**: splinter, powder, flask, chalice, eye, wing, dust, bead, lens, pact, wound, tooth, ember, frost, crown, bell, candle, coin, map, hand, bellows (y heart, wax, key, bomb para consumibles).
 
+## Sinergia de conjunto (`synergies.json`)
+`requires` admite `tags` (`{"fire": 3}`), `items_all` e `items_any_count`; `grants` admite `stats`, `effects`, `mechanics`, `projectile` y `familiars`. Los efectos `acquire`/`use` no se ejecutan dentro de una sinergia.
+- `"secret": false` + requisito por **etiquetas** ⇒ el juego muestra el progreso (pedestal, aviso al recoger, inventario). Las secretas no se anuncian hasta descubrirse.
+- Si introduces una etiqueta nueva como requisito, añade su nombre visible en `ItemSystem.TAG_LABELS`.
+- Antes de añadir una, comprueba que no se active con las combinaciones de objetos de `tests/unit/test_synergy.gd`: varias pruebas afirman valores exactos (número de explosiones, cadencia, radio).
+- Condiciones válidas en `stats[].condition` / `per`: `coins`, `keys`, `bombs`, `hp`, `missing_hp`, `hp_le_1`, `full_hp`, `items`, `moving` (`Player.stat_context`). Cualquier otra nunca se cumple y **no** se valida al arrancar.
+
 ## Enemigo (`enemies.json`)
 `id, name, script, tier (1–3), hp, radius, speed, contact_damage, tags, params{…}`; opcionales `flying, knockback_resist, armor, drop_chance, boss, title, lore, inventory_reactions`.
 Un mismo `script` con distintos `params` produce variantes reales (ej.: Campanero y Campanero Mayor). Para un comportamiento nuevo: crea un script que extienda `Enemy` e implemente `behave(dt)` y `draw_enemy(a)`.
@@ -49,6 +56,8 @@ Rejilla de **15 × 9**. Leyenda:
 | `S` / `H` | objeto / consumible en venta |
 | `P` | consumible suelto |
 | `L` | inscripción de lore |
+
+Varias `I` en una misma sala forman un **grupo de elección**: al tomar una, las demás se desvanecen (el pedestal lo avisa antes de decidir). Las salas del tesoro ofrecen así *elegir 1 de 2*.
 
 Reglas validadas: tamaño exacto, caracteres válidos, accesos de puerta libres en (7,0)(7,1) (14,4)(13,4) (7,8)(7,7) (0,4)(1,4), y **toda casilla transitable alcanzable sin romper rocas**. Recomendado (no validado por el juego): no poner apariciones a menos de 3 casillas de una puerta. `mirror: true` permite espejado horizontal/vertical (×4 variantes). `difficulty` 1–3 y `weight` controlan la selección.
 

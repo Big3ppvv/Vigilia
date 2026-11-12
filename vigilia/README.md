@@ -5,6 +5,8 @@ Eres una espina de lucidez clavada en el sueño de un dios; el sueño intenta ar
 
 **Estado: Fase 1 (núcleo jugable) completa y verificada** — 63 pruebas automáticas, partidas completas jugadas por un piloto automático, prueba de estrés y capturas reales. Ver [`docs/TEST_REPORT.md`](docs/TEST_REPORT.md).
 
+**Fase 1.5 en curso** — que el juego cumpla su promesa: economía y elecciones para que las builds se formen (de un 15–19 % a un 60–84 % de partidas con sinergia, según simulación), 42 objetos y 15 sinergias, progreso de la build visible y más respuesta al combate. **Verificada estáticamente, pendiente de ejecutar en el motor**: ver [`docs/ROADMAP.md`](docs/ROADMAP.md) y [`docs/KNOWN_ISSUES.md`](docs/KNOWN_ISSUES.md).
+
 ![Jefe final, fase 3](docs/screenshots/12_jefe_fase3_laseres.png)
 
 ## Requisitos
