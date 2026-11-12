@@ -139,8 +139,21 @@ func projectile_hit(p: Projectile, target: Node2D) -> void:
 	if p.team == Team.PLAYER:
 		DamageSystem.roll_crit(info, p.crit_chance, p.crit_mult, rng, p.force_crit)
 	deal_damage(target, info)
+	# Los estados que transporta un proyectil del jugador respetan las mismas
+	# estadísticas que los aplicados por efectos (daño y duración de estados,
+	# cargas extra): antes usaban siempre potencia 1 y duración base.
+	var power := 1.0
+	var dur_mult := 1.0
+	var extra_stacks := 0
+	if p.team == Team.PLAYER and player != null:
+		power = player.stats.get_stat("status_damage")
+		dur_mult = player.stats.get_stat("status_duration")
+		extra_stacks = int(mech("status_stacks_add", 0.0))
 	for st in p.statuses:
-		apply_status(target, str(st.get("id", "")), int(st.get("stacks", 1)), float(st.get("duration", 2.0)), 1.0, p.depth + 1, p.team)
+		apply_status(target, str(st.get("id", "")), int(st.get("stacks", 1)) + extra_stacks, float(st.get("duration", 2.0)) * dur_mult, power, p.depth + 1, p.team)
+	if info.crit:
+		fx.ring(p.pos, 10.0 + p.radius, Palette.UI_ACCENT, 0.16, 2.5)
+		fx.burst(p.pos, Palette.UI_ACCENT, 5, 220.0, 2.5, 0.25)
 	fx.puff(p.pos, p.color, 3)
 
 
@@ -270,10 +283,18 @@ func on_enemy_killed(e: Enemy, info: DamageInfo, statuses: PackedStringArray) ->
 	counters["kills"] += 1
 	SaveManager.mark_discovered("enemies", e.enemy_id)
 	var pos := e.global_position
+	fx.pop(pos, e.radius * 1.35, e.blood_color().lightened(0.25), 0.3 if e.is_boss else 0.22)
 	fx.burst(pos, e.blood_color(), 16, 240.0, 4.0, 0.6)
 	fx.decal(pos, e.radius * 0.75, Color(e.blood_color(), 0.16))
 	Audio.play("enemy_die")
 	shake(0.9 if e.is_boss else 0.12)
+	# Micro-pausa solo en bajas que importan (campeones y jefes): marca el golpe
+	# sin entrecortar los combates normales. Respeta el ajuste de accesibilidad.
+	if e.is_boss:
+		hitstop(0.12)
+	elif e.champion_id != "":
+		hitstop(0.05)
+		fx.ring(pos, e.radius * 2.4, Palette.UI_ACCENT, 0.4, 3.0)
 	if not e.is_boss and not e.is_summon:
 		_roll_drop(e)
 	var by_player := info != null and info.team == Team.PLAYER

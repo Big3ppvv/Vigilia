@@ -1,24 +1,24 @@
 {
 	"version": 1,
 	"room_clear": {
-		"chance": 0.42,
+		"chance": 0.6,
 		"luck_bonus": 0.03,
 		"table": [
-			{"kind": "coin", "weight": 40},
+			{"kind": "coin", "weight": 36},
 			{"kind": "heart", "weight": 18},
 			{"kind": "key", "weight": 12},
 			{"kind": "bomb", "weight": 12},
 			{"kind": "wax", "weight": 7},
-			{"kind": "coin3", "weight": 8}
+			{"kind": "coin3", "weight": 16}
 		]
 	},
 	"enemy_drop": {
-		"chance": 0.05,
+		"chance": 0.12,
 		"luck_bonus": 0.005,
 		"table": [
-			{"kind": "coin", "weight": 70},
-			{"kind": "heart", "weight": 20},
-			{"kind": "wax", "weight": 10}
+			{"kind": "coin", "weight": 86},
+			{"kind": "heart", "weight": 9},
+			{"kind": "wax", "weight": 5}
 		]
 	},
 	"champion_drop": {
@@ -42,7 +42,7 @@
 	},
 	"rarity_weights": {"common": 1.0, "uncommon": 0.65, "rare": 0.28, "cursed": 0.35, "legendary": 0.05},
 	"luck_rarity_bonus": {"rare": 0.08, "legendary": 0.04},
-	"item_prices": {"common": 10, "uncommon": 14, "rare": 18, "cursed": 8, "legendary": 25},
+	"item_prices": {"common": 8, "uncommon": 11, "rare": 15, "cursed": 6, "legendary": 20},
 	"shop_consumables": [
 		{"kind": "heart", "price": 3},
 		{"kind": "key", "price": 5},

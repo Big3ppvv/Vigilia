@@ -8,7 +8,7 @@
 			"biome": "wax",
 			"music": "floor",
 			"rooms": [8, 10],
-			"treasure": 1,
+			"treasure": 2,
 			"shop": 1,
 			"secret": true,
 			"branch_chance": 0.55,

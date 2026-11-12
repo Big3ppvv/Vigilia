@@ -13,10 +13,15 @@ const MAX_PARTICLES := 1400
 const MAX_PARTICLES_REDUCED := 320
 const MAX_TEXTS := 60
 const MAX_DECALS := 140
+## Topes de seguridad: los anillos de impacto y los estallidos de muerte son
+## frecuentes con builds de cadencia alta; por encima del tope se omiten.
+const MAX_RINGS := 220
+const MAX_POPS := 48
 
 var decals: Node2D
 var _parts: Array = []
 var _rings: Array = []
+var _pops: Array = []
 var _texts: Array = []
 var _beams: Array = []
 var _decal_list: Array = []
@@ -44,6 +49,7 @@ func _scaled(n: int) -> int:
 func clear() -> void:
 	_parts.clear()
 	_rings.clear()
+	_pops.clear()
 	_texts.clear()
 	_beams.clear()
 	_decal_list.clear()
@@ -73,7 +79,18 @@ func puff(pos: Vector2, color: Color, count: int = 5) -> void:
 
 
 func ring(pos: Vector2, radius: float, color: Color, life: float = 0.35, width: float = 3.0) -> void:
+	if _rings.size() >= MAX_RINGS:
+		return
 	_rings.append([pos, radius, life, life, color, width])
+
+
+## Estallido de muerte: un disco que se hincha y se apaga, con núcleo blanco.
+## Da lectura inequívoca de "abatido" (antes el enemigo simplemente desaparecía).
+## Estallido: [pos, radius, life, max_life, color]
+func pop(pos: Vector2, radius: float, color: Color, life: float = 0.22) -> void:
+	if _pops.size() >= MAX_POPS:
+		_pops.pop_front()
+	_pops.append([pos, radius, life, life, color])
 
 
 func explosion(pos: Vector2, radius: float, color: Color) -> void:
@@ -129,6 +146,7 @@ func _process(delta: float) -> void:
 		p[1] = p[1] * maxf(0.0, 1.0 - p[6] * delta)
 		i += 1
 	_tick_list(_rings, delta)
+	_tick_list(_pops, delta)
 	_tick_list(_beams, delta)
 	var j := 0
 	while j < _texts.size():
@@ -163,6 +181,13 @@ func _draw() -> void:
 		var k2: float = 1.0 - r[2] / r[3]
 		var c2: Color = r[4]
 		draw_arc(r[0], r[1] * (0.35 + 0.65 * k2), 0, TAU, 32, Color(c2, (1.0 - k2) * 0.9), r[5])
+	for q in _pops:
+		var k5: float = 1.0 - q[2] / q[3]
+		var c5: Color = q[4]
+		var pr: float = q[1] * (0.75 + 0.85 * k5)
+		draw_circle(q[0], pr, Color(c5, 0.5 * (1.0 - k5)))
+		if Settings.flashes:
+			draw_circle(q[0], pr * 0.55, Color(1.0, 1.0, 1.0, 0.75 * (1.0 - k5) * (1.0 - k5)))
 	for b in _beams:
 		var k3: float = b[2] / b[3]
 		var c3: Color = b[4]

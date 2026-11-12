@@ -18,6 +18,10 @@ const DODGE_IFRAMES := 0.26
 const HURT_IFRAMES := 1.0
 const MAX_WAX := 12
 const MAX_COINS := 99
+## Tope de críticos garantizados acumulables (Lucidez y efectos de objetos).
+const MAX_CRIT_CHARGES := 9
+## Fogonazo y retroceso del disparo: SOLO visuales (no alteran la simulación).
+const MUZZLE_TIME := 0.07
 
 var world: CombatWorld
 var character: Dictionary = {}
@@ -51,6 +55,7 @@ var _regen_acc := 0.0
 var _anim_t := 0.0
 var _trail: Array = []
 var _graze_cd := 0.0
+var _muzzle_t := 0.0
 var _body_color := Palette.PLAYER_BODY
 var _edge_color := Palette.PLAYER_EDGE
 var _eye_color := Palette.PLAYER_EYE
@@ -154,6 +159,7 @@ func _player_body(delta: float) -> void:
 	_dodge_iframes = maxf(0.0, _dodge_iframes - delta)
 	_hurt_iframes = maxf(0.0, _hurt_iframes - delta)
 	_graze_cd = maxf(0.0, _graze_cd - delta)
+	_muzzle_t = maxf(0.0, _muzzle_t - delta)
 	_regen(delta)
 	input.update(self, delta)
 	if controllable:
@@ -234,6 +240,7 @@ func _fire(dir: Vector2) -> void:
 		world.engine.emit("projectile_spawn", {"projectile": p, "tags": p.tags, "depth": 0, "generation": 0, "position": p.pos})
 	world.engine.emit("fire", {"direction": dir, "position": global_position, "depth": 0, "tags": PackedStringArray(["fire_event"])})
 	Audio.play("shoot", -8.0)
+	_muzzle_t = MUZZLE_TIME
 
 
 func _configure_shot(p: Projectile, d: Vector2, force_crit: bool) -> void:
@@ -271,10 +278,18 @@ func on_graze(_p: Projectile) -> void:
 		return
 	_graze_cd = 0.25
 	var n := int(character.get("graze_crits", 3))
-	crit_charges = mini(crit_charges + n, n * 2)
+	# Antes: mini(cargas + n, n * 2), que REDUCÍA las cargas si otra fuente ya
+	# había dado más de n * 2. Ahora solo suma, con un tope común.
+	add_crit_charges(n)
 	world.fx.float_text(global_position + Vector2(0, -30), "¡Lucidez!", _eye_color, 15, 0.9)
+	world.hitstop(0.04)
 	world.fx.ring(global_position, 36.0, _eye_color, 0.3, 2.0)
 	Audio.play("graze")
+
+
+## Suma críticos garantizados (Lucidez y efectos de objetos) con un tope común.
+func add_crit_charges(amount: int) -> void:
+	crit_charges = clampi(crit_charges + amount, 0, MAX_CRIT_CHARGES)
 
 
 # ---------------------------------------------------------------------------
@@ -441,7 +456,13 @@ func _draw() -> void:
 			alpha = 0.6
 	if not alive:
 		alpha = 0.5
-	_draw_body(Vector2.ZERO, Color(1, 1, 1, alpha), _anim_t, false)
+	# Retroceso visual al disparar: el cuerpo se desplaza un instante hacia atrás.
+	var recoil: float = _muzzle_t / MUZZLE_TIME if alive else 0.0
+	_draw_body(-aim_dir * 2.5 * recoil, Color(1, 1, 1, alpha), _anim_t, false)
+	if recoil > 0.0:
+		var muzzle := aim_dir * (radius + 10.0)
+		draw_circle(muzzle, 7.0 + 6.0 * recoil, Color(Palette.FLAME, 0.22 * recoil))
+		draw_circle(muzzle, 2.5 + 4.0 * recoil, Color(Palette.FLAME_CORE, 0.85 * recoil))
 	if wax > 0:
 		draw_arc(Vector2.ZERO, radius + 7.0, 0, TAU, 24, Color(Palette.WAX, 0.35 * alpha), 2.0)
 	for i in crit_charges:

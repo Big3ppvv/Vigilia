@@ -111,6 +111,11 @@ func _refresh() -> void:
 		var sy: Dictionary = ContentDB.synergies[sid]
 		syn.append("• %s — %s" % [sy["name"], sy.get("desc", "")])
 	_syn_label.text = "\n".join(syn) if not syn.is_empty() else "Ninguna. Combina reliquias con etiquetas comunes."
+	var prog: Array = []
+	for pr in inv.synergy_progress():
+		prog.append("• %s — %s %d/%d" % [str(pr["name"]), ItemSystem.tag_label(str(pr["tag"])), int(pr["have"]), int(pr["need"])])
+	if not prog.is_empty():
+		_syn_label.text += "\n\nEn progreso:\n" + "\n".join(prog)
 	_map.layout = game.layout
 	_map.current = game.director.current.coord if game.director.current != null else Vector2i.ZERO
 

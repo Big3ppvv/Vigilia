@@ -38,9 +38,30 @@ func prompt() -> Array:
 		return ["[E] Comprar %s — %d óbolos" % [names.get(consumable_kind, consumable_kind), price], ""]
 	var d := ContentDB.get_item(item_id)
 	var head := "[E] Tomar: " if price <= 0 else "[E] Comprar (%d óbolos): " % price
+	if price <= 0 and _has_rivals():
+		head = "[E] Elegir (las demás se desvanecen): "
 	var rar := Palette.rarity_label(str(d.get("rarity", "common")))
 	var tag_type := "Activo" if str(d.get("type", "")) == "active" else "Pasivo"
-	return [head + str(d.get("name", item_id)), "%s · %s — %s" % [tag_type, rar, str(d.get("desc", ""))]]
+	var detail := "%s · %s — %s" % [tag_type, rar, str(d.get("desc", ""))]
+	if world != null and world.player != null and world.player.inventory != null:
+		var prog := world.player.inventory.preview_progress(item_id)
+		if prog != "":
+			detail += "\nSinergias: " + prog
+	return [head + str(d.get("name", item_id)), detail]
+
+
+## true si hay otros pedestales sin tomar del mismo grupo de elección en la sala:
+## tomar este los hará desaparecer, y el jugador debe saberlo ANTES de decidir.
+func _has_rivals() -> bool:
+	if group < 0 or not is_inside_tree():
+		return false
+	for n in get_tree().get_nodes_in_group("pedestals"):
+		if n == self or not (n is ItemPedestal) or n.is_queued_for_deletion():
+			continue
+		var other := n as ItemPedestal
+		if other.group == group and not other.taken:
+			return true
+	return false
 
 
 func interact(pl: Player) -> bool:
