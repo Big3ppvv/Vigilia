@@ -375,7 +375,7 @@ func _draw_floor_details() -> void:
 		draw_rect(Rect2(d[0] - d[2] * 0.5, 0, d[2], d[1]), Color(Palette.WAX, a))
 		draw_circle(Vector2(d[0], d[1]), d[2] * 0.6, Color(Palette.WAX, a + 0.05))
 	if data.type == "start" and floor_index == 0:
-		_draw_floor_text(lore_text, Vector2(W * 0.5, 150), Color(Palette.BONE, 0.3), 14)
+		_draw_floor_text(lore_text, Vector2(W * 0.5, 470), Color(Palette.BONE, 0.3), 14)
 	elif data.lore_tile != Vector2i(-1, -1) and lore_text != "":
 		_draw_floor_text(lore_text, RoomGrid.tile_center(data.lore_tile) + Vector2(0, 40), Color(Palette.WAX, 0.55), 14)
 

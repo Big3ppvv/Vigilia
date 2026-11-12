@@ -4,20 +4,13 @@ extends Node2D
 ## Árbol (construido en código para mantener el contenido 100 % dirigido por datos):
 ##   Game (ALWAYS: recibe pausa/inventario aunque el árbol esté pausado)
 ##   ├─ World (PAUSABLE): RoomLayer, Decals, HazardField, EntityLayer (y-sort),
-##   │                    ProjectileSystem, FxSystem, CameraRig
-##   ├─ CombatWorld, SynergyEngine, RoomDirector (PAUSABLE)
-##   ├─ Viñeta (CanvasLayer 1), HUD (CanvasLayer 10), Overlays (CanvasLayer 20)
-
-const VIGNETTE_SHADER := """
-shader_type canvas_item;
-uniform float strength = 0.5;
-void fragment() {
-	vec2 uv = UV - vec2(0.5);
-	uv.x *= 1.45;
-	float v = smoothstep(0.36, 0.86, length(uv)) * strength;
-	COLOR = vec4(0.0, 0.0, 0.0, v);
-}
-"""
+##   │                    ProjectileSystem, FxSystem, CameraRig, CandleLighting
+##   ├─ CombatWorld, SynergyEngine, RoomDirector, DreamDirector (PAUSABLE)
+##   ├─ Velo del sueño (CanvasLayer 1), HUD (10), Overlays y StoryOverlay (20)
+##
+## Cada partida es UNA NOCHE de vigilia: empieza con la voz de quien te vela,
+## entre pisos la voz vuelve, si te apagas el Arrullo cuenta hacia atrás y, si
+## llegas al final, despiertas.
 
 var run: RunState
 var world: CombatWorld
@@ -40,8 +33,12 @@ var inventory_panel: InventoryPanel
 var end_screen: EndScreen
 var debug_overlay: DebugOverlay
 var fade_rect: ColorRect
-var damage_flash: ColorRect
+var veil: DreamVeil
+var story: StoryOverlay
+var dream: DreamDirector
 var bot_mode := false
+## La intro de la noche se reproduce al entrar desde el menú (no en pruebas).
+var intro_pending := false
 var ending := false
 var _hitstop_active := false
 var _prompt_target: Node = null
@@ -56,14 +53,20 @@ func _ready() -> void:
 	if run == null:
 		run = GameManager.create_run({})
 		GameManager.current_run = run
+	intro_pending = bool(GameManager.last_config.get("intro", false))
 	_build_world()
 	_build_ui()
 	_create_player()
 	world.boss_killed.connect(_on_boss_killed)
+	if intro_pending:
+		story.cover(1.0, 0.01)
+		player.controllable = false
 	start_floor(0)
 	if bool(GameManager.last_config.get("demo", false)):
 		bot_mode = true
 		set_autopilot(true)
+	if intro_pending:
+		_play_intro.call_deferred()
 
 
 func _exit_tree() -> void:
@@ -109,6 +112,11 @@ func _build_world() -> void:
 	director.name = "RoomDirector"
 	director.process_mode = Node.PROCESS_MODE_PAUSABLE
 	add_child(director)
+	dream = DreamDirector.new()
+	dream.name = "DreamDirector"
+	dream.process_mode = Node.PROCESS_MODE_PAUSABLE
+	dream.game = self
+	add_child(dream)
 
 	world.run = run
 	world.rng = run.stream("combat")
@@ -143,15 +151,9 @@ func _build_ui() -> void:
 	var vig_layer := CanvasLayer.new()
 	vig_layer.layer = 1
 	add_child(vig_layer)
-	var vig := ColorRect.new()
-	vig.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	vig.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var mat := ShaderMaterial.new()
-	var sh := Shader.new()
-	sh.code = VIGNETTE_SHADER
-	mat.shader = sh
-	vig.material = mat
-	vig_layer.add_child(vig)
+	veil = DreamVeil.new()
+	veil.game = self
+	vig_layer.add_child(veil)
 
 	var hud_layer := CanvasLayer.new()
 	hud_layer.layer = 10
@@ -163,11 +165,6 @@ func _build_ui() -> void:
 	var ov := CanvasLayer.new()
 	ov.layer = 20
 	add_child(ov)
-	damage_flash = ColorRect.new()
-	damage_flash.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	damage_flash.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	damage_flash.color = Color(0.65, 0.0, 0.08, 0.0)
-	ov.add_child(damage_flash)
 	# Menús superpuestos bajo una raíz escalable: respetan "Escala de interfaz".
 	var ov_root := ScaledRoot.new()
 	ov_root.process_mode = Node.PROCESS_MODE_ALWAYS
@@ -190,6 +187,8 @@ func _build_ui() -> void:
 	fade_rect.color = Color(0, 0, 0, 0)
 	ov.add_child(fade_rect)
 	director.fade = fade_rect
+	story = StoryOverlay.new()
+	ov.add_child(story)
 
 
 func _create_player() -> void:
@@ -224,21 +223,46 @@ func start_floor(index: int) -> void:
 	director.load_floor(layout, index)
 	hud.set_layout(layout)
 	EventBus.floor_entered.emit(index, str(floor_def.get("name", "")))
-	EventBus.banner.emit(str(floor_def.get("name", "")), ContentDB.lore_line("floor_intros", index), Palette.UI_ACCENT)
-	var tol := ToleranceSystem.describe(run)
-	if tol != "":
-		EventBus.toast.emit(tol, Palette.FLAME)
-	Audio.play_music(str(floor_def.get("music", "floor")))
+	if not intro_pending:
+		announce_floor()
+		Audio.play_music(str(floor_def.get("music", "nana")))
+
+
+func announce_floor() -> void:
+	EventBus.banner.emit(str(floor_def.get("name", "")), ContentDB.lore_line("floor_intros", run.floor_index), Palette.UI_ACCENT)
+
+
+## La voz de quien vela abre la noche. Después, el título y la sala.
+func _play_intro() -> void:
+	Audio.stop_music()
+	await story.play(night_lines(run.night), {"voice": "outside", "beep": true, "keep": true, "fade_in": 0.01})
+	await story.play([], {"title": "Noche %d" % run.night, "subtitle": str(floor_def.get("name", "")), "keep": true})
+	intro_pending = false
+	Audio.play_music(str(floor_def.get("music", "nana")))
+	await story.uncover(1.6)
+	if player.alive and not ending:
+		player.controllable = true
+	announce_floor()
+
+
+static func night_lines(night: int) -> Array:
+	if night <= 1:
+		return ContentDB.lore.get("first_night", [])
+	var intros: Array = ContentDB.lore.get("night_intros", [])
+	if night - 2 < intros.size():
+		return intros[night - 2]
+	return ContentDB.lore.get("night_generic", [])
 
 
 func on_boss_spawned(e: Enemy) -> void:
 	_boss = e
-	var label := e.display_name + ("  —  " + e.title if e.title != "" else "")
+	var label := e.display_name + ("  ·  " + e.title if e.title != "" else "")
 	EventBus.boss_started.emit(label, e.max_hp)
 	EventBus.boss_health_changed.emit(e.hp, e.max_hp, e.get_phase())
-	EventBus.banner.emit(e.display_name, e.title, Palette.BLOOD.lightened(0.3))
+	EventBus.banner.emit(e.display_name, e.title, Palette.WAX)
+	dream.on_boss_started(e)
 	Audio.play_music("boss")
-	Audio.play("roar", -4.0)
+	Audio.play("roar", -6.0)
 
 
 func _on_boss_killed(e: Enemy) -> void:
@@ -247,7 +271,7 @@ func _on_boss_killed(e: Enemy) -> void:
 		if is_instance_valid(en) and en.alive and en != e:
 			en.die(null)
 	world.projectiles.clear_team(Team.ENEMY, true)
-	Audio.play_music(str(floor_def.get("music", "floor")))
+	Audio.play_music(str(floor_def.get("music", "nana")))
 
 
 func on_boss_room_cleared() -> void:
@@ -274,7 +298,7 @@ func _spawn_boss_rewards(rd: RoomData) -> void:
 		entity_layer.add_child(node)
 	world.spawn_pickup("heart", RoomGrid.tile_center(Vector2i(7, 2)))
 	if tiles.size() > 1:
-		EventBus.toast.emit("Elige una ofrenda: la otra se desvanecerá", Palette.UI_ACCENT)
+		EventBus.toast.emit("Dos recuerdos: solo puedes quedarte con uno", Palette.UI_ACCENT)
 
 
 func spawn_exit_portal() -> void:
@@ -297,35 +321,49 @@ func request_next_floor() -> void:
 	director.transitioning = true
 	player.controllable = false
 	run.player_snapshot = player.snapshot()
-	await director.fade_to(1.0, 0.35)
+	# Entre pisos vuelve la voz de fuera.
+	var interludes: Array = ContentDB.lore.get("interludes", [])
+	var lines: Array = interludes[run.floor_index] if run.floor_index < interludes.size() else []
+	await story.play(lines, {"voice": "outside", "beep": true, "keep": true})
 	start_floor(run.floor_index + 1)
-	await director.fade_to(0.0, 0.35)
+	await story.uncover(1.0)
 	if player.alive:
 		player.controllable = true
 	director.transitioning = false
 
 
+## Despertar: fundido a blanco, la habitación real y la hoja de la noche.
 func _victory() -> void:
 	ending = true
 	player.controllable = false
-	Audio.play("victory")
-	var summary := GameManager.end_run("victory", {"ending": ContentDB.lore_line("victory", 0)})
-	await director.fade_to(0.85, 0.6)
-	end_screen.show_summary(summary, true)
+	Audio.music_wake()
+	var summary := GameManager.end_run("victory", {"ending": str(ContentDB.lore.get("victory_chart", ""))})
+	await story.cover(1.0, 1.8, true)
 	get_tree().paused = true
+	await story.play(ContentDB.lore.get("victory", []), {"voice": "ink", "white": true, "keep": true, "fade_in": 0.01})
+	await story.play([], {"title": str(ContentDB.lore.get("credits", "")), "white": true, "keep": true, "fade_in": 0.01})
+	end_screen.show_summary(summary, true)
+	await story.uncover(1.4)
 
 
+## Apagarse: el Arrullo cuenta hacia atrás y la voz de fuera se despide hasta mañana.
 func _on_player_died() -> void:
 	if ending:
 		return
 	ending = true
 	Engine.time_scale = 0.35
-	await get_tree().create_timer(1.3, true, false, true).timeout
+	Audio.music_fall_asleep()
+	await get_tree().create_timer(1.1, true, false, true).timeout
 	Engine.time_scale = 1.0
-	var epitaph := ContentDB.lore_line("epitaphs", run.kills + run.floor_index * 3)
+	var epitaph := ContentDB.lore_line("epitaphs", run.kills + run.floor_index * 3 + run.night)
 	var summary := GameManager.end_run("death", {"epitaph": epitaph})
-	end_screen.show_summary(summary, false)
 	get_tree().paused = true
+	await story.play(ContentDB.lore.get("countdown", []), {"voice": "lullaby", "pace": 0.5, "keep": true, "fade_in": 1.4})
+	var after: Array = ContentDB.lore.get("after_death", [])
+	var lines: Array = after[posmod(run.night - 1, after.size())] if not after.is_empty() else []
+	await story.play(lines, {"voice": "outside", "beep": true, "keep": true, "fade_in": 0.01})
+	end_screen.show_summary(summary, false)
+	await story.uncover(1.2)
 
 
 # ---------------------------------------------------------------------------
@@ -396,12 +434,9 @@ func hitstop(duration: float) -> void:
 	_hitstop_active = false
 
 
+## Golpe recibido: la imagen se oscurece y se enfría un instante (no rojo).
 func flash_damage() -> void:
-	if not Settings.flashes:
-		return
-	damage_flash.color.a = 0.26
-	var tw := create_tween()
-	tw.tween_property(damage_flash, "color:a", 0.0, 0.35)
+	veil.hurt_pulse()
 
 
 ## Piloto automático (F8): usa BotInput para jugar solo. Herramienta de
@@ -442,6 +477,8 @@ func _update_prompt() -> void:
 
 func _unhandled_input(event: InputEvent) -> void:
 	if ending:
+		return
+	if story.playing:
 		return
 	if event.is_action_pressed("pause"):
 		if inventory_panel.visible:

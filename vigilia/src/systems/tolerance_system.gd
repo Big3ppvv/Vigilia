@@ -20,6 +20,12 @@ const ALLERGY := 0.15
 const DECAY := 0.5
 const MIN_SAMPLE := 60.0
 
+const PROSE := {
+	"fire": "el fuego", "poison": "el veneno", "explosion": "las explosiones", "ice": "el hielo",
+	"bleed": "las heridas", "summon": "a tus muertos", "sonic": "el sonido", "blood": "la sangre",
+	"reaction": "las mezclas",
+}
+
 const LABELS := {
 	"fire": "Fuego", "poison": "Veneno", "explosion": "Explosión", "ice": "Hielo",
 	"bleed": "Sangrado", "summon": "Invocación", "sonic": "Sonido", "blood": "Sangre",
@@ -53,6 +59,16 @@ static func recompute_for_new_floor(run: RunState) -> void:
 					run.allergies[t] = ALLERGY
 	for k in run.exposure.keys():
 		run.exposure[k] = float(run.exposure[k]) * DECAY
+
+
+## Lo que el Sueño aprendió, dicho sin números (pausa y hoja de la noche).
+static func prose(tol: Dictionary) -> String:
+	if tol.is_empty():
+		return ""
+	var names: Array = []
+	for t in tol:
+		names.append(str(PROSE.get(t, LABELS.get(t, t))))
+	return "resiste " + ", ".join(names)
 
 
 static func describe(run: RunState) -> String:

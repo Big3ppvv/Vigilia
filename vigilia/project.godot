@@ -8,8 +8,8 @@ config_version=5
 [application]
 
 config/name="VIGILIA"
-config/description="VIGILIA — La Espina del Durmiente. Roguelite 2D top-down de acción y construcción de builds."
-config/version="0.1.1-fase1.5"
+config/description="VIGILIA — una vela encendida junto a la cama. Roguelite 2D de acción: cada partida es una noche de vigilia."
+config/version="0.2.0-una-noche"
 run/main_scene="res://scenes/main_menu.tscn"
 config/use_custom_user_dir=true
 config/custom_user_dir_name="vigilia"

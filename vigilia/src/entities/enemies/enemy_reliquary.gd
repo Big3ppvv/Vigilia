@@ -86,5 +86,7 @@ func draw_enemy(a: float) -> void:
 	draw_rect(Rect2(-r * 0.95, r * 0.62, r * 1.9, r * 0.32), Color(Palette.BRONZE, a), false, 2.0)
 	draw_circle(Vector2(0, -r * 0.82), r * 0.14, Color(Palette.FLAME, (0.5 + 0.4 * sin(anim_t * 6.0)) * a))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	add_glow(Vector2.ZERO, r * 0.22 * beat, Palette.BLOOD.lightened(0.25))
+	add_glow(Vector2(0, -r * 0.82).rotated(_face.angle() - PI * 0.5), r * 0.12, Palette.FLAME)
 	if state == "charge":
 		draw_arc(Vector2.ZERO, r + 10.0, _face.angle() - 0.5, _face.angle() + 0.5, 10, Color(Palette.BLOOD, 0.6 * a), 3.0)

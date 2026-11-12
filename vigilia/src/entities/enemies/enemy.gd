@@ -67,6 +67,11 @@ var _veil_reveal_t := 0.0
 var _champ_t := 0.0
 var _retaliate_cd := 0.0
 var _contact_cd := 0.0
+## Puntos que brillan en la penumbra (ojos, llamas): [pos, radio, color].
+## Se rellenan al dibujar y los pinta un hijo sin sombreado (_Glow).
+var glow_points: Array = []
+var _glow: Node2D
+static var _emissive: CanvasItemMaterial
 
 
 func setup(definition: Dictionary, combat_world: CombatWorld, stream: RngStream, opts: Dictionary = {}) -> void:
@@ -122,6 +127,13 @@ func setup(definition: Dictionary, combat_world: CombatWorld, stream: RngStream,
 	cs.shape = shape
 	add_child(cs)
 	add_to_group("enemies")
+	if _emissive == null:
+		_emissive = CanvasItemMaterial.new()
+		_emissive.light_mode = CanvasItemMaterial.LIGHT_MODE_UNSHADED
+	_glow = _Glow.new()
+	_glow.enemy = self
+	_glow.material = _emissive
+	add_child(_glow)
 	on_setup()
 
 
@@ -439,6 +451,9 @@ func _champion_on_death() -> void:
 # ---------------------------------------------------------------------------
 
 func _draw() -> void:
+	glow_points.clear()
+	if _glow != null:
+		_glow.queue_redraw()
 	var a := visual_alpha
 	if spawn_t > 0.0:
 		# Telegrafiado de aparición: círculo que se cierra; aún no es peligroso.
@@ -452,6 +467,9 @@ func _draw() -> void:
 		draw_circle(Vector2.ZERO, radius + 8.0 + 2.0 * sin(anim_t * 5.0), Color(cc, 0.16 * a))
 		draw_arc(Vector2.ZERO, radius + 6.0, 0, TAU, 24, Color(cc, 0.75 * a), 2.0)
 	draw_enemy(a)
+	if glow_points.is_empty() and spawn_t <= 0.0:
+		# Toda sombra delata dónde está, aunque sea por un brillo tenue.
+		add_glow(Vector2(0, -radius * 0.2), radius * 0.18, Palette.FLAME)
 	if shield_hp > 0.0:
 		draw_arc(Vector2.ZERO, radius + 4.0, 0, TAU, 24, Color(Palette.WAX, 0.8 * a), 3.0)
 	if flash_t > 0.0 and Settings.flashes:
@@ -467,9 +485,30 @@ func draw_enemy(_a: float) -> void:
 	draw_circle(Vector2.ZERO, radius, Palette.WAX_DARK)
 
 
-## Ojos huecos reutilizables que miran al objetivo.
+## Ojos huecos reutilizables que miran al objetivo (y brillan en la penumbra).
 func draw_eyes(center: Vector2, spacing: float, size: float, a: float, col: Color = Color(0.05, 0.02, 0.04)) -> void:
 	var look := to_target().normalized() * size * 0.35 if target != null else Vector2.ZERO
 	for sx in [-1.0, 1.0]:
 		draw_circle(center + Vector2(sx * spacing, 0), size, Color(col, a))
 		draw_circle(center + Vector2(sx * spacing, 0) + look, size * 0.38, Color(Palette.FLAME, 0.85 * a))
+		add_glow(center + Vector2(sx * spacing, 0) + look, size * 0.38, Palette.FLAME)
+
+
+## Registra un punto luminoso para este frame (ojos, llamas, núcleos).
+func add_glow(pos: Vector2, r: float, col: Color) -> void:
+	glow_points.append([pos, r, col])
+
+
+## Capa sin sombreado: lo que brilla de la sombra se ve aunque la sala esté a oscuras.
+class _Glow:
+	extends Node2D
+	var enemy: Enemy
+
+	func _draw() -> void:
+		if enemy == null:
+			return
+		var a := enemy.visual_alpha
+		for g in enemy.glow_points:
+			var col: Color = g[2]
+			draw_circle(g[0], float(g[1]) * 2.6, Color(col, 0.14 * a))
+			draw_circle(g[0], float(g[1]), Color(col.lightened(0.2), 0.95 * a))

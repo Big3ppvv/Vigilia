@@ -1,6 +1,6 @@
 class_name InventoryPanel
 extends Control
-## Inventario (Tab): reliquias con descripción, estadísticas, sinergias activas
+## Inventario (Tab): recuerdos con descripción, estadísticas, sinergias activas
 ## y mapa completo del piso. Pausa el juego mientras está abierto.
 
 var game: Node
@@ -28,13 +28,13 @@ func setup(p_game: Node) -> void:
 
 	var left := VBoxContainer.new()
 	left.custom_minimum_size = Vector2(380, 520)
-	left.add_child(UIKit.label("Reliquias", 24, Palette.UI_ACCENT))
+	left.add_child(UIKit.label("Recuerdos", 24, Palette.UI_ACCENT))
 	_grid = GridContainer.new()
 	_grid.columns = 7
 	_grid.add_theme_constant_override("h_separation", 6)
 	_grid.add_theme_constant_override("v_separation", 6)
 	left.add_child(_grid)
-	_desc_title = UIKit.label("Pasa el ratón sobre una reliquia", 18, Palette.UI_TEXT)
+	_desc_title = UIKit.label("Pasa el ratón sobre un recuerdo", 18, Palette.UI_TEXT)
 	_desc_body = UIKit.label("", 14, Palette.UI_DIM)
 	_desc_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_desc_body.custom_minimum_size = Vector2(370, 0)
@@ -97,7 +97,7 @@ func _refresh() -> void:
 		icon.mouse_entered.connect(_show_item.bind(str(id)))
 		_grid.add_child(icon)
 	if ids.is_empty():
-		_desc_title.text = "Aún no portas reliquias"
+		_desc_title.text = "Aún no llevas recuerdos"
 		_desc_body.text = ""
 	var lines: Array = []
 	for sid in StatDefs.DISPLAY_ORDER:
@@ -110,7 +110,7 @@ func _refresh() -> void:
 	for sid in inv.active_synergies:
 		var sy: Dictionary = ContentDB.synergies[sid]
 		syn.append("• %s — %s" % [sy["name"], sy.get("desc", "")])
-	_syn_label.text = "\n".join(syn) if not syn.is_empty() else "Ninguna. Combina reliquias con etiquetas comunes."
+	_syn_label.text = "\n".join(syn) if not syn.is_empty() else "Ninguna. Combina recuerdos con etiquetas comunes."
 	var prog: Array = []
 	for pr in inv.synergy_progress():
 		prog.append("• %s — %s %d/%d" % [str(pr["name"]), ItemSystem.tag_label(str(pr["tag"])), int(pr["have"]), int(pr["need"])])

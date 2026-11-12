@@ -2,8 +2,8 @@ class_name SfxSynth
 extends RefCounted
 ## Sintetizador procedural de efectos y música (PCM 16 bits mono).
 ##
-## Todo el audio de la Fase 1 se genera aquí a partir de especificaciones
-## declarativas: no hay archivos de audio externos ni dependencias de licencia.
+## Los efectos se generan aquí a partir de especificaciones declarativas (la
+## música vive en Lullaby): no hay archivos de audio externos ni licencias.
 ## La aleatoriedad (ruido) usa una semilla fija por sonido: el resultado es
 ## idéntico en cada arranque.
 ##
@@ -117,70 +117,3 @@ static func _make_wav(data: PackedByteArray, rate: int, loop: bool) -> AudioStre
 		w.loop_begin = 0
 		w.loop_end = data.size() / 2
 	return w
-
-
-## Música ambiental en bucle perfecto. Las frecuencias son múltiplos de 1/LOOP Hz
-## para que cada oscilador complete ciclos enteros y el bucle no tenga clics.
-static func render_music(kind: String) -> AudioStreamWAV:
-	var rate := 11025
-	var loop_s := 8.0
-	var n := int(loop_s * rate)
-	var data := PackedByteArray()
-	data.resize(n * 2)
-	var rng := RandomNumberGenerator.new()
-	rng.seed = SeedUtil.fnv1a32("music:" + kind)
-	var base := 55.0
-	var fifth := 82.5
-	var detune := 55.375
-	var pulse_bpm := 0.0
-	var dissonance := 0.0
-	var bell_times: Array = [0.5, 3.25, 5.75]
-	var bell_freqs: Array = [440.0, 392.0, 523.25]
-	match kind:
-		"menu":
-			base = 49.0
-			fifth = 73.5
-			detune = 49.25
-			bell_times = [1.0, 4.5]
-			bell_freqs = [392.0, 329.625]
-		"floor":
-			pulse_bpm = 60.0
-		"boss":
-			base = 55.0
-			fifth = 77.75
-			detune = 56.0
-			pulse_bpm = 120.0
-			dissonance = 0.35
-			bell_times = [0.0, 2.0, 4.0, 6.0]
-			bell_freqs = [233.125, 220.0, 233.125, 207.625]
-	var y := 0.0
-	var beat_len := 60.0 / pulse_bpm if pulse_bpm > 0.0 else 0.0
-	for i in n:
-		var t := float(i) / rate
-		var lfo := 0.6 + 0.4 * sin(TAU * 0.25 * t)
-		var s := sin(TAU * base * t) * 0.32 + sin(TAU * detune * t) * 0.26
-		s += sin(TAU * fifth * t) * 0.14 * lfo
-		if dissonance > 0.0:
-			s += sin(TAU * (base * 1.414) * t) * 0.12 * dissonance * (0.5 + 0.5 * sin(TAU * 0.5 * t))
-		s *= 0.7 + 0.3 * lfo
-		# Respiración: ruido filtrado muy suave.
-		var nz := rng.randf() * 2.0 - 1.0
-		y += 0.02 * (nz - y)
-		s += y * 0.9
-		# Pulso de latido.
-		if beat_len > 0.0:
-			var bt := fmod(t, beat_len)
-			var thump := exp(-bt / 0.07) * sin(TAU * 48.0 * bt)
-			var bt2 := fmod(t + beat_len * 0.72, beat_len)
-			thump += exp(-bt2 / 0.06) * sin(TAU * 44.0 * bt2) * 0.6
-			s += thump * 0.55
-		# Campanas lejanas.
-		for b in bell_times.size():
-			var dt := t - float(bell_times[b])
-			if dt >= 0.0 and dt < 2.4:
-				var bf: float = bell_freqs[b]
-				var bell := sin(TAU * bf * dt) + 0.5 * sin(TAU * bf * 2.76 * dt) + 0.25 * sin(TAU * bf * 5.4 * dt)
-				s += bell * exp(-dt / 0.6) * 0.07
-		var v := clampf(s * 0.42, -1.0, 1.0)
-		data.encode_s16(i * 2, int(v * 32767.0))
-	return _make_wav(data, rate, true)

@@ -25,6 +25,8 @@ func create_run(config: Dictionary = {}) -> RunState:
 	if not ContentDB.characters.has(character) and not ContentDB.character_ids.is_empty():
 		character = str(ContentDB.character_ids[0])
 	run.setup(seed_text, character, config)
+	# Cada partida es una noche más de vigilia.
+	run.night = int(SaveManager.profile.get("totals", {}).get("runs", 0)) + 1
 	last_config = config.duplicate()
 	last_config["seed"] = run.seed_string
 	return run

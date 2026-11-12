@@ -353,6 +353,7 @@ func draw_enemy(a: float) -> void:
 	draw_circle(Vector2(0, face_y), r * 0.26, Color(0.08, 0.03, 0.05, a))
 	var look := to_target().normalized() * 4.0 if target != null else Vector2.ZERO
 	draw_circle(Vector2(0, face_y) + look, r * 0.11, Color(Palette.FLAME if phase < 3 else Palette.FLAME_BLUE, a))
+	add_glow(Vector2(0, face_y) + look, r * 0.11, Palette.FLAME if phase < 3 else Palette.FLAME_BLUE)
 	for sx in [-1.0, 1.0]:
 		draw_circle(Vector2(sx * r * 0.5, face_y - r * 0.1), r * 0.12, Color(0.08, 0.03, 0.05, a))
 		draw_line(Vector2(sx * r * 0.5, face_y), Vector2(sx * r * 0.55, face_y + r * 0.6), Color(Palette.WAX_SHADOW, 0.8 * a), 3.0)
@@ -367,6 +368,7 @@ func draw_enemy(a: float) -> void:
 	draw_line(Vector2(0, -h * 0.75 - w), Vector2(0, -h * 0.75 - w - 10.0), Color(0.1, 0.06, 0.05, a), 4.0)
 	draw_circle(Vector2(0, -h * 0.75 - w - fl * 0.6), fl * 1.4, Color(fcol, 0.08))
 	GlyphPainter.flame(self, Vector2(0, -h * 0.75 - w - 6.0), fl, anim_t, fcol, Palette.FLAME_CORE)
+	add_glow(Vector2(0, -h * 0.75 - w - 6.0 - fl * 0.45), fl * 0.45, fcol)
 	if state == "stunned":
 		for i in 3:
 			var ang := anim_t * 4.0 + i * TAU / 3.0

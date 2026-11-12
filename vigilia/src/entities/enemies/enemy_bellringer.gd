@@ -129,3 +129,5 @@ func draw_enemy(a: float) -> void:
 	draw_circle(Vector2(-r * 0.2, -r * 0.2), r * 0.11, Color(Palette.FLAME, a))
 	draw_circle(Vector2(r * 0.2, -r * 0.2), r * 0.11, Color(Palette.FLAME, a))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	for sx in [-1.0, 1.0]:
+		add_glow(Vector2(0, -r * 0.35) + Vector2(sx * r * 0.2, -r * 0.2).rotated(swing), r * 0.11, Palette.BLOOD if _enraged else Palette.FLAME)

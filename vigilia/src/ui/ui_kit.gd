@@ -95,6 +95,41 @@ static func button(text: String, cb: Callable, min_w: float = 260.0) -> Button:
 	return b
 
 
+## Botón de texto sin caja: el menú de la habitación no tiene marcos, solo luz.
+static func menu_button(text: String, cb: Callable, size: int = 22) -> Button:
+	var b := Button.new()
+	b.text = text
+	b.flat = true
+	b.focus_mode = Control.FOCUS_ALL
+	b.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.add_theme_font_size_override("font_size", size)
+	b.add_theme_font_override("font", spaced_font(2))
+	var empty := StyleBoxEmpty.new()
+	for st in ["normal", "hover", "pressed", "focus", "disabled"]:
+		b.add_theme_stylebox_override(st, empty)
+	b.add_theme_color_override("font_color", Color(Palette.BONE, 0.62))
+	b.add_theme_color_override("font_hover_color", Palette.FLAME_CORE)
+	b.add_theme_color_override("font_focus_color", Palette.FLAME_CORE)
+	b.add_theme_color_override("font_pressed_color", Palette.FLAME)
+	b.add_theme_color_override("font_outline_color", Color(0, 0, 0, 0.9))
+	b.add_theme_constant_override("outline_size", 4)
+	b.pressed.connect(func() -> void:
+		Audio.play("ui_select")
+		cb.call())
+	b.mouse_entered.connect(func() -> void:
+		b.grab_focus())
+	b.focus_entered.connect(func() -> void: Audio.play("ui_move"))
+	return b
+
+
+## Fuente con espaciado entre letras (títulos que respiran).
+static func spaced_font(spacing: int) -> FontVariation:
+	var fv := FontVariation.new()
+	fv.base_font = ThemeDB.fallback_font
+	fv.spacing_glyph = spacing
+	return fv
+
+
 static func dim_background(alpha: float = 0.72) -> ColorRect:
 	var c := ColorRect.new()
 	c.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)

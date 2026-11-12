@@ -75,3 +75,4 @@ func draw_enemy(a: float) -> void:
 		var e := Vector2(sx * r * 0.22, -r * 0.4)
 		draw_line(e + Vector2(-r * 0.12, -2), e + Vector2(r * 0.12, 2), Color(0.05, 0.02, 0.04, a), 2.0)
 		draw_line(e + Vector2(0, 2), e + Vector2(0, r * 0.45 + 2.0 * sin(anim_t * 2.0 + sx)), Color(0.12, 0.08, 0.1, 0.8 * a), 2.0)
+		add_glow(e + Vector2(0, r * 0.3 + 2.0 * sin(anim_t * 2.0 + sx)), r * 0.07, Palette.WHISPER)

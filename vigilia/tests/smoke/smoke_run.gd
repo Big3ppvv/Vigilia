@@ -47,6 +47,8 @@ func _ready() -> void:
 		elif a == "--boss-only":
 			boss_only = true
 	SaveManager.load_profile("user://smoke_profile.json")
+	# Las secuencias narrativas (cuenta atrás, despertar) se reproducen al instante.
+	StoryOverlay.fast = true
 	GameManager.current_run = GameManager.create_run({"seed": seed_text})
 	game = load("res://scenes/game.tscn").instantiate()
 	add_child(game)

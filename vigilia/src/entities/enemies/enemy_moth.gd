@@ -119,6 +119,7 @@ func draw_enemy(a: float) -> void:
 	_ellipse(Vector2.ZERO, r * 0.75, r * 0.32, Color("6a5a6a", a))
 	draw_circle(Vector2(r * 0.55, 0), r * 0.22, Color(Palette.FLAME_CORE if _distract_t > 0.0 else Palette.BONE, a))
 	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+	add_glow(Vector2(r * 0.55, 0).rotated(ang), r * 0.16, Palette.FLAME_CORE if _distract_t > 0.0 else Color("d8d0ff"))
 	if state == "windup":
 		draw_line(Vector2.ZERO, _dive_dir * 90.0, Color(Palette.BLOOD, 0.45 * a), 2.0)
 

@@ -1,11 +1,13 @@
 class_name PauseMenu
 extends Control
-## Menú de pausa (Escape). Muestra la semilla para compartirla.
+## Pausa (Escape): la vigilia espera. Muestra la noche, la semilla y lo que el
+## Sueño ha aprendido de tu forma de luchar, sin números.
 
 var game: Node
 var _main: VBoxContainer
 var _settings: SettingsPanel
 var _seed_label: Label
+var _learned: Label
 
 
 func setup(p_game: Node) -> void:
@@ -14,40 +16,49 @@ func setup(p_game: Node) -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	theme = UIKit.theme()
 	visible = false
-	add_child(UIKit.dim_background(0.75))
+	add_child(UIKit.dim_background(0.8))
 	var cc := UIKit.center_box(self)
-	var panel := PanelContainer.new()
-	cc.add_child(panel)
 	_main = VBoxContainer.new()
-	_main.add_theme_constant_override("separation", 12)
+	_main.add_theme_constant_override("separation", 6)
 	_main.alignment = BoxContainer.ALIGNMENT_CENTER
-	panel.add_child(_main)
-	var title := UIKit.label("PAUSA", 34, Palette.UI_ACCENT)
+	_main.custom_minimum_size = Vector2(520, 0)
+	cc.add_child(_main)
+	var title := UIKit.label("La vigilia espera", 34, Palette.WAX, 6)
+	title.add_theme_font_override("font", UIKit.spaced_font(4))
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_main.add_child(title)
-	_seed_label = UIKit.label("", 15, Palette.UI_DIM)
+	_seed_label = UIKit.label("", 14, Palette.UI_DIM)
 	_seed_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_main.add_child(_seed_label)
-	_main.add_child(UIKit.button("Continuar", func() -> void: game.toggle_pause()))
-	_main.add_child(UIKit.button("Ajustes", _open_settings))
-	_main.add_child(UIKit.button("Copiar semilla", func() -> void:
+	_learned = UIKit.label("", 15, Palette.WHISPER)
+	_learned.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_learned.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_main.add_child(_learned)
+	var spacer := Control.new()
+	spacer.custom_minimum_size = Vector2(0, 10)
+	_main.add_child(spacer)
+	_main.add_child(UIKit.menu_button("Seguir", func() -> void: game.toggle_pause(), 22))
+	_main.add_child(UIKit.menu_button("Ajustes", _open_settings, 18))
+	_main.add_child(UIKit.menu_button("Copiar semilla", func() -> void:
 		DisplayServer.clipboard_set(SeedUtil.format_seed(game.run.seed_string))
-		_seed_label.text = "Semilla copiada: " + SeedUtil.format_seed(game.run.seed_string)))
-	_main.add_child(UIKit.button("Reiniciar (nueva semilla)", func() -> void: game.restart_run(false)))
-	_main.add_child(UIKit.button("Reiniciar (misma semilla)", func() -> void: game.restart_run(true)))
-	_main.add_child(UIKit.button("Abandonar al menú", func() -> void: game.abandon_run()))
+		_seed_label.text = "Semilla copiada: " + SeedUtil.format_seed(game.run.seed_string), 16))
+	_main.add_child(UIKit.menu_button("Repetir esta noche", func() -> void: game.restart_run(true), 16))
+	_main.add_child(UIKit.menu_button("Empezar otra noche", func() -> void: game.restart_run(false), 16))
+	_main.add_child(UIKit.menu_button("Volver a la habitación", func() -> void: game.abandon_run(), 16))
 	_settings = SettingsPanel.new()
 	_settings.visible = false
 	cc.add_child(_settings)
-	_settings.closed.connect(func() -> void: _main.get_parent().visible = true)
+	_settings.closed.connect(func() -> void: _main.visible = true)
 
 
 func open() -> void:
 	visible = true
 	_settings.visible = false
-	_main.get_parent().visible = true
-	_seed_label.text = "Semilla: %s   ·   %s   ·   %s" % [SeedUtil.format_seed(game.run.seed_string), str(game.floor_def.get("name", "")), UIKit.format_time(game.run.elapsed)]
-	(_main.get_child(2) as Button).grab_focus()
+	_main.visible = true
+	_seed_label.text = "Noche %d   ·   %s   ·   %s   ·   semilla %s" % [game.run.night, str(game.floor_def.get("name", "")), UIKit.format_time(game.run.elapsed), SeedUtil.format_seed(game.run.seed_string)]
+	var learned := ToleranceSystem.prose(game.run.tolerance)
+	_learned.text = ("El sueño aprendió de ti: %s." % learned) if learned != "" else ""
+	(_main.get_child(4) as Button).grab_focus()
 
 
 func close() -> void:
@@ -55,5 +66,5 @@ func close() -> void:
 
 
 func _open_settings() -> void:
-	_main.get_parent().visible = false
+	_main.visible = false
 	_settings.visible = true

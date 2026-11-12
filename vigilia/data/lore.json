@@ -1,31 +1,108 @@
 {
-	"version": 1,
+	"version": 2,
+	"_comment": "Voz de quien vela (fuera), voz del Arrullo (el sueño) y fragmentos. Toda referencia a la Espina es neutra en género.",
 	"title": "VIGILIA",
-	"subtitle": "La Espina del Durmiente",
-	"premise": "Algo inmenso duerme, y su sueño es un mundo. Tú eres la única cosa despierta dentro de él: una espina de lucidez que el sueño intenta arrullar hasta disolverla.",
-	"tutorial": "WASD moverse · Ratón o flechas disparar · Espacio esquivar · E interactuar · Q objeto activo · F bomba · Tab inventario",
+	"subtitle": "una vela encendida junto a la cama",
+	"premise": "Hace mucho que no despiertas. Alguien te vela cada noche y deja una vela encendida en la mesita. Dentro del sueño, eres esa llama: lo único que sigue despierto. El sueño te quiere dormir con dulzura.",
+	"tutorial": "WASD moverse · Ratón o flechas disparar · Espacio esquivar · E recordar · Q recuerdo activo",
+	"first_night": [
+		"Hola. Soy yo otra vez.",
+		"Dicen que no puedes oírme.",
+		"Yo creo que sí.",
+		"Te dejé una vela encendida en la mesita.",
+		"Para que encuentres el camino."
+	],
+	"night_intros": [
+		["Volví.", "Me dejaron quedarme un rato más."],
+		["Hoy llovió.", "Abrí un poco la ventana para que la oyeras."],
+		["Mamá vino por la tarde.", "No sabe qué decirte. Yo tampoco, pero hablo igual."],
+		["Te traje mandarinas.", "Ya sé que no puedes comerlas. Las pelo igual, por el olor."],
+		["La enfermera de noche se llama Inés.", "Dice que a veces mueves los dedos cuando te hablo."],
+		["Te leí el cuento del faro.", "El que me leías tú, cambiando el final cada vez."],
+		["Hoy no tengo mucho que contarte.", "Me quedo aquí igual."],
+		["Encontré tu libreta.", "No la he leído. Bueno, una página."],
+		["El médico habló de esperar.", "Yo sé esperar. Me enseñaste tú."],
+		["Cambié la vela.", "La otra ardió hasta el final. No se apagó ni una vez."]
+	],
+	"night_generic": ["Otra noche.", "Aquí sigo."],
 	"floor_intros": [
 		"Aquí la cera recuerda lo que la carne olvidó.",
-		"Más abajo, las velas arden hacia dentro."
+		"Huele a desinfectante y a cera. Alguien dejó encendida la luz del pasillo."
+	],
+	"interludes": [
+		["La enfermera dice que esta noche te mueves más.", "Que respiras distinto.", "No sé si es bueno. Me lo tomo como bueno."]
+	],
+	"awaken_outside": [
+		"…¿me oyes?…",
+		"…sigo aquí…",
+		"…te pelé otra mandarina…",
+		"…hace frío en el pasillo…",
+		"…la vela aguanta…",
+		"…ya queda menos para que amanezca…",
+		"…aprieta mi mano si me oyes…",
+		"…no tengas prisa. Pero vuelve…"
+	],
+	"lullaby": [
+		"Descansa.",
+		"Ya está. Ya pasó.",
+		"Cierra los ojos.",
+		"No tienes que volver.",
+		"Aquí no duele.",
+		"Shhh.",
+		"Nadie te va a reñir por dormir.",
+		"¿Para qué despertar?"
+	],
+	"lullaby_learned": {
+		"fire": "Ya conozco tu fuego.",
+		"poison": "Ya conozco tu veneno.",
+		"explosion": "Ya conozco tus estallidos.",
+		"ice": "Ya conozco tu frío.",
+		"bleed": "Ya conozco tus heridas.",
+		"summon": "Ya conozco a tus muertos.",
+		"sonic": "Ya conozco tu campana.",
+		"blood": "Ya conozco tu sangre.",
+		"reaction": "Ya conozco tus mezclas."
+	},
+	"countdown": ["Diez.", "Nueve.", "Ocho.", "Siete.", "Seis…"],
+	"after_death": [
+		["La vela de la mesita sigue encendida.", "Mañana vuelvo."],
+		["Alguien te arropa.", "Mañana es otra noche."],
+		["Apagan la luz del pasillo. La vela no.", "Hasta mañana."]
 	],
 	"epitaphs": [
-		"La cera recuerda tu forma. El sueño, no.",
-		"Te arrullaron. Por un instante, fue dulce.",
-		"Alguien, muy lejos, deja de apretar una mano.",
-		"El Durmiente se gira en su lecho. Ni siquiera te notó.",
-		"Una espina menos. El sueño cicatriza."
+		"Sin cambios. La visita habló hasta tarde.",
+		"Agitación breve hacia las tres. Después, calma.",
+		"Sin cambios. Alguien dejó mandarinas en la mesita.",
+		"Movió los dedos de la mano izquierda. Lo anoto por si acaso.",
+		"Sin cambios. La vela sigue encendida; no la apago.",
+		"Respiración tranquila. La visita se durmió en la silla."
 	],
 	"victory": [
-		"El Párpado tiembla. Al otro lado, algo contiene la respiración. ¿Era esto despertar, o solo otra capa del sueño?"
+		"Abres los ojos.",
+		"La habitación está a oscuras, salvo por una vela en la mesita.",
+		"En la silla, alguien se ha dormido con una mandarina a medio pelar en la mano.",
+		"—Hola —dices, o crees decir.",
+		"La vela tiembla. La persona de la silla levanta la cabeza."
 	],
+	"victory_chart": "Abre los ojos. Lo primero que pregunta es por la vela.",
+	"credits": "Para quienes velan.",
 	"secret_inscriptions": [
 		"«No despiertes a quien sueña contigo: dejarías de existir.»",
 		"«Las velas no lloran. Recuerdan.»",
 		"«Hubo una ventana. Hubo una silla junto a la cama. Hubo una voz que contaba hasta diez.»",
-		"«El Arrullo no es cruel. Solo quiere que descanses.»"
+		"«El Arrullo no es cruel. Solo quiere que descanses.»",
+		"«Alguien escribió en la pared: VUELVE. Con letra de niño.»"
 	],
 	"bosses": {
-		"bell_warden": "Toca a muerto por cada espina que cruza el Umbral. Nadie le dijo que el campanario está vacío.",
-		"mother_candle": "Gotea sobre sus hijos para que no tengan frío. Cree que la luz es una forma de amor."
+		"bell_warden": {
+			"intro": "Las doce. Aquí siempre son las doce.",
+			"death": "La campana calla. Por primera vez, nadie cuenta las horas."
+		},
+		"mother_candle": {
+			"intro": "Shhh. Ya pasó. Ven, que te tapo.",
+			"phase2": "¿Por qué quieres volver? Allí todo duele.",
+			"phase3": "Quédate. Te hago una cama de cera, para que no tengas frío.",
+			"death": "…Entonces vete. Pero abrígate."
+		}
 	}
 }

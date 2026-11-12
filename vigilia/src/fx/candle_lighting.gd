@@ -13,7 +13,7 @@ extends Node2D
 ## límite por objeto del renderizador de compatibilidad. Textura compartida.
 ## El HUD vive en otro CanvasLayer y conserva sus colores.
 
-const DARK := Color(0.12, 0.11, 0.18)
+const DARK := Color(0.08, 0.075, 0.13)
 const AWAKE := Color(0.6, 0.55, 0.56)
 const AWAKE_WARD := Color(0.5, 0.56, 0.62)
 const PLAYER_SCALE_MIN := 1.55

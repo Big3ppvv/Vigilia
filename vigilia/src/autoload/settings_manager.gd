@@ -38,7 +38,7 @@ const DEFAULTS := {
 	"audio/music": 0.5,
 	"video/fullscreen": false,
 	"video/vsync": true,
-	"video/lighting_strength": 0.8,
+	"video/lighting_strength": 0.9,
 	"access/screen_shake": 1.0,
 	"access/flashes": true,
 	"access/reduced_particles": false,
