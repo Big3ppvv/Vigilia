@@ -1,17 +1,25 @@
-# VIGILIA — La Espina del Durmiente
+# La última vigilia
 
-[![Verificar VIGILIA](https://github.com/Big3ppvv/Vigilia/actions/workflows/verify.yml/badge.svg)](https://github.com/Big3ppvv/Vigilia/actions/workflows/verify.yml)
+[![Verificar La última vigilia](https://github.com/Big3ppvv/Vigilia/actions/workflows/verify.yml/badge.svg)](https://github.com/Big3ppvv/Vigilia/actions/workflows/verify.yml)
 
-Roguelite de acción 2D en Godot: construye sinergias mientras el sueño aprende de cómo luchas. Arte y audio generados por código, sin dependencias externas.
+Ha muerto Amparo. Según la costumbre, alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve. Esta noche te toca a ti.
 
-El proyecto está en [`vigilia/`](vigilia/). Importa [`vigilia/project.godot`](vigilia/project.godot) con **Godot 4.6.3** y pulsa **F5**.
+Juego de supervivencia para navegador sobre una Noche de Difuntos, una vela y lo que se recuerda de quien se va. Diez minutos, de medianoche a las seis. Sin dependencias: el arte y el sonido se generan con código.
 
-- [Cómo jugar, controles y herramientas](vigilia/README.md)
-- [Informe de pruebas de la versión actual](vigilia/docs/TEST_REPORT.md)
-- [Diseño y próximos pasos](vigilia/docs/ROADMAP.md)
+![El velatorio de Amparo en la pantalla de título](la-ultima-vigilia/docs/titulo.jpg)
 
-![Vigilia: combate contra Madre Cirio](vigilia/docs/screenshots/12_jefe_fase3_laseres.png)
+## Jugar
 
-## La última vigilia (navegador)
+Descarga [`la-ultima-vigilia/la-ultima-vigilia.html`](la-ultima-vigilia/la-ultima-vigilia.html) y ábrelo con doble clic en cualquier navegador moderno. Funciona sin conexión.
 
-En [`la-ultima-vigilia/`](la-ultima-vigilia/) hay un juego aparte, para navegador: hay que velar a Amparo durante la Noche de Difuntos, de medianoche a las seis, para que la Santa Compaña no se la lleve. Se juega abriendo `la-ultima-vigilia/la-ultima-vigilia.html`. Ver [su README](la-ultima-vigilia/README.md).
+Se mueve con WASD o las flechas, se esquiva con Espacio y las armas atacan solas. En el móvil, arrastra el dedo sobre la pantalla.
+
+![Las tres de la madrugada: la hora de las ánimas](la-ultima-vigilia/docs/las-tres.jpg)
+
+## Cambiar la historia
+
+Todo el texto (Amparo, quién la vela, sus recuerdos, lo que dice cada uno y los finales) está en [`la-ultima-vigilia/story.js`](la-ultima-vigilia/story.js). Después de editarlo, ejecuta `node build.mjs` dentro de `la-ultima-vigilia/` para regenerar el archivo que se juega.
+
+Controles, estructura del código y herramientas de prueba: [`la-ultima-vigilia/README.md`](la-ultima-vigilia/README.md).
+
+![El recordatorio del amanecer](la-ultima-vigilia/docs/amanece.jpg)

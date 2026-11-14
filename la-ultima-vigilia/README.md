@@ -42,6 +42,7 @@ Todo el arte y el sonido se generan con código: pixel art, iluminación, viento
 | `audio.js` | Sonido procedural con Web Audio. |
 | `app.js`, `index.html`, `style.css` | Interfaz: título, HUD, cartas de recuerdo, recordatorio final, álbum y ajustes. |
 | `build.mjs` | Genera `la-ultima-vigilia.html` (`node build.mjs`). Hay que ejecutarlo tras cada cambio. |
+| `tools/smoke.mjs` | Prueba de humo: el piloto automático vela una noche entera con cada personaje. Es lo que ejecuta la verificación de GitHub en cada subida. |
 
 ## Herramientas de prueba
 
