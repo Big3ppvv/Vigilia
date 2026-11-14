@@ -39,10 +39,12 @@ Todo el arte y el sonido se generan con código: pixel art, iluminación, viento
 | `story.js` | **Todo el texto**: Amparo, quién la vela, los recuerdos, lo que dice cada uno, las criaturas y los finales. Es el archivo que hay que reescribir para que el juego cuente tu historia. |
 | `game.js` | Reglas: horas, criaturas, procesiones, la Guía, armas, luz y alba. |
 | `art.js`, `sprites.js` | Pixel art, camposanto, velatorio, niebla y oscuridad. |
+| `combat-fx.js` | Salidas de disparo, estelas, impactos, ondas de campana, rosario y aura del farol. Comparte la paleta de luz de `art.js`. |
 | `audio.js` | Sonido procedural con Web Audio. |
 | `app.js`, `index.html`, `style.css` | Interfaz: título, HUD, cartas de recuerdo, recordatorio final, álbum y ajustes. |
 | `build.mjs` | Genera `la-ultima-vigilia.html` (`node build.mjs`). Hay que ejecutarlo tras cada cambio. |
 | `tools/smoke.mjs` | Prueba de humo: el piloto automático vela una noche entera con cada personaje. Es lo que ejecuta la verificación de GitHub en cada subida. |
+| `tools/combat-vfx.mjs` | Prueba del combate sin conexión: daño, impactos, límites de efectos en hordas y movimiento reducido. |
 
 ## Herramientas de prueba
 
@@ -58,3 +60,7 @@ Parámetros de la URL (versión modular):
 Por ejemplo, `index.html?debug&autostart=1&bot=2&speed=8&char=matilde` juega una noche entera en poco más de un minuto.
 
 Ajustes de accesibilidad: temblor de pantalla, destellos, penumbra suave y números de daño. Con «reducir movimiento» activado en el sistema, el temblor y los destellos empiezan apagados.
+
+Los ataques iluminan el terreno próximo: fuego ámbar para las chispas, sal fría y nácar dorado para el rosario de Matilde. La campana dibuja varios ecos y el farol marca el alcance de su calor. Al apagar «Destellos» se conservan los proyectiles y las formas de los golpes, se atenúan las estelas y se suprimen las ráfagas de luz y los flashes de pantalla. «Temblor de pantalla» también controla el retroceso visual al disparar.
+
+Después de regenerar el HTML, `node tools/combat-vfx.mjs` comprueba los ataques de los tres protagonistas, una horda de 240 criaturas con todas las armas, la limpieza de efectos y el modo móvil con movimiento reducido. Requiere Playwright y Chromium, igual que la prueba de humo.

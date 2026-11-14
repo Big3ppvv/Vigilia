@@ -2,8 +2,9 @@
  * La noche de Difuntos, de 00:00 a 06:00 (cien segundos por hora).
  * Aquí se mueve todo: quien vela, lo que viene a por Amparo, la luz y el alba.
  */
-import { drawWorld, drawFlames, drawFog, drawSprite, drawShadow, sprite, Lighting } from './art.js';
+import { drawWorld, drawFlames, drawFog, drawSprite, drawShadow, sprite, Lighting, ATTACK_PALETTE } from './art.js';
 import { AudioEngine } from './audio.js';
+import { CombatEffects } from './combat-fx.js';
 import { CHARACTERS, MEMORIES, FALLBACK_CHOICES, BARKS, AMPARO, BOSS, HOURS } from './story.js';
 
 const TAU = Math.PI * 2;
@@ -46,6 +47,7 @@ export class VigilGame {
     this.hooks = hooks;
     this.audio = new AudioEngine();
     this.lighting = new Lighting();
+    this.combatFx = new CombatEffects();
     this.options = {shake: true, flashes: true, numbers: false, softDark: false};
     this.muted = false;
     this.state = 'ready';
@@ -85,6 +87,7 @@ export class VigilGame {
     this.enemies = []; this.shots = []; this.enemyShots = []; this.hazards = [];
     this.gems = []; this.particles = []; this.rings = []; this.numbers = [];
     this.corpses = []; this.marks = []; this.moths = []; this.ghosts = [];
+    this.combatFx.clear();
     this.t = {chispas: 0.35, sal: 0.4, campana: 2.5, farol: 0.4, spawn: 0.6, procession: 48, swarm: 26, ghost: 0,
       bossSummon: 5, bossWater: 3, bossSpiral: 4, regenFx: 0, stats: 0, danger: 0};
     this.dashCd = 0; this.dashTime = 0; this.dashDir = {x: 1, y: 0}; this.lastMove = {x: 1, y: 0};
@@ -336,6 +339,12 @@ export class VigilGame {
 
   /* ---------- armas ---------- */
 
+  attackPose(kind, a) {
+    const total = kind === 'sal' ? 0.24 : 0.18;
+    this.player.attack = {kind, a, life: total, total};
+    if (!this.player.moving && Math.abs(Math.cos(a)) > 0.15) this.player.face = Math.cos(a) < 0 ? -1 : 1;
+  }
+
   nearest(maxDist, from = this.player) {
     // Si la Guía está a tiro, todo va a por ella: es a quien hay que parar.
     const b = this.boss;
@@ -360,9 +369,13 @@ export class VigilGame {
           this.t.chispas = 0.62 * st.cadence;
           const count = Math.min(6, m.chispas), aim = Math.atan2(target.y - p.y, target.x - p.x);
           const dmg = 20 * (1 + 0.15 * (m.chispas - 1));
+          const tone = this.character === 'matilde' ? 'sacred' : 'ember';
+          const origin = {x: p.x + Math.cos(aim) * 12, y: p.y - 8 + Math.sin(aim) * 8};
+          this.attackPose('chispa', aim);
+          this.combatFx.emit('cast', origin.x, origin.y, {a: aim, tone, level: m.chispas});
           for (let i = 0; i < count; i++) {
             const a = aim + (i - (count - 1) / 2) * 0.13;
-            this.shots.push({kind: 'chispa', x: p.x + p.face * 6, y: p.y - 8, vx: Math.cos(a) * 400, vy: Math.sin(a) * 400, a, life: 1.3, r: 5, dmg, pierce: m.chispas >= 3 ? 2 : 1, knock: 70, hit: new Set()});
+            this.shots.push({kind: 'chispa', ...origin, vx: Math.cos(a) * 400, vy: Math.sin(a) * 400, a, life: 1.3, total: 1.3, trail: [], tone, r: 5, dmg, pierce: m.chispas >= 3 ? 2 : 1, knock: 70, hit: new Set()});
           }
           this.audio.sfx('chispa', {pan: (target.x - p.x) / this.width});
         } else this.t.chispas = 0.1;
@@ -376,15 +389,18 @@ export class VigilGame {
           this.t.sal = 0.95 * st.cadence;
           const count = Math.min(8, 2 + m.sal), aim = Math.atan2(target.y - p.y, target.x - p.x);
           const dmg = 12 * (1 + 0.2 * (m.sal - 1));
+          const origin = {x: p.x + Math.cos(aim) * 12, y: p.y - 4 + Math.sin(aim) * 8};
+          this.attackPose('sal', aim);
+          this.combatFx.emit('blast', origin.x, origin.y, {a: aim, tone: 'salt', level: m.sal});
           for (let i = 0; i < count; i++) {
             const a = aim + (i - (count - 1) / 2) * (0.62 / Math.max(1, count - 1)) + rand(-0.04, 0.04);
             const sp = rand(400, 470);
-            this.shots.push({kind: 'sal', x: p.x + Math.cos(aim) * 12, y: p.y - 4 + Math.sin(aim) * 8, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, a, life: rand(0.44, 0.54), r: 4, dmg, pierce: m.sal >= 4 ? 2 : 1, knock: 260, hit: new Set()});
+            const life = rand(0.44, 0.54);
+            this.shots.push({kind: 'sal', ...origin, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, a, life, total: life, trail: [], tone: 'salt', r: 4, dmg, pierce: m.sal >= 4 ? 2 : 1, knock: 260, hit: new Set()});
           }
           for (let i = 0; i < 6; i++) this.particle({x: p.x + Math.cos(aim) * 16, y: p.y - 4 + Math.sin(aim) * 10, vx: Math.cos(aim + rand(-0.5, 0.5)) * rand(80, 200), vy: Math.sin(aim + rand(-0.5, 0.5)) * rand(80, 200), life: 0.25, size: 2, color: '#fff6e0', glow: true});
-          this.rings.push({x: p.x + Math.cos(aim) * 18, y: p.y - 4 + Math.sin(aim) * 10, r: 4, max: 40, life: 0.12, total: 0.12, color: '#ffe2b0', light: 60});
           this.audio.sfx('sal', {pan: (target.x - p.x) / this.width});
-          this.shake = Math.max(this.shake, 1.5);
+          if (this.options.shake) this.shake = Math.max(this.shake, 1.5);
         } else this.t.sal = 0.1;
       }
     }
@@ -393,11 +409,11 @@ export class VigilGame {
       if (this.t.campana <= 0) {
         this.t.campana = Math.max(2.2, 6.2 - 0.75 * m.campana) * st.cadence;
         const R = 112 + 22 * m.campana, dmg = 26 + 12 * m.campana;
-        this.rings.push({x: p.x, y: p.y, r: 14, max: R, life: 0.5, total: 0.5, color: '#f3d9a0', width: 3, light: R});
+        this.combatFx.emit('bell', p.x, p.y, {radius: R, tone: 'sacred', level: m.campana});
         for (const e of this.enemies) {
           if (e.hp <= 0 || e.dissolve) continue;
           const d = Math.hypot(e.x - p.x, e.y - p.y);
-          if (d < R + e.r) this.hurt(e, dmg, {knock: 300, from: p});
+          if (d < R + e.r) this.hurt(e, dmg, {knock: 300, from: p, fx: 'sacred'});
         }
         this.audio.sfx('campana');
         this.freeze = Math.max(this.freeze, 0.025);
@@ -424,7 +440,11 @@ export class VigilGame {
         const a = this.clock * 2.3 + i * TAU / beads, bx = p.x + Math.cos(a) * R, by = p.y - 4 + Math.sin(a) * R;
         for (const e of this.queryGrid(bx, by, 40)) {
           if (e.hp <= 0 || e.dissolve || e.beadCd > 0) continue;
-          if (Math.hypot(e.x - bx, e.y - by) < e.r + 8) { this.hurt(e, dmg, {knock: 120, from: {x: bx, y: by}}); e.beadCd = 0.45; }
+          if (Math.hypot(e.x - bx, e.y - by) < e.r + 8) {
+            this.hurt(e, dmg, {knock: 120, from: {x: bx, y: by}, fx: 'sacred'});
+            this.combatFx.emit('bead', bx, by, {a, tone: 'sacred'});
+            e.beadCd = 0.45;
+          }
         }
       }
     }
@@ -447,7 +467,11 @@ export class VigilGame {
         if (!t || t.hp <= 0 || t.dissolve) { moth.state = 'back'; continue; }
         const dx = t.x - moth.x, dy = t.y - moth.y, d = Math.hypot(dx, dy) || 1;
         moth.x += dx / d * 330 * dt; moth.y += dy / d * 330 * dt;
-        if (d < t.r + 5) { this.hurt(t, 9 + 4 * m.polillas, {knock: 40, from: moth}); moth.state = 'back'; moth.cd = 0.75; }
+        if (d < t.r + 5) {
+          this.hurt(t, 9 + 4 * m.polillas, {knock: 40, from: moth, fx: 'sacred'});
+          this.combatFx.emit('moth', moth.x, moth.y, {a: Math.atan2(dy, dx), tone: 'sacred'});
+          moth.state = 'back'; moth.cd = 0.75;
+        }
       } else {
         const dx = p.x - moth.x, dy = p.y - 18 - moth.y, d = Math.hypot(dx, dy) || 1;
         moth.x += dx / d * 300 * dt; moth.y += dy / d * 300 * dt;
@@ -466,7 +490,7 @@ export class VigilGame {
 
   /* ---------- daño ---------- */
 
-  hurt(e, amount, {knock = 80, from = this.player, silent = false} = {}) {
+  hurt(e, amount, {knock = 80, from = this.player, silent = false, fx = null} = {}) {
     if (e.hp <= 0 || e.dissolve) return;
     const crit = Math.random() < this.st.crit;
     let dmg = amount * (crit ? 2 : 1);
@@ -479,6 +503,10 @@ export class VigilGame {
       e.kx += dx / d * knock * resist; e.ky += dy / d * knock * resist;
     }
     if (!silent) {
+      if (fx) {
+        const a = Math.atan2(e.y - from.y, e.x - from.x);
+        this.combatFx.emit('impact', e.x - Math.cos(a) * e.r * 0.35, e.y - 4 - Math.sin(a) * e.r * 0.35, {a, tone: fx, radius: crit ? 28 : 18});
+      }
       this.audio.sfx('golpe', {pan: (e.x - this.player.x) / this.width});
       const color = {anima: '#9cc8ff', ahogado: '#7fb3c4', espantajo: '#d6b466', curuxa: '#c9b28a'}[e.type] || '#c9c2b8';
       for (let i = 0; i < 2; i++) this.particle({x: e.x, y: e.y - 4, vx: rand(-70, 70), vy: rand(-80, 20), life: 0.3, size: 2, color, grav: 260});
@@ -919,14 +947,27 @@ export class VigilGame {
 
   updateShots(dt) {
     for (const s of this.shots) {
+      // Muestreo a 60 Hz y caducidad real, también en pantallas de alta frecuencia.
+      s.trail ??= [];
+      for (const point of s.trail) point.age = (point.age || 0) + dt;
+      s.trailCd = (s.trailCd || 0) - dt;
+      if (dt > 0 && s.trailCd <= 0) {
+        s.trail.push({x: s.x, y: s.y, age: 0});
+        s.trailCd = Math.max(0, s.trailCd + 1 / 60);
+      }
+      s.trail = s.trail.filter(point => point.age < 0.12).slice(-8);
       s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if (s.kind === 'chispa' && Math.random() < 0.5) this.particle({x: s.x, y: s.y, vx: rand(-15, 15), vy: rand(-15, 15), life: 0.22, size: 2, color: '#ffb04a', glow: true});
+      s.emberCd = (s.emberCd || 0) - dt;
+      if (s.kind === 'chispa' && s.emberCd <= 0) {
+        s.emberCd = 0.035;
+        this.particle({x: s.x, y: s.y, vx: -s.vx * 0.06 + rand(-12, 12), vy: -s.vy * 0.06 + rand(-12, 12), life: 0.22, size: 2, color: (ATTACK_PALETTE[s.tone] || ATTACK_PALETTE.ember).edge, glow: true});
+      }
       for (const e of this.queryGrid(s.x, s.y, 36)) {
         if (e.hp <= 0 || e.dissolve || s.hit.has(e.id)) continue;
         const rr = e.r + s.r;
         if ((e.x - s.x) ** 2 + (e.y - 4 - s.y) ** 2 < rr * rr) {
           s.hit.add(e.id);
-          this.hurt(e, s.dmg, {knock: s.knock, from: {x: s.x - s.vx * 0.05, y: s.y - s.vy * 0.05}});
+          this.hurt(e, s.dmg, {knock: s.knock, from: {x: s.x - s.vx * 0.05, y: s.y - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
           if (--s.pierce <= 0) { s.life = 0; break; }
         }
       }
@@ -985,12 +1026,14 @@ export class VigilGame {
   }
 
   particle(o) {
-    if (this.particles.length > 420) this.particles.shift();
+    if (this.particles.length >= 420) this.particles.shift();
     o.total = o.life;
     this.particles.push(o);
   }
 
   updateFx(dt) {
+    this.combatFx.update(dt);
+    if (this.player.attack) this.player.attack.life = Math.max(0, this.player.attack.life - dt);
     this.shake = Math.max(0, this.shake - dt * 22);
     this.flash = Math.max(0, this.flash - dt * 2.5);
     for (const q of this.particles) { q.life -= dt; q.x += q.vx * dt; q.y += q.vy * dt; if (q.grav) q.vy += q.grav * dt; }
@@ -1279,6 +1322,7 @@ export class VigilGame {
     if (this.shake > 0.2 && this.options.shake) ctx.translate(Math.round(rand(-1, 1) * this.shake), Math.round(rand(-1, 1) * this.shake));
     drawWorld(ctx, camX, camY, w, h, this.clock, flames, lights);
     drawFog(ctx, camX, camY, w, h, this.clock, look.fog * 0.9);
+    if (this.mem.farol && !title && this.state !== 'ended') this.combatFx.drawLanternAura(ctx, p, this.lightRadius() * 0.7, this.clock, camX, camY, this.options.flashes);
 
     // Café en el suelo
     for (const g of this.gems) {
@@ -1316,24 +1360,10 @@ export class VigilGame {
     }
     for (const L of entityLights) lights.push(L);
 
-    // Rosario
-    if (this.mem.rosario && !title && this.state !== 'ended') {
-      const beads = 1 + this.mem.rosario, R = 58 + 4 * this.mem.rosario;
-      ctx.strokeStyle = 'rgba(241,232,210,.12)'; ctx.lineWidth = 1;
-      ctx.beginPath(); ctx.ellipse(p.x - camX, p.y - 4 - camY, R, R, 0, 0, TAU); ctx.stroke();
-    }
     // Polillas
     for (const m of this.moths) {
       const flap = Math.sin(m.flap) > 0 ? 1 : 0.55;
       drawSprite(ctx, 'polilla', m.x - camX, m.y - camY, {scale: 2, sx: flap});
-    }
-    // Sal (granos blancos)
-    for (const s of this.shots) {
-      if (s.kind !== 'sal') continue;
-      ctx.fillStyle = '#f6efe0';
-      ctx.fillRect(Math.round(s.x - camX - 2), Math.round(s.y - camY - 2), 4, 4);
-      ctx.fillStyle = 'rgba(246,239,224,.35)';
-      ctx.fillRect(Math.round(s.x - camX - s.vx * 0.02 - 1), Math.round(s.y - camY - s.vy * 0.02 - 1), 3, 3);
     }
     // Partículas sin luz propia
     for (const q of this.particles) {
@@ -1346,8 +1376,22 @@ export class VigilGame {
 
     // Luces de lo que se mueve
     if (!title && (this.state !== 'ended' || this.lastVictory)) lights.push({x: p.x - camX + p.face * 8, y: p.y - camY - 10, r: this.lightRadius(), i: 1, c: 'warm', g: 0.5});
-    let budget = 70;
-    for (const s of this.shots) if (s.kind === 'chispa' && budget-- > 0) lights.push({x: s.x - camX, y: s.y - camY, r: 34, i: 0.7, c: 'warm', g: 0.5});
+    let budget = 48;
+    for (const s of this.shots) {
+      if (s.x - camX < -100 || s.x - camX > w + 100 || s.y - camY < -100 || s.y - camY > h + 100 || budget <= 0) continue;
+      budget--;
+      const salt = s.kind === 'sal';
+      lights.push({x: s.x - camX, y: s.y - camY, r: salt ? 26 : 55, a: s.a, stretch: salt ? 1.5 : 1.7,
+        i: this.options.flashes ? 0.8 : 0.4, c: s.tone || (salt ? 'salt' : 'ember'), g: this.options.flashes ? 0.7 : 0.22});
+    }
+    if (this.mem.rosario && !title && this.state !== 'ended') {
+      const beads = 1 + this.mem.rosario, R = 58 + 4 * this.mem.rosario;
+      for (let i = 0; i < beads; i++) {
+        const a = this.clock * 2.3 + i * TAU / beads;
+        lights.push({x: p.x - camX + Math.cos(a) * R, y: p.y - 4 - camY + Math.sin(a) * R, r: 34, i: 0.42, c: 'sacred', g: this.options.flashes ? 0.4 : 0.18});
+      }
+    }
+    this.combatFx.addLights(lights, camX, camY, this.options.flashes);
     for (const s of this.enemyShots) if (!(s.delay > 0)) lights.push({x: s.x - camX, y: s.y - camY, r: 30, i: 0.7, c: s.kind === 'cera' ? 'warm' : 'blue', g: 0.6});
     budget = 60;
     for (const g of this.gems) {
@@ -1382,25 +1426,12 @@ export class VigilGame {
       ctx.fillStyle = '#fff6d6'; ctx.fillRect(x - 1, y - 1, 2, 3);
     }
     ctx.globalAlpha = 1;
-    // Chispas
-    for (const s of this.shots) {
-      if (s.kind !== 'chispa') continue;
-      const x = s.x - camX, y = s.y - camY;
-      ctx.strokeStyle = 'rgba(255,176,74,.45)'; ctx.lineWidth = 3;
-      ctx.beginPath(); ctx.moveTo(x - Math.cos(s.a) * 12, y - Math.sin(s.a) * 12); ctx.lineTo(x, y); ctx.stroke();
-      ctx.fillStyle = '#ffb04a'; ctx.fillRect(Math.round(x - 3), Math.round(y - 3), 6, 6);
-      ctx.fillStyle = '#fff1bd'; ctx.fillRect(Math.round(x - 1), Math.round(y - 1), 3, 3);
-    }
-    // Rosario: las cuentas brillan un poco
+    // Los núcleos y las estelas se dibujan sobre la oscuridad que ellos iluminan.
+    for (const s of this.shots) this.combatFx.drawProjectile(ctx, s, camX, camY, this.options.flashes);
     if (this.mem.rosario && !title && this.state !== 'ended') {
-      const beads = 1 + this.mem.rosario, R = 58 + 4 * this.mem.rosario;
-      for (let i = 0; i < beads; i++) {
-        const a = this.clock * 2.3 + i * TAU / beads, x = Math.round(p.x - camX + Math.cos(a) * R), y = Math.round(p.y - 4 - camY + Math.sin(a) * R);
-        ctx.fillStyle = '#07080d'; ctx.fillRect(x - 3, y - 4, 6, 8); ctx.fillRect(x - 4, y - 3, 8, 6);
-        ctx.fillStyle = '#e9e0cc'; ctx.fillRect(x - 2, y - 3, 4, 6); ctx.fillRect(x - 3, y - 2, 6, 4);
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(x - 2, y - 2, 2, 2);
-      }
+      this.combatFx.drawRosary(ctx, p, this.mem.rosario, this.clock, camX, camY, this.options.flashes);
     }
+    this.combatFx.render(ctx, camX, camY, this.options.flashes);
     // Partículas con luz
     for (const q of this.particles) {
       if (!q.glow) continue;
@@ -1493,7 +1524,9 @@ export class VigilGame {
       if (layer === 'base') drawShadow(ctx, it.x, it.y + 10, 11);
       if (p.inv > 0 && p.inv < 50 && Math.floor(t * 20) % 2 && layer === 'base') ctx.globalAlpha = 0.55;
       const step = p.moving ? Math.abs(Math.sin(p.walk)) : 0;
-      drawSprite(ctx, this.character, it.x, it.y - 12, {scale: 2, flip: p.face < 0, bob: -step * 2, sy: 1 + step * 0.03, layer});
+      const recoil = this.options.shake && p.attack?.life > 0 ? Math.pow(p.attack.life / p.attack.total, 2) * (p.attack.kind === 'sal' ? 3 : 1.5) : 0;
+      const a = p.attack?.a || 0;
+      drawSprite(ctx, this.character, it.x - Math.cos(a) * recoil, it.y - 12 - Math.sin(a) * recoil, {scale: 2, flip: p.face < 0, bob: -step * 2, sy: 1 + step * 0.03 - recoil * 0.012, rot: -Math.cos(a) * recoil * 0.012, layer});
       ctx.globalAlpha = 1;
       return;
     }
@@ -1630,7 +1663,7 @@ export class VigilGame {
     if (['running', 'paused', 'upgrade'].includes(this.state)) {
       const low = 1 - p.hp / this.st.maxHp;
       if (low > 0.62) {
-        const k = (low - 0.62) / 0.38 * (0.6 + Math.sin(this.clock * 6) * 0.25);
+        const k = (low - 0.62) / 0.38 * (this.options.flashes ? 0.6 + Math.sin(this.clock * 6) * 0.25 : 0.6);
         const g = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.3, w / 2, h / 2, Math.hypot(w, h) * 0.6);
         g.addColorStop(0, 'rgba(90,0,0,0)'); g.addColorStop(1, `rgba(110,10,8,${0.5 * k})`);
         ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
@@ -1649,8 +1682,8 @@ export class VigilGame {
       ctx.fillStyle = g; ctx.fillRect(0, 0, w, h);
       ctx.restore();
     }
-    if (this.flash > 0.01) {
-      ctx.fillStyle = `rgba(${this.flashColor},${this.options.flashes ? this.flash * 0.6 : this.flash * 0.15})`;
+    if (this.flash > 0.01 && this.options.flashes) {
+      ctx.fillStyle = `rgba(${this.flashColor},${this.flash * 0.6})`;
       ctx.fillRect(0, 0, w, h);
     }
   }

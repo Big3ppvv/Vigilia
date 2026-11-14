@@ -10,14 +10,14 @@ const dir = new URL('.', import.meta.url);
 const read = file => readFileSync(new URL(file, dir), 'utf8');
 
 // Orden de dependencias: cada módulo solo importa de los anteriores.
-const MODULES = ['sprites.js', 'story.js', 'art.js', 'audio.js', 'game.js', 'app.js'];
+const MODULES = ['sprites.js', 'story.js', 'art.js', 'audio.js', 'combat-fx.js', 'game.js', 'app.js'];
 
 let bundle = '';
 for (const file of MODULES) {
   const id = '__' + file.replace(/\W/g, '_');
   let src = read(file);
   src = src.replace(/^import\s*\{([^}]+)\}\s*from\s*'\.\/([\w-]+)\.js';[ \t]*$/gm,
-    (_, names, mod) => `const {${names}} = __${mod}_js;`);
+    (_, names, mod) => `const {${names}} = __${mod.replace(/\W/g, '_')}_js;`);
   if (/^\s*import\s/m.test(src)) throw new Error(`${file}: hay un import que este script no sabe resolver`);
   const exported = [];
   src = src.replace(/^export\s+(const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm, (_, kind, name) => {
