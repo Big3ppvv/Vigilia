@@ -11,3 +11,7 @@ El proyecto está en [`vigilia/`](vigilia/). Importa [`vigilia/project.godot`](v
 - [Diseño y próximos pasos](vigilia/docs/ROADMAP.md)
 
 ![Vigilia: combate contra Madre Cirio](vigilia/docs/screenshots/12_jefe_fase3_laseres.png)
+
+## La última vigilia (navegador)
+
+En [`la-ultima-vigilia/`](la-ultima-vigilia/) hay un juego aparte, para navegador: hay que velar a Amparo durante la Noche de Difuntos, de medianoche a las seis, para que la Santa Compaña no se la lleve. Se juega abriendo `la-ultima-vigilia/la-ultima-vigilia.html`. Ver [su README](la-ultima-vigilia/README.md).

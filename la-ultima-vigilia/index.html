@@ -1,68 +1,176 @@
 <!doctype html>
 <html lang="es">
 <head>
-<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#101513"><meta name="description" content="Sobrevive a la noche de Arkham en un juego de horror cósmico, pixel art y hordas sin fin.">
-<title>La última vigilia — Horror cósmico</title>
-<link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#07080c">
+<meta name="description" content="Ha muerto Amparo. Alguien tiene que velarla hasta que amanezca. Un juego de supervivencia sobre una noche de Difuntos, una vela y lo que recordamos de quien se va.">
+<title>La última vigilia</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-<svg class="svg-library" xmlns="http://www.w3.org/2000/svg"><defs>
-<symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/><path d="m12 1 0 3m0 16v3M3 3l3 3m12 12 3 3M3 21l3-3M18 6l3-3"/></symbol>
-<symbol id="i-sword" viewBox="0 0 24 24"><path d="m5 19 4-4M4 14l6 6M8 15l10-12 3 0 0 3-12 10M3 21l2-2"/></symbol>
-<symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5C8 2 3 4 3 4v15s5-2 9 1c4-3 9-1 9-1V4s-5-2-9 1v15ZM6 8l3 1m-3 3 3 1m6-4 3-1m-3 5 3-1"/></symbol>
-<symbol id="i-skull" viewBox="0 0 24 24"><path d="M7 16c-6-4-3-13 5-13s11 9 5 13v4H7v-4Z"/><circle cx="8" cy="11" r="2"/><circle cx="16" cy="11" r="2"/><path d="m11 15 1-2 1 2m-3 3v3m4-3v3"/></symbol>
-<symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 6v6l4 2"/></symbol>
-<symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4V9Zm12-1c3 2 3 6 0 8m3-11c5 4 5 10 0 14"/></symbol>
+<svg class="svg-library" aria-hidden="true" xmlns="http://www.w3.org/2000/svg"><defs>
+<symbol id="i-sound" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4V9Zm12-1c2.5 2 2.5 6 0 8m3-11c4.5 4 4.5 10 0 14"/></symbol>
+<symbol id="i-mute" viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4V9Zm12 0 5 6m0-6-5 6"/></symbol>
 <symbol id="i-expand" viewBox="0 0 24 24"><path d="M4 9V4h5m6 0h5v5M4 15v5h5m6 0h5v-5"/></symbol>
-<symbol id="i-help" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 9c0-4 7-4 6 0 0 2-3 2-3 5m0 2v2"/></symbol>
 <symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></symbol>
-<symbol id="i-heart" viewBox="0 0 24 24"><path d="M12 21 3 12C-3 4 8-1 12 6c4-7 15-2 9 6l-9 9Z"/></symbol>
-<symbol id="i-spark" viewBox="0 0 24 24"><path d="m12 2 3 7 7 3-7 3-3 7-3-7-7-3 7-3 3-7Z"/></symbol>
-<symbol id="i-arrow" viewBox="0 0 24 24"><path d="M4 12h16m-6-6 6 6-6 6"/></symbol>
-<symbol id="i-bolt" viewBox="0 0 24 24"><path d="m14 2-9 12h6l-1 8 9-13h-6l1-7Z"/></symbol>
-<symbol id="i-trophy" viewBox="0 0 24 24"><path d="M7 3h10v6c0 7-10 7-10 0V3Zm0 2H3v3c0 3 4 4 5 3m9-6h4v3c0 3-4 4-5 3m-4 3v5m-4 2h8"/></symbol>
+<symbol id="i-candle" viewBox="0 0 24 24"><path d="M12 3c2 2.5 2 4.5 0 6-2-1.5-2-3.5 0-6Zm-2.5 8h5v10h-5V11Zm-3 10h11"/></symbol>
+<symbol id="i-cross" viewBox="0 0 24 24"><path d="M12 3v18M7 8h10"/></symbol>
+<symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 12h10m-4-5 5 5-5 5M17 6v12"/></symbol>
 </defs></svg>
-<div class="app-shell">
-<aside class="sidebar">
-<a class="brand" href="#" aria-label="La última vigilia, inicio"><span class="brand-emblem"><svg><use href="#i-eye"/></svg></span><span>LA ÚLTIMA<br><b>VIGILIA</b></span></a>
-<div class="side-caption">EL UMBRAL ESTÁ ABIERTO</div>
-<nav aria-label="Navegación principal">
-<button class="nav-item active" data-view="play"><svg><use href="#i-sword"/></svg><span>Jugar</span><i></i></button>
-<button class="nav-item" data-view="grimoire"><svg><use href="#i-book"/></svg><span>Grimorio</span><span class="nav-count">10</span></button>
-<button class="nav-item" data-view="records"><svg><use href="#i-clock"/></svg><span>Crónicas</span></button>
-</nav>
-<div class="sidebar-lore"><div class="tiny-star">✦</div><p>«No está muerto lo que<br>yace eternamente…»</p><span>H. P. LOVECRAFT</span></div>
-<div class="side-bottom"><button id="audioToggle" class="utility"><svg><use href="#i-volume"/></svg><span>Sonido desactivado</span><span class="switch"></span></button><button class="utility" id="controlsButton"><svg><use href="#i-help"/></svg><span>Cómo jugar</span><kbd>?</kbd></button><div class="version">ARKHAM, MASSACHUSETTS <span>v1.1</span></div></div>
-</aside>
-<main>
-<header class="page-header"><div><div class="eyebrow"><span></span> UN ROGUELITE DE HORROR CÓSMICO</div><h1>La última vigilia<span>.</span></h1><p>La noche despierta. Lo innombrable también.</p></div><div class="header-actions"><span class="location-tag"><span>✦</span> ARKHAM · 1926</span><button id="headerAudio" class="icon-button" aria-label="Activar sonido" title="Sonido"><svg><use href="#i-volume"/></svg></button><button id="fullscreenButton" class="icon-button" aria-label="Pantalla completa" title="Pantalla completa"><svg><use href="#i-expand"/></svg></button></div></header>
-<section id="playView" class="view">
-<div class="section-heading"><div><span class="status-dot"></span><h2>El cementerio olvidado</h2><span class="difficulty">VIGILIA I</span></div><span class="mission"><svg><use href="#i-clock"/></svg> Sobrevive hasta el amanecer <b>10:00</b></span></div>
-<div class="game-frame" id="gameFrame">
-<div class="hud"><div class="vitals"><div class="vital"><svg><use href="#i-heart"/></svg><div><div class="vital-label">VITALIDAD <span id="hpValue">100 / 100</span></div><div class="meter"><i id="hpBar"></i></div></div></div><div class="vital sanity"><svg><use href="#i-eye"/></svg><div><div class="vital-label">CORDURA <span id="sanityValue">100%</span></div><div class="meter"><i id="sanityBar"></i></div></div></div></div><div class="run-clock"><b id="timer">00:00</b><span id="waveLabel">LA CALMA ANTES DEL ABISMO</span></div><div class="kill-counter"><svg><use href="#i-skull"/></svg><div><b id="kills">0</b><span>DESTERRADOS</span></div><button id="pauseButton" class="icon-button" aria-label="Pausar partida" title="Pausar (P)"><svg><use href="#i-pause"/></svg></button></div></div>
-<div class="canvas-wrap"><canvas id="gameCanvas" tabindex="0" aria-label="Campo de juego. Usa WASD o las flechas para moverte; espacio para esquivar."></canvas><div class="vignette"></div><span class="map-coordinate">42°14′ N &nbsp; 70°52′ W</span><span class="map-label">— &nbsp; EL VELO ES FRÁGIL &nbsp; —</span>
-<div class="start-overlay" id="startOverlay"><div class="start-content"><div class="ritual-mark"><svg><use href="#i-eye"/></svg></div><div class="eyebrow">ALGO AGUARDA EN LA OSCURIDAD</div><h2>Cuando las estrellas<br>se alinean.</h2><p>La horda no descansa. Tú tampoco deberías.</p><button class="primary-button" id="startButton"><svg><use href="#i-sword"/></svg> COMENZAR VIGILIA <svg><use href="#i-arrow"/></svg></button><span class="start-hint"><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> moverse <i>·</i> ataques automáticos</span></div></div>
-<div class="game-overlay hidden" id="pauseOverlay"><div class="overlay-card"><span class="eyebrow">UN RESPIRO EN LA OSCURIDAD</span><h2>El tiempo se detiene.</h2><p>El abismo puede esperar un instante.</p><button class="primary-button" id="resumeButton">CONTINUAR VIGILIA <svg><use href="#i-arrow"/></svg></button><button class="text-button" id="abandonButton">Volver al umbral</button></div></div>
-<div class="game-overlay hidden" id="upgradeOverlay"><div class="upgrade-panel"><span class="eyebrow">EL CONOCIMIENTO TIENE UN PRECIO</span><h2>Poderes del otro lado</h2><p>Has alcanzado el nivel <b id="upgradeLevel">2</b>. Elige una revelación.</p><div id="upgradeChoices" class="upgrade-choices"></div><span class="muted-hint">Pulsa 1, 2 o 3 para elegir</span></div></div>
-<div class="game-overlay hidden" id="endOverlay"><div class="overlay-card"><div class="ritual-mark"><svg><use href="#i-skull"/></svg></div><span class="eyebrow" id="endEyebrow">EL ABISMO RECUERDA</span><h2 id="endTitle">La noche te reclama.</h2><p id="endDescription">Hasta la luz más obstinada acaba por apagarse.</p><div class="end-stats" id="endStats"></div><button class="primary-button" id="retryButton">OTRA VIGILIA <svg><use href="#i-arrow"/></svg></button><button class="text-button" id="returnButton">Elegir otro investigador</button></div></div>
-<button class="ability-button hidden" id="abilityButton" aria-label="Esquivar"><svg><use href="#i-bolt"/></svg><span>ESQUIVAR</span><kbd>ESPACIO</kbd></button>
-</div>
-<div class="xp-track"><i id="xpBar"></i><span id="levelLabel">NIVEL 1 <b>·</b> CONOCIMIENTO PROHIBIDO</span></div>
-<div class="game-footer"><div class="loadout"><div class="item-slot selected" title="Proyectil arcano"><svg><use href="#i-bolt"/></svg><span id="weaponTier">I</span></div><div class="item-slot empty" title="Las reliquias se obtienen al subir de nivel"><span>+</span></div><div class="item-slot empty" title="Las reliquias se obtienen al subir de nivel"><span>+</span></div><div class="item-slot empty" title="Las reliquias se obtienen al subir de nivel"><span>+</span></div><div class="loadout-text"><b id="weaponName">Proyectil arcano</b><span id="weaponHint">Tu primera defensa contra el vacío</span></div></div><div class="footer-controls"><span><kbd>W A S D</kbd> Moverse</span><span><kbd>ESPACIO</kbd> Esquivar</span><span><kbd>P</kbd> Pausa</span></div></div>
-</div>
-<div class="below-game"><section class="characters-section"><div class="small-heading"><h2>Elige a tu investigador</h2><span>CADA ALMA TIENE SU CONDENA</span></div><div class="character-list">
-<button class="character-card selected" data-character="archivist" aria-pressed="true"><div class="portrait-frame"><canvas data-portrait="archivist" width="64" height="76"></canvas></div><div><span class="character-role">EL ARCHIVISTA</span><h3>Silas Whitmore</h3><p>Conocimiento prohibido</p></div><span class="selection-marker">✓</span></button>
-<button class="character-card" data-character="medium" aria-pressed="false"><div class="portrait-frame"><canvas data-portrait="medium" width="64" height="76"></canvas></div><div><span class="character-role">LA MÉDIUM</span><h3>Agnes Blackwood</h3><p>Vínculo con el más allá</p></div><span class="selection-marker">✓</span></button>
-<button class="character-card" data-character="mariner" aria-pressed="false"><div class="portrait-frame"><canvas data-portrait="mariner" width="64" height="76"></canvas></div><div><span class="character-role">EL MARINERO</span><h3>Elias Marsh</h3><p>Pólvora y agua salada</p></div><span class="selection-marker">✓</span></button>
-</div></section><aside class="objective-note"><span>UNA REGLA PARA SOBREVIVIR</span><p>No mires al abismo.<br><em>Haz que él te tema.</em></p><svg><use href="#i-eye"/></svg></aside></div>
-<div class="page-foot"><span>NO TODAS LAS HISTORIAS DEBEN SER DESENTERRADAS.</span><button id="mobileControls">Controles y ayuda <svg><use href="#i-help"/></svg></button><span>HECHO PARA PERDER LA CORDURA <span class="gold">✦</span></span></div>
+
+<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar."></canvas>
+
+<!-- Pantalla de título: la escena del velatorio queda detrás, en el lienzo. -->
+<section id="title" class="screen title-screen">
+  <div class="title-panel">
+    <p class="place" id="placeLine">Noche de Difuntos · Camposanto del Carmen</p>
+    <h1>La última vigilia</h1>
+    <p class="intro" id="introLine"></p>
+    <p class="tagline" id="taglineLine"></p>
+    <h2 class="pick-label">¿Quién la vela esta noche?</h2>
+    <div class="cast" id="cast" role="radiogroup" aria-label="Quién vela a Amparo"></div>
+    <p class="cast-detail" id="castDetail"></p>
+    <p class="cast-perk" id="castPerk"></p>
+    <div class="title-actions">
+      <button class="primary" id="startButton"><svg aria-hidden="true"><use href="#i-candle"/></svg><span>Velar a Amparo</span></button>
+      <nav class="links" aria-label="Más">
+        <button data-open="albumDialog">Recuerdos</button>
+        <button data-open="recordsDialog">Las noches</button>
+        <button data-open="settingsDialog">Ajustes</button>
+        <button data-open="helpDialog">Cómo se vela</button>
+      </nav>
+    </div>
+  </div>
+  <p class="night-count" id="nightCount"></p>
 </section>
-<section id="grimoireView" class="view hidden"><div class="section-heading"><div><h2>El grimorio de Arkham</h2></div><span class="mission">DIEZ REVELACIONES PROHIBIDAS</span></div><div class="archive-intro"><span class="eyebrow">FRAGMENTOS DEL NECRONOMICÓN</span><h2>Hay cosas que es mejor ignorar.</h2><p>Conoce a quienes acechan entre las lápidas y las reliquias que pueden mantenerte con vida.</p></div><div id="grimoireGrid" class="grimoire-grid"></div><button class="primary-button back-to-play">VOLVER AL UMBRAL <svg><use href="#i-arrow"/></svg></button></section>
-<section id="recordsView" class="view hidden"><div class="section-heading"><div><h2>Crónicas de los perdidos</h2></div><span class="mission">CADA VIGILIA DEJA UNA HUELLA</span></div><div class="archive-intro"><span class="eyebrow">EL ARCHIVO DE MISKATONIC</span><h2>El abismo lleva la cuenta.</h2><p>Tus últimas expediciones, conservadas en este navegador.</p></div><div class="record-summary" id="recordSummary"></div><div id="recordList" class="record-list"></div><button class="primary-button back-to-play">VOLVER A LA VIGILIA <svg><use href="#i-arrow"/></svg></button></section>
-</main>
+
+<div class="corner-tools">
+  <button class="icon-btn" id="soundButton" aria-label="Silenciar" title="Sonido"><svg aria-hidden="true"><use href="#i-sound"/></svg></button>
+  <button class="icon-btn" id="fullscreenButton" aria-label="Pantalla completa" title="Pantalla completa"><svg aria-hidden="true"><use href="#i-expand"/></svg></button>
 </div>
-<dialog id="controlsDialog"><button class="dialog-close icon-button" aria-label="Cerrar ayuda">×</button><span class="eyebrow">ANTES DE CRUZAR EL UMBRAL</span><h2>Sobrevive a la vigilia.</h2><p>Resiste diez minutos en el cementerio. Las criaturas se vuelven más numerosas a medida que la noche avanza.</p><div class="control-row"><kbd>W A S D</kbd><span>o las flechas para moverte. En móvil, arrastra sobre el campo de juego.</span></div><div class="control-row"><kbd>ESPACIO</kbd><span>Esquiva en la dirección en la que te mueves. También puedes pulsar el botón de esquivar.</span></div><div class="control-row"><kbd>P / ESC</kbd><span>Pausa la partida y toma un respiro.</span></div><div class="help-tip"><svg><use href="#i-spark"/></svg><p>Atacas automáticamente. Recoge los fragmentos verdes que dejan los enemigos para subir de nivel y elegir nuevas reliquias. Con menos del 60% de cordura, infliges un 25% más de daño y recibes un 20% más.</p></div><button class="primary-button dialog-close">ENTENDIDO <svg><use href="#i-arrow"/></svg></button><a class="download-link" href="la-ultima-vigilia.html" download>Descargar para jugar sin conexión ↓</a></dialog>
+
+<!-- Durante la noche -->
+<section id="hud" class="hud hidden" aria-live="off">
+  <div class="hud-top">
+    <div class="vitals">
+      <div class="who"><b id="hudName">Lucía</b> <span id="hudRole">La nieta</span></div>
+      <div class="bar hp"><i id="hpBar"></i></div>
+      <span class="hp-text" id="hpText">100 / 100</span>
+    </div>
+    <div class="night">
+      <b id="clock">00:00</b>
+      <span id="mood">Noche de Difuntos</span>
+      <div class="night-track" aria-hidden="true"><i id="nightBar"></i><span class="moon"></span><span class="sun"></span></div>
+    </div>
+    <div class="tally">
+      <div><b id="kills">0</b><span>ahuyentados</span></div>
+      <button class="icon-btn small" id="pauseButton" aria-label="Pausa" title="Pausa (P)"><svg aria-hidden="true"><use href="#i-pause"/></svg></button>
+    </div>
+  </div>
+  <div class="boss hidden" id="bossBox">
+    <div class="boss-name"><b>La Guía</b><span>Carmela Souto lleva la cruz desde 1963</span></div>
+    <div class="bar boss-hp"><i id="bossBar"></i></div>
+    <div class="soul"><span>Se lleva a Amparo</span><div class="bar soul-bar"><i id="soulBar"></i></div></div>
+  </div>
+  <div class="banner" id="banner" aria-live="polite"><b id="bannerTitle"></b><span id="bannerSub"></span></div>
+  <div class="subtitle" id="subtitle" aria-live="polite"><span class="speaker" id="subSpeaker"></span><span class="line" id="subLine"></span></div>
+  <div class="hud-bottom">
+    <div class="memory-col">
+      <span class="level-text" id="levelText">Recuerdos · 1</span>
+      <div class="memories" id="hudMemories" aria-label="Recuerdos"></div>
+    </div>
+    <button class="dash" id="dashButton" aria-label="Esquivar"><svg aria-hidden="true"><use href="#i-dash"/></svg><span>Esquivar</span><kbd id="dashKey">Espacio</kbd><i id="dashFill"></i></button>
+  </div>
+  <div class="memory-track" aria-hidden="true"><i id="xpBar"></i></div>
+</section>
+
+<!-- Elegir un recuerdo -->
+<section id="choice" class="screen overlay hidden" aria-labelledby="choiceTitle">
+  <div class="choice-wrap">
+    <p class="eyebrow">Con la luz, vuelve algo</p>
+    <h2 id="choiceTitle">Recuerdas…</h2>
+    <div class="cards" id="choiceCards"></div>
+    <p class="hint">Pulsa 1, 2 o 3</p>
+  </div>
+</section>
+
+<section id="pause" class="screen overlay hidden" aria-labelledby="pauseTitle">
+  <div class="pause-card">
+    <p class="eyebrow" id="pauseClock">00:00</p>
+    <h2 id="pauseTitle">La vela sigue encendida.</h2>
+    <p>Amparo puede esperar un momento. La noche, también.</p>
+    <button class="primary" id="resumeButton"><span>Seguir velando</span></button>
+    <nav class="links">
+      <button data-open="settingsDialog">Ajustes</button>
+      <button data-open="helpDialog">Cómo se vela</button>
+      <button id="quitButton">Dejar la vigilia</button>
+    </nav>
+  </div>
+</section>
+
+<section id="end" class="screen overlay hidden" aria-labelledby="endTitle">
+  <article class="memorial" id="memorial">
+    <svg class="memorial-mark" aria-hidden="true"><use href="#i-cross"/></svg>
+    <p class="eyebrow" id="endEyebrow"></p>
+    <h2 id="endTitle"></h2>
+    <p class="epilogue" id="endText"></p>
+    <p class="last-words" id="endWords"></p>
+    <div class="end-stats" id="endStats"></div>
+  </article>
+  <p class="loop-line" id="loopLine"></p>
+  <div class="end-actions">
+    <button class="primary" id="againButton"><span>Volver a velar</span></button>
+    <nav class="links">
+      <button id="otherButton">Que la vele otra persona</button>
+      <button data-open="albumDialog">Recuerdos</button>
+    </nav>
+  </div>
+</section>
+
+<dialog id="albumDialog" class="panel" aria-labelledby="albumTitle">
+  <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
+  <h2 id="albumTitle">Recuerdos de Amparo</h2>
+  <p class="panel-intro">Lo que se recuerda de alguien depende de quién lo recuerde. Cada noche vuelve algo distinto.</p>
+  <h3>Lo que se llevó <span id="albumCount"></span></h3>
+  <div class="album" id="albumGrid"></div>
+  <h3>Lo que viene de noche</h3>
+  <div class="bestiary" id="bestiaryGrid"></div>
+  <h3>Quienes la velaron</h3>
+  <div class="watchers" id="watchersGrid"></div>
+</dialog>
+
+<dialog id="recordsDialog" class="panel" aria-labelledby="recordsTitle">
+  <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
+  <h2 id="recordsTitle">Las noches</h2>
+  <p class="panel-intro">La Noche de Difuntos se repite hasta que alguien la vela entera. Se guardan en este navegador.</p>
+  <div class="record-summary" id="recordSummary"></div>
+  <ol class="record-list" id="recordList"></ol>
+</dialog>
+
+<dialog id="settingsDialog" class="panel narrow" aria-labelledby="settingsTitle">
+  <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
+  <h2 id="settingsTitle">Ajustes</h2>
+  <div class="settings">
+    <label class="row"><span>Sonido</span><input type="checkbox" id="optSound"></label>
+    <label class="row"><span>Volumen</span><input type="range" id="optVolume" min="0" max="100" step="5"></label>
+    <label class="row"><span>Temblor de pantalla</span><input type="checkbox" id="optShake"></label>
+    <label class="row"><span>Destellos</span><input type="checkbox" id="optFlashes"></label>
+    <label class="row"><span>Penumbra suave <small>más visibilidad fuera de tu luz</small></span><input type="checkbox" id="optSoftDark"></label>
+    <label class="row"><span>Números de daño</span><input type="checkbox" id="optNumbers"></label>
+  </div>
+</dialog>
+
+<dialog id="helpDialog" class="panel narrow" aria-labelledby="helpTitle">
+  <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
+  <h2 id="helpTitle">Cómo se vela</h2>
+  <dl class="help" id="helpList"></dl>
+  <a class="download" href="la-ultima-vigilia.html" download>Descargar para jugar sin conexión</a>
+</dialog>
+
 <div class="toast" id="toast" role="status"></div>
 <script type="module" src="app.js"></script>
-</body></html>
+</body>
+</html>
