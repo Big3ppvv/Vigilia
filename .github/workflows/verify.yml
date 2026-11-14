@@ -58,3 +58,6 @@ jobs:
 
       - name: Velar con el piloto automático
         run: node la-ultima-vigilia/tools/smoke.mjs
+
+      - name: Comprobar combate, efectos y movimiento reducido sin conexión
+        run: node la-ultima-vigilia/tools/combat-vfx.mjs

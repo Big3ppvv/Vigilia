@@ -6,6 +6,13 @@ import { PALETTE, EMISSIVE, SPRITES, ICONS } from './sprites.js';
 
 const TAU = Math.PI * 2;
 
+// Una misma paleta para el trazo del arma y la luz que deja en el camposanto.
+export const ATTACK_PALETTE = Object.freeze({
+  ember: Object.freeze({rgb: '255,116,46', edge: '#ff742e', core: '#fff2bc'}),
+  salt: Object.freeze({rgb: '190,224,242', edge: '#bee0f2', core: '#f4fbff'}),
+  sacred: Object.freeze({rgb: '238,205,129', edge: '#eecd81', core: '#fff4d8'})
+});
+
 export function makeCanvas(w, h) {
   const c = typeof OffscreenCanvas !== 'undefined' ? new OffscreenCanvas(w, h) : document.createElement('canvas');
   c.width = w; c.height = h;
@@ -436,10 +443,12 @@ function holeSprite() {
   return c;
 }
 
-function glowSprite(rgb) {
+function glowSprite(rgb, core) {
   const c = makeCanvas(128, 128), g = c.getContext('2d');
   const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
-  r.addColorStop(0, `rgba(${rgb},1)`);
+  r.addColorStop(0, core || `rgba(${rgb},1)`);
+  // Los ataques tienen un núcleo cálido o nacarado, sin blanquear todo el halo.
+  if (core) r.addColorStop(0.1, `rgba(${rgb},.8)`);
   r.addColorStop(0.25, `rgba(${rgb},.45)`);
   r.addColorStop(0.6, `rgba(${rgb},.12)`);
   r.addColorStop(1, `rgba(${rgb},0)`);
@@ -458,7 +467,8 @@ export class Lighting {
       red: glowSprite('255,92,52'),
       blue: glowSprite('120,176,255'),
       pale: glowSprite('214,232,255'),
-      white: glowSprite('255,246,226')
+      white: glowSprite('255,246,226'),
+      ...Object.fromEntries(Object.entries(ATTACK_PALETTE).map(([key, color]) => [key, glowSprite(color.rgb, color.core)]))
     };
     this.w = 1; this.h = 1;
   }
@@ -467,6 +477,31 @@ export class Lighting {
     this.w = w; this.h = h;
     this.canvas.width = Math.max(1, Math.ceil(w * this.scale));
     this.canvas.height = Math.max(1, Math.ceil(h * this.scale));
+  }
+
+  /*
+   * Luces: x/y, r, i, c, g. Opcionales: a (radianes) y stretch (1–3).
+   * La misma elipse abre la oscuridad y colorea el suelo: el fogonazo tiene
+   * dirección, sin crear gradientes ni lienzos en cada fotograma.
+   */
+  stamp(ctx, image, L, radius, scale = 1) {
+    const stretch = Math.max(1, Math.min(3, L.stretch || 1));
+    const x = L.x * scale, y = L.y * scale, r = radius * scale;
+    if (stretch === 1) {
+      ctx.drawImage(image, x - r, y - r, r * 2, r * 2);
+      return;
+    }
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(L.a || 0);
+    ctx.scale(stretch, 1);
+    ctx.drawImage(image, -r, -r, r * 2, r * 2);
+    ctx.restore();
+  }
+
+  visible(L, radius) {
+    const extent = radius * Math.max(1, Math.min(3, L.stretch || 1));
+    return radius > 0 && L.i > 0 && L.x + extent >= 0 && L.x - extent <= this.w && L.y + extent >= 0 && L.y - extent <= this.h;
   }
 
   /* darkness: 0 a 1. tint: color de la noche. beams: haces del faro. */
@@ -480,10 +515,9 @@ export class Lighting {
     lc.fillRect(0, 0, W, H);
     lc.globalCompositeOperation = 'destination-out';
     for (const L of lights) {
-      const R = L.r * s;
-      if (L.x * s + R < 0 || L.x * s - R > W || L.y * s + R < 0 || L.y * s - R > H) continue;
+      if (!this.visible(L, L.r)) continue;
       lc.globalAlpha = Math.min(1, L.i);
-      lc.drawImage(this.hole, L.x * s - R, L.y * s - R, R * 2, R * 2);
+      this.stamp(lc, this.hole, L, L.r, s);
     }
     for (const b of beams) {
       lc.globalAlpha = b.i;
@@ -514,9 +548,9 @@ export class Lighting {
       const g = L.g ?? 0.5;
       if (g <= 0) continue;
       const R = L.r * 0.9;
-      if (L.x + R < 0 || L.x - R > this.w || L.y + R < 0 || L.y - R > this.h) continue;
+      if (!this.visible(L, R)) continue;
       ctx.globalAlpha = Math.min(1, L.i * g * strength);
-      ctx.drawImage(this.glows[L.c] || this.glows.warm, L.x - R, L.y - R, R * 2, R * 2);
+      this.stamp(ctx, this.glows[L.c] || this.glows.warm, L, R);
     }
     ctx.restore();
   }
