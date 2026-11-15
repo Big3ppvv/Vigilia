@@ -100,8 +100,9 @@ function updateNightCount() {
 
 function layoutTitle() {
   const wide = innerWidth > 860;
-  if (wide) game.titleFocus = {x: -Math.min(560, innerWidth * 0.48) / 2 + 20, y: 30};
-  else game.titleFocus = {x: 0, y: 30 + innerHeight * 0.36 / (game.zoom || 1)};
+  const zoom = game.zoom || 1;
+  if (wide) game.titleFocus = {x: (-Math.min(560, innerWidth * 0.48) / 2 + 20) / zoom, y: 30};
+  else game.titleFocus = {x: 0, y: 30 + innerHeight * 0.36 / zoom};
 }
 addEventListener('resize', layoutTitle);
 layoutTitle();
