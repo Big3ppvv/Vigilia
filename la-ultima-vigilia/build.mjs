@@ -8,24 +8,43 @@ import { readFileSync, writeFileSync } from 'node:fs';
 
 const dir = new URL('.', import.meta.url);
 const read = file => readFileSync(new URL(file, dir), 'utf8');
+const IMPORT = /^import\s*\{([^}]+)\}\s*from\s*'\.\/([\w-]+)\.js';[ \t]*$/gm;
+const EXPORT = /^export\s+(const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm;
+const idOf = file => '__' + file.replace(/\W/g, '_');
 
-// Orden de dependencias: cada módulo solo importa de los anteriores.
-const MODULES = ['sprites.js', 'story.js', 'art.js', 'audio.js', 'combat-fx.js', 'game.js', 'app.js'];
+// Los módulos se descubren a partir de app.js: cada uno va detrás de los que importa.
+const order = [], state = new Map();
+function visit(file, trail = []) {
+  if (state.get(file) === 'done') return;
+  if (state.get(file) === 'open') throw new Error(`Importación circular: ${[...trail, file].join(' → ')}`);
+  state.set(file, 'open');
+  for (const match of read(file).matchAll(IMPORT)) visit(`${match[2]}.js`, [...trail, file]);
+  state.set(file, 'done');
+  order.push(file);
+}
+visit('app.js');
 
+const exportsOf = new Map();
 let bundle = '';
-for (const file of MODULES) {
-  const id = '__' + file.replace(/\W/g, '_');
+for (const file of order) {
   let src = read(file);
-  src = src.replace(/^import\s*\{([^}]+)\}\s*from\s*'\.\/([\w-]+)\.js';[ \t]*$/gm,
-    (_, names, mod) => `const {${names}} = __${mod.replace(/\W/g, '_')}_js;`);
+  src = src.replace(IMPORT, (_, names, mod) => {
+    const known = exportsOf.get(`${mod}.js`);
+    for (const name of names.split(',').map(n => n.trim()).filter(Boolean)) {
+      if (!/^[A-Za-z_$][\w$]*$/.test(name)) throw new Error(`${file}: este script no entiende «${name}» (sin alias ni saltos raros)`);
+      if (!known.includes(name)) throw new Error(`${file}: ${mod}.js no exporta «${name}»`);
+    }
+    return `const {${names}} = ${idOf(`${mod}.js`)};`;
+  });
   if (/^\s*import\s/m.test(src)) throw new Error(`${file}: hay un import que este script no sabe resolver`);
   const exported = [];
-  src = src.replace(/^export\s+(const|let|function|class)\s+([A-Za-z_$][\w$]*)/gm, (_, kind, name) => {
+  src = src.replace(EXPORT, (_, kind, name) => {
     exported.push(name);
     return `${kind} ${name}`;
   });
   if (/^export\s/m.test(src)) throw new Error(`${file}: hay un export que este script no sabe resolver`);
-  bundle += `/* ---- ${file} ---- */\nconst ${id} = (() => {\n${src}\nreturn {${exported.join(', ')}};\n})();\n`;
+  exportsOf.set(file, exported);
+  bundle += `/* ---- ${file} ---- */\nconst ${idOf(file)} = (() => {\n${src}\nreturn {${exported.join(', ')}};\n})();\n`;
 }
 if (bundle.includes('</script')) throw new Error('El código contiene </script y rompería el HTML');
 
@@ -40,4 +59,4 @@ swap('<link rel="stylesheet" href="style.css">', `<style>\n${read('style.css')}<
 swap('<script type="module" src="app.js"></script>', `<script type="module">\n${bundle}</script>`);
 
 writeFileSync(new URL('la-ultima-vigilia.html', dir), html);
-console.log(`la-ultima-vigilia.html · ${(html.length / 1024).toFixed(0)} KB`);
+console.log(`la-ultima-vigilia.html · ${order.length} módulos · ${(html.length / 1024).toFixed(0)} KB`);

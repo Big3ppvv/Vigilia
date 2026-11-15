@@ -3,9 +3,9 @@
  * Las luces viven en Lighting; aquí quedan las siluetas luminosas y el nácar.
  * Ningún efecto cambia el daño ni la duración de las armas.
  */
+import { TAU } from './util.js';
 import { ATTACK_PALETTE, makeCanvas } from './art.js';
 
-const TAU = Math.PI * 2;
 const MAX_EFFECTS = 96;
 const MAX_LIGHTS = 24;
 const priority = kind => kind === 'bell' ? 3 : kind === 'cast' || kind === 'blast' ? 2 : kind === 'impact' ? 0 : 1;

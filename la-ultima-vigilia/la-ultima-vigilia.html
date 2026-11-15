@@ -607,6 +607,63 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
 
 <div class="toast" id="toast" role="status"></div>
 <script type="module">
+/* ---- util.js ---- */
+const __util_js = (() => {
+/* Herramientas pequeñas que usa todo el juego. */
+const TAU = Math.PI * 2;
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const rand = (a, b) => a + Math.random() * (b - a);
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+const lerp = (a, b, t) => a + (b - a) * t;
+
+return {TAU, clamp, rand, pick, lerp};
+})();
+/* ---- balance.js ---- */
+const __balance_js = (() => {
+/*
+ * Los números de la noche: cuánto dura, qué criaturas vienen y cuánto aguantan.
+ * Para cambiar el equilibrio, este es el archivo.
+ */
+const { clamp } = __util_js;
+
+/* La noche de Difuntos va de 00:00 a 06:00: cien segundos por hora. */
+const NIGHT = 600;
+const HOUR = 100;
+const BOSS_AT = 500;
+const MAX_ENEMIES = 240;
+const MAX_LEVEL = 5;
+const COFFIN = {x: 0, y: 0};
+
+const fmtClock = t => {
+  const s = clamp(t, 0, NIGHT);
+  const h = Math.floor(s / HOUR), m = Math.min(59, Math.floor((s % HOUR) * 0.6));
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+/* unlock en segundos de noche; value es la luz que dejan al irse. */
+const ENEMIES = {
+  anima: {unlock: 0, weight: 30, hp: 12, speed: 60, r: 10, damage: 6, value: 1, scale: 2},
+  hermano: {unlock: 0, weight: 44, hp: 24, speed: 34, r: 13, damage: 9, value: 1, scale: 2},
+  urco: {unlock: 100, weight: 20, hp: 34, speed: 52, r: 14, damage: 11, value: 2, scale: 2},
+  curuxa: {unlock: 150, weight: 15, hp: 26, speed: 58, r: 12, damage: 10, value: 2, scale: 2},
+  ahogado: {unlock: 200, weight: 24, hp: 64, speed: 29, r: 15, damage: 13, value: 3, scale: 2},
+  planidera: {unlock: 250, weight: 12, hp: 38, speed: 40, r: 13, damage: 8, value: 3, scale: 2},
+  espantajo: {unlock: 400, weight: 7, hp: 200, speed: 22, r: 22, damage: 20, value: 7, scale: 2},
+  guia: {unlock: 9999, weight: 0, hp: 2700, speed: 27, r: 30, damage: 24, value: 0, scale: 3}
+};
+
+/*
+ * El Camposanto del Carmen. El recinto es lo que queda dentro del muro; margin
+ * es cuánto deja ver la cámara al otro lado (al este, el mar y el faro).
+ */
+const WORLD = {left: -1560, right: 1560, top: -1160, bottom: 1160, margin: {n: 250, s: 110, w: 230, e: 520}};
+const LIGHTHOUSE = {x: 1905, y: 420, lampY: -168};
+
+/* Los cuatro cirios del velatorio, alrededor del ataúd. */
+const CIRIOS = [{x: -58, y: -30}, {x: 58, y: -30}, {x: -58, y: 38}, {x: 58, y: 38}];
+
+return {NIGHT, HOUR, BOSS_AT, MAX_ENEMIES, MAX_LEVEL, COFFIN, fmtClock, ENEMIES, WORLD, LIGHTHOUSE, CIRIOS};
+})();
 /* ---- sprites.js ---- */
 const __sprites_js = (() => {
 /* Pixel art dibujado a mano, carácter a carácter. Las letras de EMISSIVE brillan en la oscuridad. */
@@ -1092,310 +1149,14 @@ const ICONS = {
 
 return {PALETTE, EMISSIVE, SPRITES, ICONS};
 })();
-/* ---- story.js ---- */
-const __story_js = (() => {
-/*
- * Todo el texto del juego vive aquí: quién es Amparo, quién la vela,
- * qué se recuerda de ella y qué viene a por ella.
- * Si quieres que el juego hable con tu voz, este es el archivo que hay que reescribir.
- */
-
-const WORLD = {
-  deceased: 'Amparo',
-  place: 'Camposanto del Carmen',
-  night: 'Noche de Difuntos',
-  tagline: 'Que no se apague la vela.',
-  intro: 'Amparo murió el día de Todos los Santos, a los ochenta y ocho años. Según la costumbre, alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve.',
-  loop: 'La Noche de Difuntos se repite hasta que alguien la vela entera.'
-};
-
-/* Cada hora tiene nombre propio. La campana da tantos golpes como marca la hora. */
-const HOURS = [
-  {name: 'Medianoche', mood: 'Noche de Difuntos'},
-  {name: 'La una', mood: 'Se oyen pasos en el camino'},
-  {name: 'Las dos', mood: 'Sube la marea'},
-  {name: 'Las tres', mood: 'La hora de las ánimas'},
-  {name: 'Las cuatro', mood: 'Lo más oscuro de la noche'},
-  {name: 'Las cinco', mood: 'Viene la Guía'},
-  {name: 'Las seis', mood: 'Amanece'}
-];
-
-const CHARACTERS = {
-  lucia: {
-    name: 'Lucía',
-    role: 'La nieta',
-    age: '34 años',
-    blurb: 'Diez años sin volver al pueblo. Llegó en el último autobús, con la maleta y una culpa que no le cabe en ella.',
-    perk: 'Recuerda un 25 % más · Su luz llega más lejos: la linterna del móvil',
-    weapon: 'chispas',
-    start: {chispas: 1},
-    hp: 100, speed: 128, light: 1.22, memory: 1.25, armor: 0,
-    victory: 'Lucía apagó el cirio con dos dedos, como le había enseñado ella. Esta vez no se fue en el primer autobús.',
-    defeat: 'Lucía despertó con la cabeza apoyada en el ataúd y el móvil sin batería. No recordaba el final de la noche. Eso fue lo peor.'
-  },
-  julian: {
-    name: 'Julián',
-    role: 'El sepulturero',
-    age: '79 años',
-    blurb: 'Esta tarde cavó la fosa de Amparo y no dejó que nadie le ayudara. La sacó a bailar en las fiestas del cincuenta y cuatro.',
-    perk: 'Escopeta cargada con sal gruesa · Más aguante, menos prisa',
-    weapon: 'sal',
-    start: {sal: 1},
-    hp: 125, speed: 112, light: 1, memory: 1, armor: 0.1,
-    victory: 'Julián se sentó en el murete y encendió un cigarro. «Ya puedes regañarme», dijo. Nadie le regañó, y aun así lo apagó a la mitad.',
-    defeat: 'Julián despertó en la silla, con el cigarro apagado entre los dedos. «Mañana otra vez», dijo. Y era verdad.'
-  },
-  matilde: {
-    name: 'Matilde',
-    role: 'La rezadora',
-    age: '81 años',
-    blurb: 'Ha rezado en todos los velatorios del pueblo desde 1961. Amparo le hacía trampas al tute. Es el primero en el que le tiembla la voz.',
-    perk: 'Empieza con el rosario de nácar · Reza más rápido de lo que anda',
-    weapon: 'chispas',
-    start: {chispas: 1, rosario: 1},
-    hp: 90, speed: 116, light: 1, memory: 1, armor: 0,
-    victory: 'Matilde terminó el último misterio. Luego, por primera vez en sesenta años de velatorios, se quedó callada.',
-    defeat: 'Matilde despertó con el rosario enredado en los dedos y la boca seca de rezar. Juró que la noche siguiente no se dormiría.'
-  }
-};
-
-/*
- * Los recuerdos son las mejoras. Cada uno es una cosa concreta de Amparo.
- * kind: 'arma' dispara o golpea por su cuenta; 'recuerdo' cambia cómo velas.
- * fragment se usa para escribir el amanecer con los recuerdos que más elegiste.
- */
-const MEMORIES = [
-  {id: 'chispas', kind: 'arma', name: 'Chispas del cirio',
-    effect: 'Lanza chispas a lo más cercano. Cada nivel: una chispa más y +15 % de daño.',
-    line: 'Encendía el cirio con un solo fósforo. Decía que la segunda cerilla es para los que dudan.',
-    fragment: 'la cerilla que nunca le falló'},
-  {id: 'sal', kind: 'arma', name: 'Sal gruesa',
-    effect: 'Un abanico de sal que hiere y aparta. Cada nivel: un grano más y +20 % de daño.',
-    line: 'Si se le caía la sal, echaba un pellizco por encima del hombro. Por si acaso.',
-    fragment: 'la sal por encima del hombro'},
-  {id: 'rosario', kind: 'arma', name: 'El rosario de nácar',
-    effect: 'Cuentas que giran a tu alrededor y golpean. Cada nivel: una cuenta más y más daño.',
-    line: 'Le faltaba una cuenta. Nunca quiso cambiarlo.',
-    fragment: 'el rosario al que le faltaba una cuenta'},
-  {id: 'campana', kind: 'arma', name: 'La campana del Carmen',
-    effect: 'Cada pocos segundos, un tañido hiere y aparta lo que te rodea. Cada nivel: más alcance y más a menudo.',
-    line: 'Un martes cualquiera tocó a fiesta. Dijo que los martes también se lo merecían.',
-    fragment: 'la campana tocando a fiesta un martes'},
-  {id: 'farol', kind: 'arma', name: 'El farol del faro',
-    effect: 'Tu luz quema: lo que entra en ella arde despacio. Cada nivel: luz más amplia y más calor.',
-    line: 'Su padre fue el último farero. Ella le subía la cena: ciento diecisiete escalones.',
-    fragment: 'los ciento diecisiete escalones del faro'},
-  {id: 'polillas', kind: 'arma', name: 'Las polillas del armario',
-    effect: 'Polillas que buscan a las criaturas y las muerden. Cada nivel: una polilla más.',
-    line: 'Guardó el vestido de novia con naftalina. Se lo comieron igual. «Tendrían hambre», dijo.',
-    fragment: 'el vestido de novia que se comieron las polillas'},
-  {id: 'pan', kind: 'recuerdo', name: 'El pan de los jueves',
-    effect: 'Recuperas 0,5 de vida por segundo por nivel.',
-    line: 'Los jueves olía a pan todo el pueblo. Nadie necesitaba calendario.',
-    fragment: 'el olor a pan de los jueves'},
-  {id: 'radio', kind: 'recuerdo', name: 'La radio de la cocina',
-    effect: 'Atacas un 10 % más rápido por nivel.',
-    line: 'Siempre la misma emisora: coplas, el parte del tiempo y las esquelas del domingo.',
-    fragment: 'la radio de la cocina, bajita'},
-  {id: 'caldo', kind: 'recuerdo', name: 'El caldo de los disgustos',
-    effect: '+20 de vida máxima por nivel. Al elegirlo, te cura 30.',
-    line: 'Para un resfriado, caldo. Para un desengaño, caldo. Para un entierro, caldo.',
-    fragment: 'el caldo para todos los disgustos'},
-  {id: 'gafas', kind: 'recuerdo', name: 'Las gafas en la cabeza',
-    effect: 'Atraes la luz desde un 35 % más lejos por nivel.',
-    line: 'Se pasaba media mañana buscándolas. Las llevaba puestas en la cabeza.',
-    fragment: 'las gafas que buscaba llevándolas puestas'},
-  {id: 'mecedora', kind: 'recuerdo', name: 'La mecedora',
-    effect: 'Esquivas un 15 % más a menudo y te mueves un 5 % más rápido por nivel.',
-    line: 'Se mecía para pensar. Decía que pensar quieta da sueño.',
-    fragment: 'el crujido de la mecedora'},
-  {id: 'fotos', kind: 'recuerdo', name: 'El álbum de fotos',
-    effect: 'Recuerdas un 15 % más con cada luz por nivel.',
-    line: 'En sus fotos nadie mira a cámara. Decía que así la gente se parece más a sí misma.',
-    fragment: 'las fotos en las que nadie mira a cámara'},
-  {id: 'risa', kind: 'recuerdo', name: 'Su risa',
-    effect: '+7 % de probabilidad por nivel de un golpe certero que hace el doble de daño.',
-    line: 'Se reía con todo el cuerpo, como si le hicieran cosquillas por dentro.',
-    fragment: 'su risa, que le sacudía los hombros'},
-  {id: 'manos', kind: 'recuerdo', name: 'Sus manos frías',
-    effect: 'Recibes un 8 % menos de daño por nivel.',
-    line: '«Manos frías, corazón caliente», decía. Y te las ponía en la nuca.',
-    fragment: 'las manos frías en la nuca'}
-];
-
-/* Si ya lo recuerdas todo, la noche aún ofrece esto. */
-const FALLBACK_CHOICES = [
-  {id: 'cafe', kind: 'consuelo', name: 'Un café del termo',
-    effect: 'Recuperas 35 de vida.',
-    line: 'En los velatorios siempre hay un termo de café. Y alguien que pregunta si está recién hecho.'},
-  {id: 'silencio', kind: 'consuelo', name: 'Un rato en silencio',
-    effect: 'Tu esquiva se recarga al instante.',
-    line: 'Hay cosas que no hace falta decir en voz alta.'}
-];
-
-const CREATURES = {
-  anima: {name: 'Ánima en pena', tag: 'Desde medianoche',
-    lore: 'Almas que se perdieron por el camino. No quieren hacerte daño: quieren tu calor, y eso duele igual.'},
-  hermano: {name: 'Hermano de la Compaña', tag: 'Caminan en fila',
-    lore: 'Van en procesión, con un cirio en la mano y la capucha calada. Si cuentas las velas, siempre sobra una.'},
-  urco: {name: 'El Urco', tag: 'Desde la una · Embiste',
-    lore: 'Un perro negro que sube del mar arrastrando cadenas. Antes de saltar se queda quieto y gruñe: ese es el momento de apartarse.'},
-  curuxa: {name: 'La curuxa', tag: 'Desde la una y media · Vuela',
-    lore: 'La lechuza que canta en el tejado de quien se va a morir. Esta semana cantó tres noches en el de Amparo.'},
-  ahogado: {name: 'Ahogado', tag: 'Desde las dos · Lento',
-    lore: 'El mar devuelve lo que se lleva, aunque tarde. Vienen chorreando a ver a quién velan esta vez.'},
-  planidera: {name: 'Plañidera', tag: 'Desde las dos y media · A distancia',
-    lore: 'Las contrataban para llorar en los entierros. Algunas no supieron parar. Sus lágrimas queman: no te quedes quieto.'},
-  espantajo: {name: 'El espantajo', tag: 'Desde las cuatro · Enorme',
-    lore: 'Lo hizo Ramón, el marido de Amparo, con su chaqueta de los domingos. Cuarenta años vigilando el maizal. Esta noche ha bajado al camposanto.'},
-  guia: {name: 'La Guía', tag: 'A las cinco',
-    lore: 'Quien encabeza la Compaña lleva la cruz hasta que otro la coja. Carmela Souto la lleva desde 1963. Esta noche viene a por Amparo.'}
-};
-
-const BOSS = {
-  name: 'La Guía',
-  title: 'Carmela Souto lleva la cruz desde 1963',
-  arrive: 'Viene a por Amparo',
-  reach: '—Ven, Amparo, que se hace tarde.',
-  rage: '—¡Que alguien coja la cruz! ¡Que alguien la coja ya!',
-  freed: '—¿Ya amanece? Decidle a mi madre que ya voy.',
-  took: 'Carmela posó la mano sobre el ataúd. La Compaña siguió su camino con una luz más.'
-};
-
-/* La voz de Amparo. Aparece poco, en cursiva, y nunca se explica. */
-const AMPARO = {
-  name: 'Amparo',
-  lines: [
-    '—Abrígate, que de noche refresca.',
-    '—¿Has comido algo? Hay caldo.',
-    '—No corras tanto, que te vas a caer.',
-    '—Tú no te preocupes por mí.',
-    '—Si me buscas, estoy en la mecedora.',
-    '—Esa puerta, que se cierra sola.'
-  ],
-  lowHp: '—Duérmete un poco, que ya velo yo.',
-  dawn: '—Y apaga la luz al salir.'
-};
-
-/*
- * Lo que dice cada uno durante la noche.
- * hourN suena al dar la campana. first_* la primera vez que ven a cada criatura.
- * memory_* al elegir ese recuerdo (no todos los recuerdos tienen frase para todos).
- */
-const BARKS = {
-  lucia: {
-    start: [
-      'Vale. Tú y yo, abuela. Hasta que amanezca.',
-      'Me explicaste mil veces cómo se hacía esto. Nunca te escuché.',
-      'Decías que en el pueblo ya no quedaba nadie para velar a nadie. Pues aquí estoy.'
-    ],
-    hour1: 'La una. Doce por ciento de batería y cinco horas de noche. Las cuentas no salen.',
-    hour2: 'Las dos. A esta hora tú llevabas un rato dormida. Siempre a las diez, con la radio puesta.',
-    hour3: 'Las tres. La hora de las ánimas, decías. Yo me reía. Ya no me río.',
-    hour4: 'Las cuatro. Cuatro por ciento. Te estarías riendo de mí, ¿verdad?',
-    hour5: 'Las cinco. Ya casi. Aguanta. Aguanto.',
-    first_hermano: 'No. No, no, no. Me lo contabas para que no saliera de noche. Era verdad.',
-    first_anima: 'Son… velas. Van solas. Pobrecillas.',
-    first_urco: 'Un perro negro con cadenas. Claro que sí. Por qué no.',
-    first_curuxa: 'La lechuza. Me dijiste por teléfono que cantaba en tu tejado. No te hice caso.',
-    first_ahogado: 'Vienen del mar. Están empapados. Vienen… a verte.',
-    first_planidera: '¿Quién llora así? Nadie llora así por nadie.',
-    first_espantajo: 'Esa chaqueta… es la del abuelo Ramón.',
-    lowHp: ['No me puedo dormir. No me puedo dormir.', 'Aguanta, Lucía. Aguanta.', 'Abuela, échame una mano, anda.'],
-    boss: '¿Carmela? La abuela me habló de una Carmela que se perdió en el monte.',
-    stopped: 'El reloj se ha parado. Claro que se ha parado.',
-    freed: 'Vete a casa, Carmela. Ya está.',
-    dawn: 'Está amaneciendo. Mira, abuela. Mira qué luz.',
-    memory_rosario: 'Fui yo. Me tragué yo la cuenta. Nunca te lo dije.',
-    memory_pan: 'Los jueves olía a pan hasta en el autobús.',
-    memory_fotos: 'En todas salgo de espaldas. Ahora entiendo por qué.',
-    memory_radio: 'Todavía me sé la sintonía del parte.',
-    memory_gafas: 'Llevo tus gafas en el bolso. No sé por qué las cogí.',
-    memory_farol: 'Nunca subí al faro contigo. Siempre había algo más importante.'
-  },
-  julian: {
-    start: [
-      'Bueno, Amparo. La fosa ya está hecha. Ahora, esto.',
-      'Cincuenta años diciéndome que dejara el tabaco. Y mírate.',
-      'He enterrado a medio pueblo. Velar es otra cosa.'
-    ],
-    hour1: 'La una. A esta hora, en las fiestas del cincuenta y cuatro, todavía bailábamos.',
-    hour2: 'Las dos. Ramón bailaba mejor. Eso no te lo discuto.',
-    hour3: 'Las tres. A esta hora se murió mi padre. Y el tuyo. Mala hora, las tres.',
-    hour4: 'Las cuatro. Me duelen las rodillas. No se lo digas a nadie.',
-    hour5: 'Las cinco. Ya huele a mar de madrugada. Queda poco, mujer.',
-    first_hermano: 'La Compaña. Sabía que vendríais. A esta no os la lleváis.',
-    first_anima: 'Ánimas. No muerden. Pero no les des la espalda.',
-    first_urco: 'El Urco. Ese perro ya rondaba por aquí cuando yo era un chaval.',
-    first_curuxa: 'La curuxa. Siempre llega tarde. Ya está muerta, pájaro.',
-    first_ahogado: 'A ese lo conozco. El hijo de los Lema, el del setenta y dos.',
-    first_planidera: 'Las de llorar. En mis tiempos se les pagaba con una gallina.',
-    first_espantajo: 'El espantajo de Ramón, con su chaqueta de los domingos. Hay que tener cara.',
-    lowHp: ['Todavía no, rediós.', 'No me vas a ver caer, Amparo.', 'Estas rodillas…'],
-    boss: 'Carmela. Tres días te buscamos en el monte. Tres días.',
-    stopped: 'Se ha parado el reloj de la torre. Ese reloj no se paró ni en la guerra.',
-    freed: 'Descansa, Carmela. Ya la llevo yo.',
-    dawn: 'Ya clarea. Ya te puedes ir tranquila, mujer.',
-    memory_pan: 'Los jueves me guardaba una barra. Hasta el último jueves.',
-    memory_risa: 'Esa risa. Le sacudía los hombros.',
-    memory_manos: 'Manos frías, corazón caliente. Me las ponía en la nuca para fastidiarme.',
-    memory_mecedora: 'La mecedora se la arreglé yo. Tres veces.',
-    memory_caldo: 'Cuando lo de mi Pilar me trajo caldo. Sin decir nada. Solo caldo.',
-    memory_sal: 'Sal del economato. Lo mejor contra lo que no tiene cuerpo.'
-  },
-  matilde: {
-    start: [
-      'Se tenía que morir el día de Todos los Santos. Para fastidiar. Así era ella.',
-      'Sesenta años rezando en velatorios. Nunca me había temblado la voz.',
-      'Dios te salve, María… y a ti, Amparo, que buena falta te hace.'
-    ],
-    hour1: 'La una. Amparo hacía trampas al tute. Que Dios la perdone, porque yo no.',
-    hour2: 'Las dos. A estas horas ya nos habíamos bebido el anís de la viuda de Couto.',
-    hour3: 'Las tres. Ánimas benditas, dejadla en paz, que bastante tuvo.',
-    hour4: 'Las cuatro. Se me duermen los pies. Rezo más deprisa.',
-    hour5: 'Las cinco. El último misterio, Amparo. Aguanta tú, que yo aguanto.',
-    first_hermano: '¡La Santa Compaña! Pues a esta no os la lleváis, que me debe una partida.',
-    first_anima: 'Ánimas del purgatorio. Rezad conmigo, criaturas, que se os pasa el frío.',
-    first_urco: '¡Fuera, chucho! ¡Fuera de aquí!',
-    first_curuxa: 'La curuxa cantó en tu tejado y yo te dije que no era nada. Mentí.',
-    first_ahogado: 'Los del mar. Siempre vienen a mirar. Que se sequen primero.',
-    first_planidera: '¡Aficionadas! Así no se llora a nadie.',
-    first_espantajo: 'Ramón, hijo, ¿tú también? Si no te gustaban las visitas.',
-    lowHp: ['Virgen del Carmen, échame una mano.', 'A mis años, esto.', 'No te me duermas, Matilde.'],
-    boss: '¿Carmela? ¡Carmela Souto! ¡Te debo cinco pesetas desde el sesenta y tres!',
-    stopped: 'Se ha parado el reloj. Pues yo no me paro.',
-    freed: 'Toma, Carmela. Tus cinco pesetas. Ve con Dios.',
-    dawn: 'Amanece. Gloria al Padre… y a ti, terca, que lo has conseguido.',
-    memory_rosario: 'Ese rosario se lo regalé yo. Y la cuenta no se la tragó nadie: la perdió jugando al tute.',
-    memory_radio: 'La copla esa la cantaba fatal. Fatal. Pero entera.',
-    memory_fotos: 'En todas sale con los ojos cerrados. Decía que era para rezar.',
-    memory_risa: 'Se reía en misa. En misa, Amparo.',
-    memory_gafas: 'Las gafas en la cabeza. Mil veces te lo dije: mírate en el espejo.',
-    memory_campana: 'La del martes fue ella. El cura todavía no lo sabe.'
-  }
-};
-
-const HELP = [
-  ['Moverte', 'WASD o las flechas. En el móvil, arrastra el dedo sobre la pantalla.'],
-  ['Atacar', 'Es automático: tus armas buscan solas lo que tengas más cerca.'],
-  ['Esquivar', 'Espacio. Durante el salto nada te toca. Tiene unos segundos de recarga.'],
-  ['Recordar', 'Recoge la luz que dejan las criaturas. Cada recuerdo de Amparo es una mejora: elige uno de tres.'],
-  ['La luz', 'Si estás herido, tu luz se encoge. Junto al ataúd de Amparo te recuperas.'],
-  ['Las cinco', 'Llega la Guía y va directa al ataúd. No dejes que se la lleve.'],
-  ['Pausa', 'P o Esc.']
-];
-
-return {WORLD, HOURS, CHARACTERS, MEMORIES, FALLBACK_CHOICES, CREATURES, BOSS, AMPARO, BARKS, HELP};
-})();
 /* ---- art.js ---- */
 const __art_js = (() => {
 /*
- * Arte y luz. Todo se dibuja con código: el camposanto, el velatorio de Amparo,
- * la niebla y la oscuridad que solo se abre donde hay una vela.
+ * Sprites y luz: el pixel art se construye desde sprites.js y la oscuridad
+ * solo se abre donde hay una vela. El camposanto está en world.js.
  */
+const { TAU } = __util_js;
 const { PALETTE, EMISSIVE, SPRITES, ICONS } = __sprites_js;
-
-const TAU = Math.PI * 2;
 
 // Una misma paleta para el trazo del arma y la luz que deja en el camposanto.
 const ATTACK_PALETTE = Object.freeze({
@@ -1474,350 +1235,6 @@ function drawShadow(ctx, x, y, w, alpha = 0.45) {
 
 function drawIcon(ctx, id, x, y, scale = 2) {
   drawSprite(ctx, id, x, y, {scale});
-}
-
-/* ---------- piezas sueltas ---------- */
-
-function px(c, u, x, y, w, h, color) {
-  c.fillStyle = color;
-  c.fillRect(Math.round(x * u), Math.round(y * u), Math.round(w * u), Math.round(h * u));
-}
-
-/* Lamparilla de cristal rojo, como las del día de Todos los Santos. */
-function votive(c, x, y, flames, lights, time, seed) {
-  c.save(); c.translate(Math.round(x), Math.round(y));
-  px(c, 2, -2, 0, 4, 1, '#07080d');
-  px(c, 2, -2, -4, 4, 4, '#5e1d14');
-  px(c, 2, -1, -4, 2, 3, '#a8331f');
-  px(c, 2, -2, -5, 4, 1, '#07080d');
-  c.restore();
-  const flick = 0.85 + Math.sin(time * 9 + seed * 7) * 0.08 + Math.sin(time * 23 + seed) * 0.05;
-  flames.push({x, y: y - 11, kind: 'votive', f: flick});
-  lights.push({x, y: y - 8, r: 46 * flick, i: 0.85, c: 'red', g: 0.9});
-}
-
-function cirioStand(c, x, y, flames, lights, time, seed) {
-  c.save(); c.translate(Math.round(x), Math.round(y));
-  px(c, 2, -4, 0, 8, 2, '#07080d');
-  px(c, 2, -3, -1, 6, 2, '#8a6a2c');
-  px(c, 2, -1, -14, 2, 14, '#8a6a2c');
-  px(c, 2, -1, -14, 1, 14, '#c9a04c');
-  px(c, 2, -3, -15, 6, 2, '#c9a04c');
-  px(c, 2, -1, -22, 2, 7, '#f1e8d2');
-  px(c, 2, 0, -22, 1, 7, '#c9bb9a');
-  c.restore();
-  const flick = 0.9 + Math.sin(time * 7 + seed * 3) * 0.06 + Math.sin(time * 19 + seed) * 0.04;
-  flames.push({x, y: y - 48, kind: 'cirio', f: flick});
-  lights.push({x, y: y - 44, r: 120 * flick, i: 1, c: 'warm', g: 1});
-}
-
-function flowers(c, x, y, seed) {
-  for (let i = 0; i < 7; i++) {
-    const fx = x + (hash(seed, i, 3) - 0.5) * 18, fy = y + (hash(seed, i, 5) - 0.5) * 8;
-    c.fillStyle = '#26402c'; c.fillRect(Math.round(fx) - 1, Math.round(fy), 3, 3);
-    c.fillStyle = hash(seed, i, 9) > 0.45 ? '#ebe8dc' : '#e8c25a';
-    c.fillRect(Math.round(fx) - 1, Math.round(fy) - 2, 3, 3);
-    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(Math.round(fx), Math.round(fy) - 1, 1, 1);
-  }
-}
-
-function tomb(c, x, y, v, flames, lights, time, seed) {
-  c.save(); c.translate(Math.round(x), Math.round(y));
-  const u = 2;
-  px(c, u, -12, 6, 25, 4, 'rgba(2,3,8,.45)');
-  // losa
-  px(c, u, -10, -2, 20, 11, '#07080d');
-  px(c, u, -9, -1, 18, 9, '#3c4447');
-  px(c, u, -9, -1, 18, 2, '#4d5659');
-  px(c, u, -9, 6, 18, 2, '#2a3134');
-  // cabecera
-  px(c, u, -7, -16, 14, 15, '#07080d');
-  px(c, u, -6, -15, 12, 14, '#4a5356');
-  px(c, u, -5, -17, 10, 2, '#07080d');
-  px(c, u, -5, -16, 10, 2, '#5a6366');
-  px(c, u, 4, -14, 2, 13, '#353d40');
-  if (v > 0.5) { px(c, u, -1, -13, 2, 8, '#2a3134'); px(c, u, -3, -11, 6, 2, '#2a3134'); }
-  else { for (let i = 0; i < 4; i++) px(c, u, -4, -12 + i * 3, i === 3 ? 5 : 8, 1, '#30383b'); }
-  // musgo
-  px(c, u, -6, -3, 3, 2, '#2f4632'); px(c, u, 4, -2, 2, 2, '#2f4632');
-  c.restore();
-  if (hash(seed, 2, 41) > 0.5) flowers(c, x - 6, y + 4, seed);
-  if (hash(seed, 3, 17) > 0.45) votive(c, x + 9, y + 10, flames, lights, time, seed);
-}
-
-function ironCross(c, x, y, seed) {
-  c.save(); c.translate(Math.round(x), Math.round(y));
-  const u = 2;
-  px(c, u, -6, 8, 12, 3, 'rgba(2,3,8,.45)');
-  px(c, u, -3, 6, 6, 3, '#2a3134');
-  px(c, u, -1, -20, 2, 27, '#07080d');
-  px(c, u, -7, -14, 14, 2, '#07080d');
-  px(c, u, -1, -20, 1, 26, '#3a3f4a');
-  px(c, u, -7, -14, 13, 1, '#3a3f4a');
-  px(c, u, -3, -16, 1, 1, '#3a3f4a'); px(c, u, 2, -16, 1, 1, '#3a3f4a');
-  px(c, u, -3, -12, 1, 1, '#3a3f4a'); px(c, u, 2, -12, 1, 1, '#3a3f4a');
-  c.restore();
-  if (hash(seed, 7, 2) > 0.5) flowers(c, x, y + 10, seed);
-}
-
-function woodCross(c, x, y, seed) {
-  c.save(); c.translate(Math.round(x), Math.round(y)); c.rotate((hash(seed, 1, 1) - 0.5) * 0.18);
-  const u = 2;
-  px(c, u, -6, 7, 12, 3, 'rgba(2,3,8,.4)');
-  px(c, u, -2, -16, 4, 24, '#07080d');
-  px(c, u, -7, -10, 14, 4, '#07080d');
-  px(c, u, -1, -15, 2, 22, '#5a3e27');
-  px(c, u, -6, -9, 12, 2, '#5a3e27');
-  px(c, u, -1, -15, 1, 22, '#7a5434');
-  c.restore();
-}
-
-function cypress(c, x, y, seed) {
-  c.save(); c.translate(Math.round(x), Math.round(y));
-  c.fillStyle = 'rgba(2,3,8,.5)';
-  c.beginPath(); c.ellipse(4, 4, 22, 8, 0, 0, TAU); c.fill();
-  c.fillStyle = '#2b1f16'; c.fillRect(-2, -8, 5, 12);
-  const h = 92 + hash(seed, 1, 8) * 30;
-  for (let i = 0; i < h; i += 4) {
-    const t = i / h;
-    const wv = (Math.sin(t * Math.PI) * 0.85 + 0.15) * (13 + hash(seed, i, 2) * 3) * (1 - t * 0.35);
-    const jag = hash(seed, i, 4) * 3;
-    c.fillStyle = '#07080d'; c.fillRect(Math.round(-wv - 1 - jag), -8 - i - 4, Math.round(wv * 2 + 2 + jag), 5);
-    c.fillStyle = '#12211a'; c.fillRect(Math.round(-wv - jag), -8 - i - 4, Math.round(wv * 2 + jag), 4);
-    c.fillStyle = '#1c3226'; c.fillRect(Math.round(-wv * 0.4), -8 - i - 4, Math.round(wv * 0.7), 3);
-  }
-  c.restore();
-}
-
-function angel(c, x, y) {
-  c.save(); c.translate(Math.round(x), Math.round(y));
-  const u = 2;
-  px(c, u, -9, 8, 18, 3, 'rgba(2,3,8,.45)');
-  px(c, u, -7, 0, 14, 9, '#07080d'); px(c, u, -6, 1, 12, 7, '#4a5356'); px(c, u, -6, 1, 12, 1, '#5d6669');
-  // alas
-  px(c, u, -9, -22, 6, 16, '#07080d'); px(c, u, 3, -22, 6, 16, '#07080d');
-  px(c, u, -8, -21, 4, 14, '#7c8388'); px(c, u, 4, -21, 4, 14, '#7c8388');
-  px(c, u, -8, -21, 2, 10, '#9aa1a5'); px(c, u, 6, -21, 2, 10, '#9aa1a5');
-  // figura
-  px(c, u, -3, -24, 6, 25, '#07080d'); px(c, u, -2, -18, 4, 18, '#9aa1a5'); px(c, u, -2, -18, 1, 18, '#b6bcbf');
-  px(c, u, -2, -23, 4, 5, '#9aa1a5'); px(c, u, -1, -22, 2, 2, '#b6bcbf');
-  px(c, u, -1, -19, 2, 1, '#7c8388');
-  px(c, u, -3, -16, 6, 2, '#7c8388');
-  c.restore();
-}
-
-function niches(c, x, y, flames, lights, time, seed) {
-  c.save(); c.translate(Math.round(x), Math.round(y));
-  const u = 2;
-  px(c, u, -33, 18, 66, 4, 'rgba(2,3,8,.5)');
-  px(c, u, -32, -26, 64, 45, '#07080d');
-  px(c, u, -31, -25, 62, 43, '#535b5d');
-  px(c, u, -31, -25, 62, 3, '#6a7274');
-  for (let row = 0; row < 3; row++) for (let col = 0; col < 5; col++) {
-    const nx = -29 + col * 12, ny = -21 + row * 13;
-    px(c, u, nx, ny, 11, 11, '#07080d');
-    px(c, u, nx + 1, ny + 1, 9, 9, row === 1 && col === 2 ? '#2a3134' : '#3e4648');
-    px(c, u, nx + 2, ny + 3, 6, 1, '#2c3336');
-    px(c, u, nx + 2, ny + 5, 5, 1, '#2c3336');
-    const h = hash(seed + col, row, 77);
-    if (h > 0.62) { c.fillStyle = h > 0.8 ? '#e8c25a' : '#ebe8dc'; c.fillRect(Math.round((nx + 7) * u), Math.round((ny + 7) * u), 4, 4); c.fillStyle = '#26402c'; c.fillRect(Math.round((nx + 7) * u), Math.round((ny + 9) * u), 4, 2); }
-    if (h < 0.22) votive(c, x + (nx + 3) * u, y + (ny + 10) * u, flames, lights, time, seed + row * 7 + col);
-  }
-  c.restore();
-}
-
-/* ---------- el velatorio de Amparo, en el centro del mundo ---------- */
-
-function drawVelatorio(c, sx, sy, time, flames, lights) {
-  const u = 2;
-  c.save(); c.translate(Math.round(sx), Math.round(sy));
-  // alfombra de luz sucia en el suelo
-  c.fillStyle = 'rgba(70,52,30,.22)';
-  c.beginPath(); c.ellipse(0, 6, 120, 58, 0, 0, TAU); c.fill();
-  // sombra
-  px(c, u, -22, 6, 44, 6, 'rgba(2,3,8,.5)');
-  // caballetes
-  px(c, u, -16, 4, 2, 8, '#07080d'); px(c, u, 14, 4, 2, 8, '#07080d');
-  px(c, u, -15, 4, 1, 7, '#4e3420'); px(c, u, 15, 4, 1, 7, '#4e3420');
-  // ataúd
-  px(c, u, -21, -8, 42, 15, '#07080d');
-  px(c, u, -20, -7, 40, 13, '#7a4a31');
-  px(c, u, -20, -7, 40, 2, '#94603f');
-  px(c, u, -19, -5, 38, 9, '#4f2e20');
-  px(c, u, -18, -4, 36, 7, '#ece6e9');
-  px(c, u, -18, 2, 36, 1, '#bcb2bb');
-  // almohada y Amparo
-  px(c, u, -17, -3, 5, 5, '#f7f3f0');
-  px(c, u, -17, -2, 2, 3, '#e4e2da');
-  px(c, u, -15, -2, 3, 3, '#d9c7b4');
-  px(c, u, -13, -1, 1, 1, '#b88a6a');
-  px(c, u, -12, -3, 22, 5, '#1d1d27');
-  px(c, u, -12, -3, 22, 1, '#30313f');
-  px(c, u, -6, -2, 3, 2, '#d9c7b4');
-  px(c, u, -5, 0, 1, 1, '#f1e8d2'); px(c, u, -3, 0, 1, 1, '#f1e8d2'); px(c, u, -4, 1, 1, 1, '#c9a04c');
-  px(c, u, 10, -2, 4, 3, '#1d1d27');
-  // corona de crisantemos a los pies
-  for (let i = 0; i < 12; i++) {
-    const a = i / 12 * TAU;
-    c.fillStyle = i % 3 ? '#ebe8dc' : '#e8c25a';
-    c.fillRect(Math.round(52 + Math.cos(a) * 9) - 2, Math.round(-2 + Math.sin(a) * 6) - 2, 4, 4);
-  }
-  c.fillStyle = '#26402c'; c.fillRect(48, -4, 3, 3);
-  // la silla de quien vela, vacía
-  px(c, u, -30, 14, 10, 2, '#07080d'); px(c, u, -29, 8, 8, 7, '#07080d');
-  px(c, u, -28, 9, 6, 5, '#7a5434'); px(c, u, -28, 9, 6, 1, '#94603f');
-  px(c, u, -29, 2, 2, 7, '#07080d'); px(c, u, -22, 2, 2, 7, '#07080d');
-  px(c, u, -29, 2, 9, 2, '#07080d'); px(c, u, -28, 2, 7, 1, '#7a5434');
-  px(c, u, -28, 3, 1, 6, '#4e3420'); px(c, u, -22, 3, 1, 6, '#4e3420');
-  // taburete con el termo de café y dos tazas
-  px(c, u, 20, 13, 9, 2, '#07080d'); px(c, u, 21, 10, 7, 4, '#4e3420');
-  px(c, u, 21, 4, 3, 7, '#07080d'); px(c, u, 21, 5, 2, 5, '#5b646c'); px(c, u, 21, 5, 1, 5, '#9aa6ae');
-  px(c, u, 25, 8, 2, 2, '#f1e8d2'); px(c, u, 25, 8, 2, 1, '#07080d');
-  c.restore();
-  const corners = [[-50, -26], [50, -26], [-50, 34], [50, 34]];
-  corners.forEach(([x, y], i) => cirioStand(c, sx + x, sy + y, flames, lights, time, i + 1));
-  lights.push({x: sx, y: sy, r: 230, i: 0.55, c: 'warm', g: 0.6});
-}
-
-/* ---------- el suelo y lo que hay sobre él ---------- */
-
-let ground;
-function groundTile() {
-  if (ground) return ground;
-  ground = makeCanvas(256, 256);
-  const c = ground.getContext('2d');
-  c.fillStyle = '#121a1b'; c.fillRect(0, 0, 256, 256);
-  for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
-    const n = hash(x, y, 39);
-    if (n < 0.13) c.fillStyle = '#152022';
-    else if (n < 0.24) c.fillStyle = '#16231f';
-    else if (n < 0.3) c.fillStyle = '#0d1314';
-    else continue;
-    c.fillRect(x * 2, y * 2, 2, 2);
-  }
-  for (let i = 0; i < 40; i++) {
-    const x = Math.floor(hash(i, 2) * 124) * 2, y = Math.floor(hash(i, 3) * 124) * 2;
-    c.fillStyle = i % 3 ? '#1d2f28' : '#243a30';
-    c.fillRect(x, y, 2, 4); c.fillRect(x - 2, y + 2, 2, 2); c.fillRect(x + 2, y - 2, 2, 4);
-  }
-  for (let i = 0; i < 14; i++) {
-    const x = hash(i, 18) * 245 | 0, y = hash(i, 17) * 245 | 0;
-    c.fillStyle = '#2b3236'; c.fillRect(x, y, 4, 2); c.fillRect(x + 1, y + 2, 3, 1);
-    c.fillStyle = '#0b1012'; c.fillRect(x, y + 3, 4, 1);
-  }
-  // hojas secas de noviembre
-  for (let i = 0; i < 18; i++) {
-    const x = hash(i, 51) * 250 | 0, y = hash(i, 52) * 250 | 0;
-    c.fillStyle = i % 2 ? '#3a2a1c' : '#4a3420'; c.fillRect(x, y, 3, 2); c.fillRect(x + 1, y + 2, 2, 1);
-  }
-  return ground;
-}
-
-const PATH = 640;
-
-/*
- * Dibuja el mundo visible. Rellena flames (llamas para la capa que brilla) y lights (agujeros en la oscuridad).
- * Coordenadas de pantalla en píxeles CSS.
- */
-function drawWorld(c, camX, camY, w, h, time, flames, lights) {
-  c.save();
-  c.imageSmoothingEnabled = false;
-  const tile = groundTile(), ts = 256;
-  const sx0 = Math.floor(camX / ts), sy0 = Math.floor(camY / ts);
-  for (let y = sy0; y <= (camY + h) / ts; y++) for (let x = sx0; x <= (camX + w) / ts; x++) c.drawImage(tile, Math.floor(x * ts - camX), Math.floor(y * ts - camY));
-  // paseos de grava
-  for (let i = Math.floor((camX - 40) / PATH); i <= (camX + w + 40) / PATH; i++) {
-    const xx = Math.round(i * PATH - camX);
-    c.fillStyle = 'rgba(122,112,92,.13)'; c.fillRect(xx - 26, 0, 52, h);
-    for (let y = Math.floor(camY / 6) * 6; y < camY + h; y += 6) {
-      const n = hash(i, y, 5);
-      if (n > 0.55) { c.fillStyle = n > 0.85 ? 'rgba(170,160,140,.18)' : 'rgba(30,30,28,.3)'; c.fillRect(xx - 24 + Math.floor(hash(i, y, 6) * 48), Math.floor(y - camY), 2, 2); }
-    }
-  }
-  for (let j = Math.floor((camY - 40) / PATH); j <= (camY + h + 40) / PATH; j++) {
-    const yy = Math.round(j * PATH - camY);
-    c.fillStyle = 'rgba(122,112,92,.13)'; c.fillRect(0, yy - 26, w, 52);
-    for (let x = Math.floor(camX / 6) * 6; x < camX + w; x += 6) {
-      const n = hash(x, j, 7);
-      if (n > 0.55) { c.fillStyle = n > 0.85 ? 'rgba(170,160,140,.18)' : 'rgba(30,30,28,.3)'; c.fillRect(Math.floor(x - camX), yy - 24 + Math.floor(hash(x, j, 8) * 48), 2, 2); }
-    }
-  }
-  // objetos en una rejilla con azar fijo: el camposanto es siempre el mismo
-  const cell = 150, objects = [];
-  for (let gy = Math.floor((camY - 150) / cell); gy <= (camY + h + 170) / cell; gy++) {
-    for (let gx = Math.floor((camX - 120) / cell); gx <= (camX + w + 120) / cell; gx++) {
-      const wx = gx * cell + hash(gx, gy, 25) * 80 + 35, wy = gy * cell + hash(gx, gy, 88) * 80 + 35;
-      if (Math.hypot(wx, wy * 1.4) < 230) continue;
-      // nada encima de los paseos
-      const mx = ((wx % PATH) + PATH) % PATH, my = ((wy % PATH) + PATH) % PATH;
-      if (mx < 46 || mx > PATH - 46 || my < 50 || my > PATH - 40) continue;
-      objects.push({sx: Math.round(wx - camX), sy: Math.round(wy - camY), v: hash(gx, gy, 73), gx, gy});
-    }
-  }
-  objects.sort((a, b) => a.sy - b.sy);
-  for (const o of objects) {
-    const seed = o.gx * 31 + o.gy * 17;
-    if (o.gx % 7 === 3 && o.gy % 5 === 1) { niches(c, o.sx, o.sy, flames, lights, time, seed); continue; }
-    if (o.v < 0.12) cypress(c, o.sx, o.sy, seed);
-    else if (o.v < 0.44) tomb(c, o.sx, o.sy, hash(o.gx, o.gy, 11), flames, lights, time, seed);
-    else if (o.v < 0.54) ironCross(c, o.sx, o.sy, seed);
-    else if (o.v < 0.62) woodCross(c, o.sx, o.sy, seed);
-    else if (o.v < 0.66) angel(c, o.sx, o.sy);
-    else if (o.v < 0.74) flowers(c, o.sx, o.sy, seed);
-    else if (o.v > 0.97) votive(c, o.sx, o.sy, flames, lights, time, seed);
-  }
-  if (Math.abs(camX + w / 2) < w + 200 && Math.abs(camY + h / 2) < h + 200) drawVelatorio(c, -camX, -camY, time, flames, lights);
-  c.restore();
-}
-
-/* Llamas de vela, dibujadas después de la oscuridad para que brillen. */
-function drawFlames(c, flames, time) {
-  c.save();
-  for (const f of flames) {
-    const x = Math.round(f.x), y = Math.round(f.y), tall = f.kind === 'cirio' ? 1 : 0;
-    const lean = Math.round(Math.sin(time * 3 + x) * 0.6);
-    c.fillStyle = f.kind === 'votive' ? 'rgba(255,107,58,.55)' : 'rgba(255,176,74,.6)';
-    c.fillRect(x - 2, y - 1, 4, 5 + tall * 2);
-    c.fillStyle = '#ffb04a';
-    c.fillRect(x - 1 + lean, y - 2 - tall * 2, 2, 5 + tall * 2);
-    c.fillStyle = '#fff1bd';
-    c.fillRect(x - 1 + lean, y + (f.f > 0.95 ? -1 : 0) - tall, 2, 2 + tall);
-  }
-  c.restore();
-}
-
-/* ---------- niebla ---------- */
-
-let fogBlob;
-function fogSprite() {
-  if (fogBlob) return fogBlob;
-  fogBlob = makeCanvas(256, 128);
-  const c = fogBlob.getContext('2d');
-  const g = c.createRadialGradient(128, 64, 4, 128, 64, 126);
-  g.addColorStop(0, 'rgba(190,205,215,1)'); g.addColorStop(0.45, 'rgba(190,205,215,.45)'); g.addColorStop(1, 'rgba(190,205,215,0)');
-  c.save(); c.scale(1, 0.5); c.translate(0, 64);
-  c.fillStyle = g; c.fillRect(0, -64, 256, 256);
-  c.restore();
-  return fogBlob;
-}
-
-function drawFog(c, camX, camY, w, h, time, density) {
-  if (density <= 0.01) return;
-  const img = fogSprite(), cell = 360;
-  c.save();
-  for (let gy = Math.floor((camY - 200) / cell); gy <= (camY + h + 200) / cell; gy++) {
-    for (let gx = Math.floor((camX - 500) / cell); gx <= (camX + w + 300) / cell; gx++) {
-      const n = hash(gx, gy, 101);
-      if (n < 0.35) continue;
-      const drift = (time * (9 + n * 8)) % (cell * 3);
-      const x = gx * cell + hash(gx, gy, 102) * cell + drift - camX - cell;
-      const y = gy * cell + hash(gx, gy, 103) * cell - camY;
-      const sc = 1.6 + n * 1.8;
-      c.globalAlpha = density * (0.05 + n * 0.08);
-      c.drawImage(img, x - 128 * sc, y - 64 * sc, 256 * sc, 128 * sc);
-    }
-  }
-  c.restore();
 }
 
 /* ---------- la oscuridad ---------- */
@@ -1964,7 +1381,7 @@ function drawPortrait(c, key, width, height) {
   c.restore();
 }
 
-return {ATTACK_PALETTE, makeCanvas, hash, sprite, drawSprite, drawShadow, drawIcon, drawVelatorio, drawWorld, drawFlames, drawFog, Lighting, drawPortrait};
+return {ATTACK_PALETTE, makeCanvas, hash, sprite, drawSprite, drawShadow, drawIcon, Lighting, drawPortrait};
 })();
 /* ---- audio.js ---- */
 const __audio_js = (() => {
@@ -2514,9 +1931,9 @@ const __combat_fx_js = (() => {
  * Las luces viven en Lighting; aquí quedan las siluetas luminosas y el nácar.
  * Ningún efecto cambia el daño ni la duración de las armas.
  */
+const { TAU } = __util_js;
 const { ATTACK_PALETTE, makeCanvas } = __art_js;
 
-const TAU = Math.PI * 2;
 const MAX_EFFECTS = 96;
 const MAX_LIGHTS = 24;
 const priority = kind => kind === 'bell' ? 3 : kind === 'cast' || kind === 'blast' ? 2 : kind === 'impact' ? 0 : 1;
@@ -2781,185 +2198,310 @@ class CombatEffects {
 
 return {CombatEffects};
 })();
-/* ---- game.js ---- */
-const __game_js = (() => {
+/* ---- story.js ---- */
+const __story_js = (() => {
 /*
- * La noche de Difuntos, de 00:00 a 06:00 (cien segundos por hora).
- * Aquí se mueve todo: quien vela, lo que viene a por Amparo, la luz y el alba.
+ * Todo el texto del juego vive aquí: quién es Amparo, quién la vela,
+ * qué se recuerda de ella y qué viene a por ella.
+ * Si quieres que el juego hable con tu voz, este es el archivo que hay que reescribir.
  */
-const { drawWorld, drawFlames, drawFog, drawSprite, drawShadow, sprite, Lighting, ATTACK_PALETTE } = __art_js;
-const { AudioEngine } = __audio_js;
-const { CombatEffects } = __combat_fx_js;
-const { CHARACTERS, MEMORIES, FALLBACK_CHOICES, BARKS, AMPARO, BOSS, HOURS } = __story_js;
 
-const TAU = Math.PI * 2;
-const NIGHT = 600;
-const HOUR = 100;
-const BOSS_AT = 500;
-const MAX_ENEMIES = 240;
-const COFFIN = {x: 0, y: 0};
-
-const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
-const rand = (a, b) => a + Math.random() * (b - a);
-const pick = arr => arr[Math.floor(Math.random() * arr.length)];
-const lerp = (a, b, t) => a + (b - a) * t;
-
-const fmtClock = t => {
-  const s = clamp(t, 0, NIGHT);
-  const h = Math.floor(s / HOUR), m = Math.min(59, Math.floor((s % HOUR) * 0.6));
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+const WORLD = {
+  deceased: 'Amparo',
+  place: 'Camposanto del Carmen',
+  night: 'Noche de Difuntos',
+  tagline: 'Que no se apague la vela.',
+  intro: 'Amparo murió el día de Todos los Santos, a los ochenta y ocho años. Según la costumbre, alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve.',
+  loop: 'La Noche de Difuntos se repite hasta que alguien la vela entera.'
 };
 
-/* unlock en segundos de noche; value es la luz que dejan al irse. */
-const ENEMIES = {
-  anima: {unlock: 0, weight: 30, hp: 12, speed: 60, r: 10, damage: 6, value: 1, scale: 2},
-  hermano: {unlock: 0, weight: 44, hp: 24, speed: 34, r: 13, damage: 9, value: 1, scale: 2},
-  urco: {unlock: 100, weight: 20, hp: 34, speed: 52, r: 14, damage: 11, value: 2, scale: 2},
-  curuxa: {unlock: 150, weight: 15, hp: 26, speed: 58, r: 12, damage: 10, value: 2, scale: 2},
-  ahogado: {unlock: 200, weight: 24, hp: 64, speed: 29, r: 15, damage: 13, value: 3, scale: 2},
-  planidera: {unlock: 250, weight: 12, hp: 38, speed: 40, r: 13, damage: 8, value: 3, scale: 2},
-  espantajo: {unlock: 400, weight: 7, hp: 200, speed: 22, r: 22, damage: 20, value: 7, scale: 2},
-  guia: {unlock: 9999, weight: 0, hp: 2700, speed: 27, r: 30, damage: 24, value: 0, scale: 3}
+/* Cada hora tiene nombre propio. La campana da tantos golpes como marca la hora. */
+const HOURS = [
+  {name: 'Medianoche', mood: 'Noche de Difuntos'},
+  {name: 'La una', mood: 'Se oyen pasos en el camino'},
+  {name: 'Las dos', mood: 'Sube la marea'},
+  {name: 'Las tres', mood: 'La hora de las ánimas'},
+  {name: 'Las cuatro', mood: 'Lo más oscuro de la noche'},
+  {name: 'Las cinco', mood: 'Viene la Guía'},
+  {name: 'Las seis', mood: 'Amanece'}
+];
+
+const CHARACTERS = {
+  lucia: {
+    name: 'Lucía',
+    role: 'La nieta',
+    age: '34 años',
+    blurb: 'Diez años sin volver al pueblo. Llegó en el último autobús, con la maleta y una culpa que no le cabe en ella.',
+    perk: 'Recuerda un 25 % más · Su luz llega más lejos: la linterna del móvil',
+    weapon: 'chispas',
+    start: {chispas: 1},
+    hp: 100, speed: 128, light: 1.22, memory: 1.25, armor: 0,
+    victory: 'Lucía apagó el cirio con dos dedos, como le había enseñado ella. Esta vez no se fue en el primer autobús.',
+    defeat: 'Lucía despertó con la cabeza apoyada en el ataúd y el móvil sin batería. No recordaba el final de la noche. Eso fue lo peor.'
+  },
+  julian: {
+    name: 'Julián',
+    role: 'El sepulturero',
+    age: '79 años',
+    blurb: 'Esta tarde cavó la fosa de Amparo y no dejó que nadie le ayudara. La sacó a bailar en las fiestas del cincuenta y cuatro.',
+    perk: 'Escopeta cargada con sal gruesa · Más aguante, menos prisa',
+    weapon: 'sal',
+    start: {sal: 1},
+    hp: 125, speed: 112, light: 1, memory: 1, armor: 0.1,
+    victory: 'Julián se sentó en el murete y encendió un cigarro. «Ya puedes regañarme», dijo. Nadie le regañó, y aun así lo apagó a la mitad.',
+    defeat: 'Julián despertó en la silla, con el cigarro apagado entre los dedos. «Mañana otra vez», dijo. Y era verdad.'
+  },
+  matilde: {
+    name: 'Matilde',
+    role: 'La rezadora',
+    age: '81 años',
+    blurb: 'Ha rezado en todos los velatorios del pueblo desde 1961. Amparo le hacía trampas al tute. Es el primero en el que le tiembla la voz.',
+    perk: 'Empieza con el rosario de nácar · Reza más rápido de lo que anda',
+    weapon: 'chispas',
+    start: {chispas: 1, rosario: 1},
+    hp: 90, speed: 116, light: 1, memory: 1, armor: 0,
+    victory: 'Matilde terminó el último misterio. Luego, por primera vez en sesenta años de velatorios, se quedó callada.',
+    defeat: 'Matilde despertó con el rosario enredado en los dedos y la boca seca de rezar. Juró que la noche siguiente no se dormiría.'
+  }
 };
 
-const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
-const MAX_LEVEL = 5;
+/*
+ * Los recuerdos son las mejoras. Cada uno es una cosa concreta de Amparo.
+ * kind: 'arma' dispara o golpea por su cuenta; 'recuerdo' cambia cómo velas.
+ * fragment se usa para escribir el amanecer con los recuerdos que más elegiste.
+ */
+const MEMORIES = [
+  {id: 'chispas', kind: 'arma', name: 'Chispas del cirio',
+    effect: 'Lanza chispas a lo más cercano. Cada nivel: una chispa más y +15 % de daño.',
+    line: 'Encendía el cirio con un solo fósforo. Decía que la segunda cerilla es para los que dudan.',
+    fragment: 'la cerilla que nunca le falló'},
+  {id: 'sal', kind: 'arma', name: 'Sal gruesa',
+    effect: 'Un abanico de sal que hiere y aparta. Cada nivel: un grano más y +20 % de daño.',
+    line: 'Si se le caía la sal, echaba un pellizco por encima del hombro. Por si acaso.',
+    fragment: 'la sal por encima del hombro'},
+  {id: 'rosario', kind: 'arma', name: 'El rosario de nácar',
+    effect: 'Cuentas que giran a tu alrededor y golpean. Cada nivel: una cuenta más y más daño.',
+    line: 'Le faltaba una cuenta. Nunca quiso cambiarlo.',
+    fragment: 'el rosario al que le faltaba una cuenta'},
+  {id: 'campana', kind: 'arma', name: 'La campana del Carmen',
+    effect: 'Cada pocos segundos, un tañido hiere y aparta lo que te rodea. Cada nivel: más alcance y más a menudo.',
+    line: 'Un martes cualquiera tocó a fiesta. Dijo que los martes también se lo merecían.',
+    fragment: 'la campana tocando a fiesta un martes'},
+  {id: 'farol', kind: 'arma', name: 'El farol del faro',
+    effect: 'Tu luz quema: lo que entra en ella arde despacio. Cada nivel: luz más amplia y más calor.',
+    line: 'Su padre fue el último farero. Ella le subía la cena: ciento diecisiete escalones.',
+    fragment: 'los ciento diecisiete escalones del faro'},
+  {id: 'polillas', kind: 'arma', name: 'Las polillas del armario',
+    effect: 'Polillas que buscan a las criaturas y las muerden. Cada nivel: una polilla más.',
+    line: 'Guardó el vestido de novia con naftalina. Se lo comieron igual. «Tendrían hambre», dijo.',
+    fragment: 'el vestido de novia que se comieron las polillas'},
+  {id: 'pan', kind: 'recuerdo', name: 'El pan de los jueves',
+    effect: 'Recuperas 0,5 de vida por segundo por nivel.',
+    line: 'Los jueves olía a pan todo el pueblo. Nadie necesitaba calendario.',
+    fragment: 'el olor a pan de los jueves'},
+  {id: 'radio', kind: 'recuerdo', name: 'La radio de la cocina',
+    effect: 'Atacas un 10 % más rápido por nivel.',
+    line: 'Siempre la misma emisora: coplas, el parte del tiempo y las esquelas del domingo.',
+    fragment: 'la radio de la cocina, bajita'},
+  {id: 'caldo', kind: 'recuerdo', name: 'El caldo de los disgustos',
+    effect: '+20 de vida máxima por nivel. Al elegirlo, te cura 30.',
+    line: 'Para un resfriado, caldo. Para un desengaño, caldo. Para un entierro, caldo.',
+    fragment: 'el caldo para todos los disgustos'},
+  {id: 'gafas', kind: 'recuerdo', name: 'Las gafas en la cabeza',
+    effect: 'Atraes la luz desde un 35 % más lejos por nivel.',
+    line: 'Se pasaba media mañana buscándolas. Las llevaba puestas en la cabeza.',
+    fragment: 'las gafas que buscaba llevándolas puestas'},
+  {id: 'mecedora', kind: 'recuerdo', name: 'La mecedora',
+    effect: 'Esquivas un 15 % más a menudo y te mueves un 5 % más rápido por nivel.',
+    line: 'Se mecía para pensar. Decía que pensar quieta da sueño.',
+    fragment: 'el crujido de la mecedora'},
+  {id: 'fotos', kind: 'recuerdo', name: 'El álbum de fotos',
+    effect: 'Recuerdas un 15 % más con cada luz por nivel.',
+    line: 'En sus fotos nadie mira a cámara. Decía que así la gente se parece más a sí misma.',
+    fragment: 'las fotos en las que nadie mira a cámara'},
+  {id: 'risa', kind: 'recuerdo', name: 'Su risa',
+    effect: '+7 % de probabilidad por nivel de un golpe certero que hace el doble de daño.',
+    line: 'Se reía con todo el cuerpo, como si le hicieran cosquillas por dentro.',
+    fragment: 'su risa, que le sacudía los hombros'},
+  {id: 'manos', kind: 'recuerdo', name: 'Sus manos frías',
+    effect: 'Recibes un 8 % menos de daño por nivel.',
+    line: '«Manos frías, corazón caliente», decía. Y te las ponía en la nuca.',
+    fragment: 'las manos frías en la nuca'}
+];
 
-class VigilGame {
-  constructor(canvas, hooks = {}) {
-    this.canvas = canvas;
-    this.ctx = canvas.getContext('2d', {alpha: false});
-    this.hooks = hooks;
-    this.audio = new AudioEngine();
-    this.lighting = new Lighting();
-    this.combatFx = new CombatEffects();
-    this.options = {shake: true, flashes: true, numbers: false, softDark: false};
-    this.muted = false;
-    this.state = 'ready';
-    this.character = 'lucia';
-    this.keys = new Set();
-    this.pointer = null;
-    this.width = 900; this.height = 560;
-    this.clock = 0;
-    this.lastFrame = performance.now();
-    this.timeScale = 1;
-    this.bot = false;
-    this.god = false;
-    this.handlers = [];
-    this.cam = {x: 0, y: 24};
-    this.titleFocus = {x: 0, y: 30};
-    this.grid = new Map();
-    this.reset();
-    this.resize();
-    this.bindInput();
-    this.resizeObserver = new ResizeObserver(() => this.resize());
-    this.resizeObserver.observe(canvas);
-    this.frame = this.frame.bind(this);
-    this.raf = requestAnimationFrame(this.frame);
+/* Si ya lo recuerdas todo, la noche aún ofrece esto. */
+const FALLBACK_CHOICES = [
+  {id: 'cafe', kind: 'consuelo', name: 'Un café del termo',
+    effect: 'Recuperas 35 de vida.',
+    line: 'En los velatorios siempre hay un termo de café. Y alguien que pregunta si está recién hecho.'},
+  {id: 'silencio', kind: 'consuelo', name: 'Un rato en silencio',
+    effect: 'Tu esquiva se recarga al instante.',
+    line: 'Hay cosas que no hace falta decir en voz alta.'}
+];
+
+const CREATURES = {
+  anima: {name: 'Ánima en pena', tag: 'Desde medianoche',
+    lore: 'Almas que se perdieron por el camino. No quieren hacerte daño: quieren tu calor, y eso duele igual.'},
+  hermano: {name: 'Hermano de la Compaña', tag: 'Caminan en fila',
+    lore: 'Van en procesión, con un cirio en la mano y la capucha calada. Si cuentas las velas, siempre sobra una.'},
+  urco: {name: 'El Urco', tag: 'Desde la una · Embiste',
+    lore: 'Un perro negro que sube del mar arrastrando cadenas. Antes de saltar se queda quieto y gruñe: ese es el momento de apartarse.'},
+  curuxa: {name: 'La curuxa', tag: 'Desde la una y media · Vuela',
+    lore: 'La lechuza que canta en el tejado de quien se va a morir. Esta semana cantó tres noches en el de Amparo.'},
+  ahogado: {name: 'Ahogado', tag: 'Desde las dos · Lento',
+    lore: 'El mar devuelve lo que se lleva, aunque tarde. Vienen chorreando a ver a quién velan esta vez.'},
+  planidera: {name: 'Plañidera', tag: 'Desde las dos y media · A distancia',
+    lore: 'Las contrataban para llorar en los entierros. Algunas no supieron parar. Sus lágrimas queman: no te quedes quieto.'},
+  espantajo: {name: 'El espantajo', tag: 'Desde las cuatro · Enorme',
+    lore: 'Lo hizo Ramón, el marido de Amparo, con su chaqueta de los domingos. Cuarenta años vigilando el maizal. Esta noche ha bajado al camposanto.'},
+  guia: {name: 'La Guía', tag: 'A las cinco',
+    lore: 'Quien encabeza la Compaña lleva la cruz hasta que otro la coja. Carmela Souto la lleva desde 1963. Esta noche viene a por Amparo.'}
+};
+
+const BOSS = {
+  name: 'La Guía',
+  title: 'Carmela Souto lleva la cruz desde 1963',
+  arrive: 'Viene a por Amparo',
+  reach: '—Ven, Amparo, que se hace tarde.',
+  rage: '—¡Que alguien coja la cruz! ¡Que alguien la coja ya!',
+  freed: '—¿Ya amanece? Decidle a mi madre que ya voy.',
+  took: 'Carmela posó la mano sobre el ataúd. La Compaña siguió su camino con una luz más.'
+};
+
+/* La voz de Amparo. Aparece poco, en cursiva, y nunca se explica. */
+const AMPARO = {
+  name: 'Amparo',
+  lines: [
+    '—Abrígate, que de noche refresca.',
+    '—¿Has comido algo? Hay caldo.',
+    '—No corras tanto, que te vas a caer.',
+    '—Tú no te preocupes por mí.',
+    '—Si me buscas, estoy en la mecedora.',
+    '—Esa puerta, que se cierra sola.'
+  ],
+  lowHp: '—Duérmete un poco, que ya velo yo.',
+  dawn: '—Y apaga la luz al salir.'
+};
+
+/*
+ * Lo que dice cada uno durante la noche.
+ * hourN suena al dar la campana. first_* la primera vez que ven a cada criatura.
+ * memory_* al elegir ese recuerdo (no todos los recuerdos tienen frase para todos).
+ */
+const BARKS = {
+  lucia: {
+    start: [
+      'Vale. Tú y yo, abuela. Hasta que amanezca.',
+      'Me explicaste mil veces cómo se hacía esto. Nunca te escuché.',
+      'Decías que en el pueblo ya no quedaba nadie para velar a nadie. Pues aquí estoy.'
+    ],
+    hour1: 'La una. Doce por ciento de batería y cinco horas de noche. Las cuentas no salen.',
+    hour2: 'Las dos. A esta hora tú llevabas un rato dormida. Siempre a las diez, con la radio puesta.',
+    hour3: 'Las tres. La hora de las ánimas, decías. Yo me reía. Ya no me río.',
+    hour4: 'Las cuatro. Cuatro por ciento. Te estarías riendo de mí, ¿verdad?',
+    hour5: 'Las cinco. Ya casi. Aguanta. Aguanto.',
+    first_hermano: 'No. No, no, no. Me lo contabas para que no saliera de noche. Era verdad.',
+    first_anima: 'Son… velas. Van solas. Pobrecillas.',
+    first_urco: 'Un perro negro con cadenas. Claro que sí. Por qué no.',
+    first_curuxa: 'La lechuza. Me dijiste por teléfono que cantaba en tu tejado. No te hice caso.',
+    first_ahogado: 'Vienen del mar. Están empapados. Vienen… a verte.',
+    first_planidera: '¿Quién llora así? Nadie llora así por nadie.',
+    first_espantajo: 'Esa chaqueta… es la del abuelo Ramón.',
+    lowHp: ['No me puedo dormir. No me puedo dormir.', 'Aguanta, Lucía. Aguanta.', 'Abuela, échame una mano, anda.'],
+    boss: '¿Carmela? La abuela me habló de una Carmela que se perdió en el monte.',
+    stopped: 'El reloj se ha parado. Claro que se ha parado.',
+    freed: 'Vete a casa, Carmela. Ya está.',
+    dawn: 'Está amaneciendo. Mira, abuela. Mira qué luz.',
+    memory_rosario: 'Fui yo. Me tragué yo la cuenta. Nunca te lo dije.',
+    memory_pan: 'Los jueves olía a pan hasta en el autobús.',
+    memory_fotos: 'En todas salgo de espaldas. Ahora entiendo por qué.',
+    memory_radio: 'Todavía me sé la sintonía del parte.',
+    memory_gafas: 'Llevo tus gafas en el bolso. No sé por qué las cogí.',
+    memory_farol: 'Nunca subí al faro contigo. Siempre había algo más importante.'
+  },
+  julian: {
+    start: [
+      'Bueno, Amparo. La fosa ya está hecha. Ahora, esto.',
+      'Cincuenta años diciéndome que dejara el tabaco. Y mírate.',
+      'He enterrado a medio pueblo. Velar es otra cosa.'
+    ],
+    hour1: 'La una. A esta hora, en las fiestas del cincuenta y cuatro, todavía bailábamos.',
+    hour2: 'Las dos. Ramón bailaba mejor. Eso no te lo discuto.',
+    hour3: 'Las tres. A esta hora se murió mi padre. Y el tuyo. Mala hora, las tres.',
+    hour4: 'Las cuatro. Me duelen las rodillas. No se lo digas a nadie.',
+    hour5: 'Las cinco. Ya huele a mar de madrugada. Queda poco, mujer.',
+    first_hermano: 'La Compaña. Sabía que vendríais. A esta no os la lleváis.',
+    first_anima: 'Ánimas. No muerden. Pero no les des la espalda.',
+    first_urco: 'El Urco. Ese perro ya rondaba por aquí cuando yo era un chaval.',
+    first_curuxa: 'La curuxa. Siempre llega tarde. Ya está muerta, pájaro.',
+    first_ahogado: 'A ese lo conozco. El hijo de los Lema, el del setenta y dos.',
+    first_planidera: 'Las de llorar. En mis tiempos se les pagaba con una gallina.',
+    first_espantajo: 'El espantajo de Ramón, con su chaqueta de los domingos. Hay que tener cara.',
+    lowHp: ['Todavía no, rediós.', 'No me vas a ver caer, Amparo.', 'Estas rodillas…'],
+    boss: 'Carmela. Tres días te buscamos en el monte. Tres días.',
+    stopped: 'Se ha parado el reloj de la torre. Ese reloj no se paró ni en la guerra.',
+    freed: 'Descansa, Carmela. Ya la llevo yo.',
+    dawn: 'Ya clarea. Ya te puedes ir tranquila, mujer.',
+    memory_pan: 'Los jueves me guardaba una barra. Hasta el último jueves.',
+    memory_risa: 'Esa risa. Le sacudía los hombros.',
+    memory_manos: 'Manos frías, corazón caliente. Me las ponía en la nuca para fastidiarme.',
+    memory_mecedora: 'La mecedora se la arreglé yo. Tres veces.',
+    memory_caldo: 'Cuando lo de mi Pilar me trajo caldo. Sin decir nada. Solo caldo.',
+    memory_sal: 'Sal del economato. Lo mejor contra lo que no tiene cuerpo.'
+  },
+  matilde: {
+    start: [
+      'Se tenía que morir el día de Todos los Santos. Para fastidiar. Así era ella.',
+      'Sesenta años rezando en velatorios. Nunca me había temblado la voz.',
+      'Dios te salve, María… y a ti, Amparo, que buena falta te hace.'
+    ],
+    hour1: 'La una. Amparo hacía trampas al tute. Que Dios la perdone, porque yo no.',
+    hour2: 'Las dos. A estas horas ya nos habíamos bebido el anís de la viuda de Couto.',
+    hour3: 'Las tres. Ánimas benditas, dejadla en paz, que bastante tuvo.',
+    hour4: 'Las cuatro. Se me duermen los pies. Rezo más deprisa.',
+    hour5: 'Las cinco. El último misterio, Amparo. Aguanta tú, que yo aguanto.',
+    first_hermano: '¡La Santa Compaña! Pues a esta no os la lleváis, que me debe una partida.',
+    first_anima: 'Ánimas del purgatorio. Rezad conmigo, criaturas, que se os pasa el frío.',
+    first_urco: '¡Fuera, chucho! ¡Fuera de aquí!',
+    first_curuxa: 'La curuxa cantó en tu tejado y yo te dije que no era nada. Mentí.',
+    first_ahogado: 'Los del mar. Siempre vienen a mirar. Que se sequen primero.',
+    first_planidera: '¡Aficionadas! Así no se llora a nadie.',
+    first_espantajo: 'Ramón, hijo, ¿tú también? Si no te gustaban las visitas.',
+    lowHp: ['Virgen del Carmen, échame una mano.', 'A mis años, esto.', 'No te me duermas, Matilde.'],
+    boss: '¿Carmela? ¡Carmela Souto! ¡Te debo cinco pesetas desde el sesenta y tres!',
+    stopped: 'Se ha parado el reloj. Pues yo no me paro.',
+    freed: 'Toma, Carmela. Tus cinco pesetas. Ve con Dios.',
+    dawn: 'Amanece. Gloria al Padre… y a ti, terca, que lo has conseguido.',
+    memory_rosario: 'Ese rosario se lo regalé yo. Y la cuenta no se la tragó nadie: la perdió jugando al tute.',
+    memory_radio: 'La copla esa la cantaba fatal. Fatal. Pero entera.',
+    memory_fotos: 'En todas sale con los ojos cerrados. Decía que era para rezar.',
+    memory_risa: 'Se reía en misa. En misa, Amparo.',
+    memory_gafas: 'Las gafas en la cabeza. Mil veces te lo dije: mírate en el espejo.',
+    memory_campana: 'La del martes fue ella. El cura todavía no lo sabe.'
   }
+};
 
-  /* ---------- ciclo de vida ---------- */
+const HELP = [
+  ['Moverte', 'WASD o las flechas. En el móvil, arrastra el dedo sobre la pantalla.'],
+  ['Atacar', 'Es automático: tus armas buscan solas lo que tengas más cerca.'],
+  ['Esquivar', 'Espacio. Durante el salto nada te toca. Tiene unos segundos de recarga.'],
+  ['Recordar', 'Recoge la luz que dejan las criaturas. Cada recuerdo de Amparo es una mejora: elige uno de tres.'],
+  ['La luz', 'Si estás herido, tu luz se encoge. Junto al ataúd de Amparo te recuperas.'],
+  ['Las cinco', 'Llega la Guía y va directa al ataúd. No dejes que se la lleve.'],
+  ['Pausa', 'P o Esc.']
+];
 
-  reset() {
-    const ch = CHARACTERS[this.character] || CHARACTERS.lucia;
-    this.time = 0; this.kills = 0; this.level = 1; this.xp = 0; this.xpNext = this.xpFor(1);
-    this.mem = Object.fromEntries(MEMORIES.map(m => [m.id, 0]));
-    this.order = [];
-    for (const [k, v] of Object.entries(ch.start)) { this.mem[k] = v; this.order.push(k); }
-    this.player = {x: 0, y: 92, hp: ch.hp, face: 1, inv: 0, dip: 0, walk: 0, moving: false};
-    this.computeStats();
-    this.player.hp = this.st.maxHp;
-    this.enemies = []; this.shots = []; this.enemyShots = []; this.hazards = [];
-    this.gems = []; this.particles = []; this.rings = []; this.numbers = [];
-    this.corpses = []; this.marks = []; this.moths = []; this.ghosts = [];
-    this.combatFx.clear();
-    this.t = {chispas: 0.35, sal: 0.4, campana: 2.5, farol: 0.4, spawn: 0.6, procession: 48, swarm: 26, ghost: 0,
-      bossSummon: 5, bossWater: 3, bossSpiral: 4, regenFx: 0, stats: 0, danger: 0};
-    this.dashCd = 0; this.dashTime = 0; this.dashDir = {x: 1, y: 0}; this.lastMove = {x: 1, y: 0};
-    this.phase = 'night'; this.hourShown = 0; this.boss = null; this.soul = 0; this.stoppedFor = 0;
-    this.rushFrom = 0; this.dawnT = 0; this.dyingT = 0; this.cause = null; this.bossReached = false; this.bossRaged = false;
-    this.dawnBreaks = false; this.deathClock = null; this.lastVictory = false;
-    this.damageTaken = 0; this.minHp = Infinity;
-    this.shake = 0; this.flash = 0; this.flashColor = '255,255,255'; this.freeze = 0;
-    this.seen = new Set(); this.said = new Set(); this.subQueue = []; this.sub = null; this.subT = 0;
-    this.lowHpCd = 0; this.amparoSaid = new Set(); this.danger = 0;
-    this.choices = []; this.enemyId = 0; this.cafeDrops = 0;
-    this.keys.clear(); this.pointer = null;
-  }
+return {WORLD, HOURS, CHARACTERS, MEMORIES, FALLBACK_CHOICES, CREATURES, BOSS, AMPARO, BARKS, HELP};
+})();
+/* ---- input.js ---- */
+const __input_js = (() => {
+/*
+ * Teclado y dedo: cómo se mueve y esquiva quien vela.
+ */
+const { rand } = __util_js;
 
-  computeStats() {
-    const m = this.mem, ch = CHARACTERS[this.character] || CHARACTERS.lucia;
-    const prevMax = this.st?.maxHp;
-    this.st = {
-      maxHp: ch.hp + 20 * m.caldo,
-      speed: ch.speed * (1 + 0.05 * m.mecedora),
-      regen: 0.5 * m.pan,
-      cadence: Math.pow(0.9, m.radio),
-      pickup: 72 * (1 + 0.35 * m.gafas),
-      memory: ch.memory * (1 + 0.15 * m.fotos),
-      crit: 0.04 + 0.07 * m.risa,
-      armor: Math.min(0.6, ch.armor + 0.08 * m.manos),
-      dashCd: 5 * Math.pow(0.85, m.mecedora),
-      light: 178 * ch.light * (1 + 0.1 * m.farol)
-    };
-    if (prevMax && this.player) this.player.hp = Math.min(this.st.maxHp, this.player.hp + Math.max(0, this.st.maxHp - prevMax));
-  }
-
-  xpFor(level) { return Math.floor(5 + level * 3.4 + level * level * 0.18); }
-
-  start(character) {
-    this.character = CHARACTERS[character] ? character : 'lucia';
-    this.reset();
-    this.audio.init();
-    this.audio.setMuted(this.muted);
-    this.cam.x = this.player.x; this.cam.y = this.player.y;
-    this.setState('running');
-    this.banner(HOURS[0].name, HOURS[0].mood);
-    this.audio.sfx('hora', {count: 12, gap: 1.5});
-    for (const id of this.order) this.hooks.onDiscover?.({kind: 'memory', id});
-    this.bark('start', {line: pick(BARKS[this.character].start), delay: 2.2});
-    for (let i = 0; i < 7; i++) {
-      const e = this.spawn('anima');
-      if (e) { const a = i / 7 * TAU + 0.4, r = Math.max(this.width, this.height) * 0.62; e.x = this.player.x + Math.cos(a) * r; e.y = this.player.y + Math.sin(a) * r; }
-    }
-    this.emitStats();
-    this.canvas.focus?.({preventScroll: true});
-  }
-
-  /* Para pruebas: salta a un momento de la noche. */
-  skipTo(seconds) {
-    if (this.state !== 'running') return;
-    this.time = clamp(seconds, 0, NIGHT - 2);
-    this.hourShown = Math.min(5, Math.floor(this.time / HOUR));
-  }
-
-  setState(state) { this.state = state; this.hooks.onState?.(state); }
-  pause() { if (this.state !== 'running') return; this.keys.clear(); this.pointer = null; this.setState('paused'); }
-  resume() { if (this.state !== 'paused') return; this.keys.clear(); this.pointer = null; this.lastFrame = performance.now(); this.setState('running'); this.canvas.focus?.({preventScroll: true}); }
-  setMuted(v) { this.muted = !!v; this.audio.setMuted(this.muted); if (!this.muted) this.audio.init(); }
-  setVolume(v) { this.audio.setVolume(v); }
-  setOptions(o) { Object.assign(this.options, o); }
-  backToTitle() { this.reset(); this.setState('ready'); this.hooks.onSubtitle?.(null); this.emitStats(); }
-  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); }
-
-  resize() {
-    const rect = this.canvas.getBoundingClientRect();
-    const cssW = Math.max(1, rect.width || 900), cssH = Math.max(1, rect.height || 560);
-    // En pantallas pequeñas se aleja un poco la cámara para ver venir a la Compaña.
-    this.zoom = Math.min(cssW, cssH) < 520 ? 0.75 : 1;
-    this.width = cssW / this.zoom;
-    this.height = cssH / this.zoom;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    this.canvas.width = Math.round(cssW * dpr);
-    this.canvas.height = Math.round(cssH * dpr);
-    this.ctx.setTransform(dpr * this.zoom, 0, 0, dpr * this.zoom, 0, 0);
-    this.ctx.imageSmoothingEnabled = false;
-    this.lighting.resize(this.width, this.height);
-  }
-
-  /* ---------- entrada ---------- */
-
-  listen(target, type, fn, opts) { target.addEventListener(type, fn, opts); this.handlers.push(() => target.removeEventListener(type, fn, opts)); }
+const inputMethods = {
+  listen(target, type, fn, opts) { target.addEventListener(type, fn, opts); this.handlers.push(() => target.removeEventListener(type, fn, opts)); },
 
   bindInput() {
     const codes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Escape', 'KeyP'];
@@ -2987,7 +2529,7 @@ class VigilGame {
     const end = e => { if (this.pointer?.id === e.pointerId) this.pointer = null; };
     this.listen(this.canvas, 'pointerup', end);
     this.listen(this.canvas, 'pointercancel', end);
-  }
+  },
 
   movement() {
     let x = (this.keys.has('KeyD') || this.keys.has('ArrowRight') ? 1 : 0) - (this.keys.has('KeyA') || this.keys.has('ArrowLeft') ? 1 : 0);
@@ -2998,7 +2540,7 @@ class VigilGame {
     }
     const len = Math.hypot(x, y);
     return len > 1 ? {x: x / len, y: y / len} : {x, y};
-  }
+  },
 
   dash() {
     if (this.state !== 'running' || this.dashCd > 0) return false;
@@ -3012,92 +2554,21 @@ class VigilGame {
     for (let i = 0; i < 8; i++) this.particle({x: this.player.x, y: this.player.y + 8, vx: rand(-60, 60), vy: rand(-30, 10), life: 0.4, size: 3, color: '#3a3f46'});
     this.emitStats();
     return true;
-  }
+  },
+};
 
-  /* ---------- bucle ---------- */
+return {inputMethods};
+})();
+/* ---- director.js ---- */
+const __director_js = (() => {
+/*
+ * La noche manda: qué pasa a cada hora y cuánta Compaña viene.
+ */
+const { TAU, rand } = __util_js;
+const { NIGHT, MAX_ENEMIES } = __balance_js;
+const { HOURS } = __story_js;
 
-  frame(ts) {
-    const dt = Math.min(0.05, Math.max(0, (ts - this.lastFrame) / 1000));
-    this.lastFrame = ts;
-    this.clock += dt;
-    const steps = this.state === 'running' ? Math.max(1, Math.floor(this.timeScale)) : 1;
-    for (let i = 0; i < steps; i++) this.step(dt);
-    try { this.render(dt); } catch (err) { console.error(err); }
-    this.audio.update(dt, this.audioState());
-    this.raf = requestAnimationFrame(this.frame);
-  }
-
-  step(dt) {
-    if (this.state === 'running') {
-      if (this.freeze > 0) this.freeze -= dt;
-      else this.update(dt);
-      this.updateSubtitles(dt);
-    } else if (this.state === 'dying') { this.updateDying(dt); this.updateSubtitles(dt); }
-    else if (this.state === 'dawn') { this.updateDawn(dt); this.updateSubtitles(dt); }
-    else if (this.state === 'ready') this.updateFx(dt);
-  }
-
-  audioState() {
-    const scene = {ready: 'title', running: 'run', paused: 'pause', upgrade: 'pause', dying: 'end', dawn: 'dawn', ended: this.lastVictory ? 'dawn' : 'end'}[this.state] || 'title';
-    return {scene, hour: this.time / HOUR, danger: this.danger, hp: this.player.hp / this.st.maxHp, boss: !!(this.boss && this.boss.hp > 0)};
-  }
-
-  update(dt) {
-    const p = this.player, st = this.st;
-    // El reloj de la noche
-    if (this.phase === 'rush') this.time = Math.min(NIGHT, this.time + dt * Math.max(10, (NIGHT - this.rushFrom) / 5.5));
-    else if (this.phase === 'stopped') this.stoppedFor += dt;
-    else this.time += dt;
-    if (this.phase === 'night' && this.boss && this.boss.hp > 0 && this.time >= NIGHT - 1) this.stopClock();
-    if (this.time >= NIGHT && this.phase !== 'stopped') { this.beginDawn(); return; }
-    const hour = Math.floor(this.time / HOUR);
-    if (hour > this.hourShown && hour <= 5 && this.phase === 'night') { this.hourShown = hour; this.onHour(hour); }
-    if (!this.boss && this.time >= BOSS_AT) this.spawnBoss();
-    if (this.phase === 'stopped' && this.stoppedFor > 75 && !this.dawnBreaks) {
-      this.dawnBreaks = true;
-      this.banner('La luz se abre paso', 'La Guía se debilita');
-    }
-
-    // Quien vela
-    p.inv = Math.max(0, p.inv - dt);
-    p.dip = Math.max(0, p.dip - dt * 1.8);
-    this.dashCd = Math.max(0, this.dashCd - dt);
-    this.lowHpCd = Math.max(0, this.lowHpCd - dt);
-    const mv = this.bot ? this.botMove() : this.movement();
-    p.moving = Math.hypot(mv.x, mv.y) > 0.05;
-    if (p.moving) { this.lastMove = {x: mv.x, y: mv.y}; if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1; p.walk += dt * 11; }
-    if (this.dashTime > 0) {
-      this.dashTime -= dt;
-      p.x += this.dashDir.x * st.speed * 4.2 * dt; p.y += this.dashDir.y * st.speed * 4.2 * dt;
-      this.t.ghost -= dt;
-      if (this.t.ghost <= 0) { this.t.ghost = 0.035; this.ghosts.push({x: p.x, y: p.y, face: p.face, life: 0.28}); }
-    } else { p.x += mv.x * st.speed * dt; p.y += mv.y * st.speed * dt; }
-    if (st.regen) p.hp = Math.min(st.maxHp, p.hp + st.regen * dt);
-    // Junto a Amparo se descansa.
-    if (Math.hypot(p.x - COFFIN.x, p.y - COFFIN.y) < 125 && p.hp < st.maxHp) {
-      p.hp = Math.min(st.maxHp, p.hp + 2.2 * dt);
-      this.t.regenFx -= dt;
-      if (this.t.regenFx <= 0) { this.t.regenFx = 0.25; this.particle({x: p.x + rand(-10, 10), y: p.y + rand(-6, 10), vx: 0, vy: -24, life: 0.9, size: 2, color: '#ffd59a', glow: true}); }
-    }
-
-    this.weapons(dt);
-    this.spawning(dt);
-    this.updateEnemies(dt);
-    if (this.state !== 'running') return;
-    this.updateShots(dt);
-    this.updateHazards(dt);
-    if (this.state !== 'running') return;
-    this.updatePickups(dt);
-    this.updateFx(dt);
-    if (this.boss && this.boss.hp > 0) this.updateSoul(dt);
-    if (this.state !== 'running') return;
-    if (this.xp >= this.xpNext) this.levelUp();
-    this.t.stats -= dt;
-    if (this.t.stats <= 0) { this.t.stats = 0.1; this.emitStats(); }
-  }
-
-  /* ---------- las horas ---------- */
-
+const directorMethods = {
   onHour(h) {
     this.audio.sfx('hora', {count: h});
     this.banner(HOURS[h].name, HOURS[h].mood);
@@ -3111,7 +2582,7 @@ class VigilGame {
         e.x = this.player.x + Math.cos(a) * r; e.y = this.player.y + Math.sin(a) * r;
       }
     }
-  }
+  },
 
   stopClock() {
     this.phase = 'stopped';
@@ -3120,15 +2591,74 @@ class VigilGame {
     this.audio.sfx('reloj');
     this.banner('05:59', 'El reloj de la torre se ha parado');
     this.bark('stopped', {priority: 3, delay: 0.8});
-  }
+  },
 
-  /* ---------- armas ---------- */
+  spawnProcession() {
+    const n = Math.min(11, 5 + Math.floor(this.time / 100));
+    const a = Math.random() * TAU;
+    const r = Math.max(this.width, this.height) * 0.62 + 40;
+    let prev = null;
+    for (let i = 0; i < n; i++) {
+      const e = this.spawn('hermano', {x: this.player.x + Math.cos(a) * (r + i * 26), y: this.player.y + Math.sin(a) * (r + i * 26)});
+      if (!e) break;
+      e.speed = 36 * (1 + this.time / 1300);
+      e.heading = a + Math.PI + rand(-0.9, 0.9);
+      if (prev) { e.leader = prev; prev.follower = e; }
+      prev = e;
+    }
+  },
 
+  spawnSwarm(n) {
+    const a = Math.random() * TAU, r = Math.max(this.width, this.height) * 0.6;
+    const cx = this.player.x + Math.cos(a) * r, cy = this.player.y + Math.sin(a) * r;
+    for (let i = 0; i < n; i++) this.spawn('anima', {x: cx + rand(-50, 50), y: cy + rand(-50, 50)});
+  },
+
+  /* Cuántas criaturas quiere la noche a cada hora: sube despacio hasta las cinco. */
+  targetPopulation() {
+    if (this.boss && this.boss.hp > 0) return 90;
+    return Math.min(MAX_ENEMIES, 24 + this.time * 0.38);
+  },
+
+  spawning(dt) {
+    if (this.phase === 'rush') return;
+    this.t.spawn -= dt;
+    if (this.t.spawn <= 0) {
+      const alive = this.enemies.filter(e => !e.dissolve && !e.summoned).length;
+      const deficit = this.targetPopulation() - alive;
+      if (deficit > 0) {
+        const count = Math.min(4, Math.ceil(deficit / 12));
+        for (let i = 0; i < count; i++) if (!this.spawn()) break;
+        this.t.spawn = deficit > 30 ? 0.18 : 0.42;
+      } else this.t.spawn = 0.5;
+    }
+    if (this.time > 60 && !this.boss) {
+      this.t.procession -= dt;
+      if (this.t.procession <= 0) { this.t.procession = rand(24, 36); this.spawnProcession(); }
+    }
+    this.t.swarm -= dt;
+    if (this.t.swarm <= 0 && !this.boss) { this.t.swarm = rand(45, 65); this.spawnSwarm(5 + Math.floor(Math.random() * 4)); }
+  },
+};
+
+return {directorMethods};
+})();
+/* ---- weapons.js ---- */
+const __weapons_js = (() => {
+/*
+ * Las armas atacan solas. Aquí también vive el daño: quién hiere a quién y cuánto.
+ */
+const { TAU, clamp, rand, pick, lerp } = __util_js;
+const { ENEMIES } = __balance_js;
+const { ATTACK_PALETTE } = __art_js;
+const { AMPARO, BARKS } = __story_js;
+
+const weaponMethods = {
   attackPose(kind, a) {
     const total = kind === 'sal' ? 0.24 : 0.18;
     this.player.attack = {kind, a, life: total, total};
     if (!this.player.moving && Math.abs(Math.cos(a)) > 0.15) this.player.face = Math.cos(a) < 0 ? -1 : 1;
-  }
+  },
 
   nearest(maxDist, from = this.player) {
     // Si la Guía está a tiro, todo va a por ella: es a quien hay que parar.
@@ -3141,7 +2671,7 @@ class VigilGame {
       if (d < bd) { bd = d; best = e; }
     }
     return best;
-  }
+  },
 
   weapons(dt) {
     const p = this.player, m = this.mem, st = this.st;
@@ -3263,7 +2793,7 @@ class VigilGame {
         if (d < 24) moth.state = 'orbit';
       }
     }
-  }
+  },
 
   lightRadius() {
     const p = this.player, hpRatio = clamp(p.hp / this.st.maxHp, 0, 1);
@@ -3271,9 +2801,7 @@ class VigilGame {
     let r = this.st.light * (0.72 + 0.28 * hpRatio) * (1 - 0.14 * p.dip) * flicker;
     if (this.state === 'dying') r *= Math.max(0, 1 - this.dyingT / 1.7);
     return r;
-  }
-
-  /* ---------- daño ---------- */
+  },
 
   hurt(e, amount, {knock = 80, from = this.player, silent = false, fx = null} = {}) {
     if (e.hp <= 0 || e.dissolve) return;
@@ -3300,7 +2828,7 @@ class VigilGame {
     if (this.options.numbers && !silent) this.numbers.push({x: e.x, y: e.y - e.r - 6, text: String(Math.round(dmg)), color: crit ? '#ffe2a0' : '#d8d2c4', life: 0.7});
     if (e.type === 'guia') this.bossHit(e);
     if (e.hp <= 0) this.kill(e);
-  }
+  },
 
   kill(e) {
     e.hp = 0;
@@ -3324,15 +2852,7 @@ class VigilGame {
     // Si muere uno de la procesión, el de detrás sigue al de delante.
     if (e.follower) { e.follower.leader = e.leader; }
     if (e.leader) e.leader.follower = e.follower;
-  }
-
-  dropGem(x, y, v) {
-    if (this.gems.length > 360) {
-      const g = this.gems[Math.floor(Math.random() * this.gems.length)];
-      if (!g.cafe) { g.v += v; return; }
-    }
-    this.gems.push({x: x + rand(-4, 4), y: y + rand(-4, 4), v, magnet: false, bob: Math.random() * 6});
-  }
+  },
 
   damagePlayer(amount, source) {
     const p = this.player;
@@ -3354,10 +2874,174 @@ class VigilGame {
       if (!this.amparoSaid.has('low')) { this.amparoSaid.add('low'); this.say(AMPARO.lowHp, AMPARO.name, {italic: true, priority: 3}); }
       else this.bark('lowHp', {once: false, line: pick(BARKS[this.character].lowHp), priority: 2});
     }
-  }
+  },
 
-  /* ---------- criaturas ---------- */
+  updateShots(dt) {
+    for (const s of this.shots) {
+      // Muestreo a 60 Hz y caducidad real, también en pantallas de alta frecuencia.
+      s.trail ??= [];
+      for (const point of s.trail) point.age = (point.age || 0) + dt;
+      s.trailCd = (s.trailCd || 0) - dt;
+      if (dt > 0 && s.trailCd <= 0) {
+        s.trail.push({x: s.x, y: s.y, age: 0});
+        s.trailCd = Math.max(0, s.trailCd + 1 / 60);
+      }
+      s.trail = s.trail.filter(point => point.age < 0.12).slice(-8);
+      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      s.emberCd = (s.emberCd || 0) - dt;
+      if (s.kind === 'chispa' && s.emberCd <= 0) {
+        s.emberCd = 0.035;
+        this.particle({x: s.x, y: s.y, vx: -s.vx * 0.06 + rand(-12, 12), vy: -s.vy * 0.06 + rand(-12, 12), life: 0.22, size: 2, color: (ATTACK_PALETTE[s.tone] || ATTACK_PALETTE.ember).edge, glow: true});
+      }
+      for (const e of this.queryGrid(s.x, s.y, 36)) {
+        if (e.hp <= 0 || e.dissolve || s.hit.has(e.id)) continue;
+        const rr = e.r + s.r;
+        if ((e.x - s.x) ** 2 + (e.y - 4 - s.y) ** 2 < rr * rr) {
+          s.hit.add(e.id);
+          this.hurt(e, s.dmg, {knock: s.knock, from: {x: s.x - s.vx * 0.05, y: s.y - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
+          if (--s.pierce <= 0) { s.life = 0; break; }
+        }
+      }
+    }
+    this.shots = this.shots.filter(s => s.life > 0);
+    if (this.shots.length > 160) this.shots.splice(0, this.shots.length - 160);
+    const p = this.player;
+    for (const s of this.enemyShots) {
+      if (s.delay > 0) { s.delay -= dt; continue; }
+      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      if ((p.x - s.x) ** 2 + (p.y - 6 - s.y) ** 2 < (s.r + 8) ** 2) { s.life = 0; this.damagePlayer(s.dmg, s); if (this.state !== 'running') return; }
+    }
+    this.enemyShots = this.enemyShots.filter(s => s.life > 0);
+  },
+};
 
+return {weaponMethods};
+})();
+/* ---- memories.js ---- */
+const __memories_js = (() => {
+/*
+ * Los recuerdos son las mejoras: la luz que se recoge y lo que vuelve con ella.
+ */
+const { TAU, rand, pick } = __util_js;
+const { MAX_LEVEL } = __balance_js;
+const { CHARACTERS, MEMORIES, FALLBACK_CHOICES, AMPARO } = __story_js;
+
+const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
+
+const memoryMethods = {
+  computeStats() {
+    const m = this.mem, ch = CHARACTERS[this.character] || CHARACTERS.lucia;
+    const prevMax = this.st?.maxHp;
+    this.st = {
+      maxHp: ch.hp + 20 * m.caldo,
+      speed: ch.speed * (1 + 0.05 * m.mecedora),
+      regen: 0.5 * m.pan,
+      cadence: Math.pow(0.9, m.radio),
+      pickup: 72 * (1 + 0.35 * m.gafas),
+      memory: ch.memory * (1 + 0.15 * m.fotos),
+      crit: 0.04 + 0.07 * m.risa,
+      armor: Math.min(0.6, ch.armor + 0.08 * m.manos),
+      dashCd: 5 * Math.pow(0.85, m.mecedora),
+      light: 178 * ch.light * (1 + 0.1 * m.farol)
+    };
+    if (prevMax && this.player) this.player.hp = Math.min(this.st.maxHp, this.player.hp + Math.max(0, this.st.maxHp - prevMax));
+  },
+
+  xpFor(level) { return Math.floor(5 + level * 3.4 + level * level * 0.18); },
+
+  dropGem(x, y, v) {
+    if (this.gems.length > 360) {
+      const g = this.gems[Math.floor(Math.random() * this.gems.length)];
+      if (!g.cafe) { g.v += v; return; }
+    }
+    this.gems.push({x: x + rand(-4, 4), y: y + rand(-4, 4), v, magnet: false, bob: Math.random() * 6});
+  },
+
+  updatePickups(dt) {
+    const p = this.player, R = this.st.pickup;
+    for (const g of this.gems) {
+      const dx = p.x - g.x, dy = p.y - 4 - g.y, d = Math.hypot(dx, dy);
+      if (d < R) g.magnet = true;
+      if (g.magnet) { const s = Math.max(200, 460 - d); g.x += dx / (d || 1) * s * dt; g.y += dy / (d || 1) * s * dt; }
+      if (d < 15) {
+        g.got = true;
+        if (g.cafe) {
+          p.hp = Math.min(this.st.maxHp, p.hp + 25);
+          this.audio.sfx('cafe');
+          for (let i = 0; i < 6; i++) this.particle({x: p.x, y: p.y - 10, vx: rand(-30, 30), vy: rand(-60, -30), life: 0.8, size: 2, color: '#f1e8d2', glow: false});
+        } else {
+          this.xp += g.v * this.st.memory;
+          this.audio.sfx('luz', {pan: 0});
+        }
+      }
+    }
+    this.gems = this.gems.filter(g => !g.got && Math.abs(g.x - p.x) < 2600 && Math.abs(g.y - p.y) < 2600);
+  },
+
+  levelUp() {
+    this.xp -= this.xpNext;
+    this.level++;
+    this.xpNext = this.xpFor(this.level);
+    this.keys.clear(); this.pointer = null;
+    const owned = MEMORIES.filter(m => this.mem[m.id] > 0 && this.mem[m.id] < MAX_LEVEL);
+    const fresh = MEMORIES.filter(m => this.mem[m.id] === 0);
+    const pool = [...owned, ...fresh].sort(() => Math.random() - 0.5);
+    let picks = pool.slice(0, 3);
+    // Que siempre haya algo nuevo y algo conocido, si se puede.
+    if (owned.length && !picks.some(c => this.mem[c.id] > 0)) picks[2] = pick(owned);
+    if (fresh.length && !picks.some(c => this.mem[c.id] === 0)) picks[1] = pick(fresh);
+    picks = [...new Set(picks)].filter(Boolean);
+    for (const f of FALLBACK_CHOICES) if (picks.length < 3) picks.push(f);
+    this.choices = picks.map(c => ({...c, level: (this.mem[c.id] || 0) + 1, isNew: !this.mem[c.id] && MEMORY[c.id] !== undefined}));
+    this.audio.sfx('recuerdo');
+    this.setState('upgrade');
+    this.emitStats();
+    if (this.bot) { this.chooseUpgrade(this.choices[Math.floor(Math.random() * this.choices.length)].id); return; }
+    this.hooks.onLevelUp?.({level: this.level, choices: this.choices});
+  },
+
+  chooseUpgrade(id) {
+    if (this.state !== 'upgrade') return false;
+    const choice = this.choices.find(c => c.id === id);
+    if (!choice) return false;
+    const p = this.player;
+    if (id === 'cafe') p.hp = Math.min(this.st.maxHp, p.hp + 35);
+    else if (id === 'silencio') this.dashCd = 0;
+    else {
+      const first = this.mem[id] === 0;
+      this.mem[id] = Math.min(MAX_LEVEL, this.mem[id] + 1);
+      if (first) { this.order.push(id); this.hooks.onDiscover?.({kind: 'memory', id}); }
+      this.computeStats();
+      if (id === 'caldo') p.hp = Math.min(this.st.maxHp, p.hp + 30);
+      if (id === 'campana' && first) this.t.campana = 0.6;
+      const said = this.bark('memory_' + id, {priority: 2});
+      if (!said && first && Math.random() < 0.4) {
+        const line = AMPARO.lines.find(l => !this.amparoSaid.has(l));
+        if (line) { this.amparoSaid.add(line); this.say(line, AMPARO.name, {italic: true}); }
+      }
+    }
+    this.choices = [];
+    this.rings.push({x: p.x, y: p.y, r: 12, max: 120, life: 0.7, total: 0.7, color: '#ffd59a', width: 2, light: 160});
+    for (let i = 0; i < 18; i++) { const a = i / 18 * TAU; this.particle({x: p.x, y: p.y - 6, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110, life: 0.6, size: 2, color: '#ffe2a0', glow: true}); }
+    this.lastFrame = performance.now();
+    this.setState('running');
+    this.emitStats();
+    this.canvas.focus?.({preventScroll: true});
+    return true;
+  },
+};
+
+return {memoryMethods};
+})();
+/* ---- enemies.js ---- */
+const __enemies_js = (() => {
+/*
+ * Lo que viene de noche: cómo aparece, cómo se mueve y cómo ataca cada criatura.
+ */
+const { TAU, clamp, rand, lerp } = __util_js;
+const { ENEMIES, MAX_ENEMIES } = __balance_js;
+
+const enemyMethods = {
   spawn(force, at) {
     if (this.enemies.length >= MAX_ENEMIES && force !== 'guia') return null;
     let type = force;
@@ -3381,54 +3065,7 @@ class VigilGame {
       mode: 'hunt', modeT: 0, cd: rand(1.5, 3.5), lock: 0, heading: 0};
     this.enemies.push(e);
     return e;
-  }
-
-  spawnProcession() {
-    const n = Math.min(11, 5 + Math.floor(this.time / 100));
-    const a = Math.random() * TAU;
-    const r = Math.max(this.width, this.height) * 0.62 + 40;
-    let prev = null;
-    for (let i = 0; i < n; i++) {
-      const e = this.spawn('hermano', {x: this.player.x + Math.cos(a) * (r + i * 26), y: this.player.y + Math.sin(a) * (r + i * 26)});
-      if (!e) break;
-      e.speed = 36 * (1 + this.time / 1300);
-      e.heading = a + Math.PI + rand(-0.9, 0.9);
-      if (prev) { e.leader = prev; prev.follower = e; }
-      prev = e;
-    }
-  }
-
-  spawnSwarm(n) {
-    const a = Math.random() * TAU, r = Math.max(this.width, this.height) * 0.6;
-    const cx = this.player.x + Math.cos(a) * r, cy = this.player.y + Math.sin(a) * r;
-    for (let i = 0; i < n; i++) this.spawn('anima', {x: cx + rand(-50, 50), y: cy + rand(-50, 50)});
-  }
-
-  /* Cuántas criaturas quiere la noche a cada hora: sube despacio hasta las cinco. */
-  targetPopulation() {
-    if (this.boss && this.boss.hp > 0) return 90;
-    return Math.min(MAX_ENEMIES, 24 + this.time * 0.38);
-  }
-
-  spawning(dt) {
-    if (this.phase === 'rush') return;
-    this.t.spawn -= dt;
-    if (this.t.spawn <= 0) {
-      const alive = this.enemies.filter(e => !e.dissolve && !e.summoned).length;
-      const deficit = this.targetPopulation() - alive;
-      if (deficit > 0) {
-        const count = Math.min(4, Math.ceil(deficit / 12));
-        for (let i = 0; i < count; i++) if (!this.spawn()) break;
-        this.t.spawn = deficit > 30 ? 0.18 : 0.42;
-      } else this.t.spawn = 0.5;
-    }
-    if (this.time > 60 && !this.boss) {
-      this.t.procession -= dt;
-      if (this.t.procession <= 0) { this.t.procession = rand(24, 36); this.spawnProcession(); }
-    }
-    this.t.swarm -= dt;
-    if (this.t.swarm <= 0 && !this.boss) { this.t.swarm = rand(45, 65); this.spawnSwarm(5 + Math.floor(Math.random() * 4)); }
-  }
+  },
 
   buildGrid() {
     this.grid.clear();
@@ -3439,7 +3076,7 @@ class VigilGame {
       if (!a) { a = []; this.grid.set(k, a); }
       a.push(e);
     }
-  }
+  },
 
   queryGrid(x, y, r) {
     const out = [];
@@ -3449,7 +3086,7 @@ class VigilGame {
       if (a) for (const e of a) out.push(e);
     }
     return out;
-  }
+  },
 
   updateEnemies(dt) {
     const p = this.player;
@@ -3504,7 +3141,7 @@ class VigilGame {
       }
     }
     this.enemies = this.enemies.filter(e => e.hp > 0);
-  }
+  },
 
   behave(e, dx, dy, len, dt, slow) {
     const ux = dx / len, uy = dy / len;
@@ -3614,10 +3251,21 @@ class VigilGame {
     e.x += (ux * fwd + uy * side) * dt * slow;
     e.y += (uy * fwd - ux * side) * dt * slow;
     e.flip = dx < 0;
-  }
+  },
+};
 
-  /* ---------- la Guía ---------- */
+return {enemyMethods};
+})();
+/* ---- boss.js ---- */
+const __boss_js = (() => {
+/*
+ * La Guía: va directa al ataúd y hay que apartarla antes de que se lleve a Amparo.
+ */
+const { TAU, rand } = __util_js;
+const { COFFIN } = __balance_js;
+const { BOSS } = __story_js;
 
+const bossMethods = {
   spawnBoss() {
     const p = this.player;
     const a = Math.atan2(p.y - COFFIN.y, p.x - COFFIN.x) + Math.PI + rand(-0.6, 0.6);
@@ -3634,7 +3282,7 @@ class VigilGame {
     this.banner(BOSS.name, BOSS.arrive, 'boss');
     this.bark('boss', {priority: 3, delay: 2.4});
     this.flash = this.options.flashes ? 0.35 : 0; this.flashColor = '255,236,200';
-  }
+  },
 
   behaveBoss(e, dx, dy, len, dt, slow) {
     const p = this.player;
@@ -3681,7 +3329,7 @@ class VigilGame {
         this.audio.sfx('lagrima');
       }
     }
-  }
+  },
 
   bossHit(e) {
     if (e.hp > 0 && e.hp < e.maxHp * e.nextStagger) {
@@ -3695,7 +3343,7 @@ class VigilGame {
       if (this.options.shake) this.shake = Math.max(this.shake, 8);
       this.soul = Math.max(0, this.soul - 0.15);
     }
-  }
+  },
 
   updateSoul(dt) {
     const b = this.boss, d = Math.hypot(b.x - COFFIN.x, b.y - COFFIN.y);
@@ -3705,7 +3353,7 @@ class VigilGame {
       if (Math.random() < 0.4) this.particle({x: COFFIN.x + rand(-30, 30), y: COFFIN.y + rand(-8, 8), vx: (b.x - COFFIN.x) * 0.6, vy: (b.y - COFFIN.y) * 0.6 - 20, life: 0.9, size: 2, color: '#e8f5ff', glow: true});
       if (this.soul >= 1) this.beginDying('took');
     } else this.soul = Math.max(0, this.soul - dt / 20);
-  }
+  },
 
   freeBoss(e) {
     this.corpses.push({type: 'guia', x: e.x, y: e.y, flip: e.flip, life: 1.6, total: 1.6, scale: 3, kneel: true});
@@ -3726,47 +3374,7 @@ class VigilGame {
     this.phase = 'rush';
     this.rushFrom = this.time;
     this.player.inv = 99;
-  }
-
-  /* ---------- proyectiles, peligros, recogidas ---------- */
-
-  updateShots(dt) {
-    for (const s of this.shots) {
-      // Muestreo a 60 Hz y caducidad real, también en pantallas de alta frecuencia.
-      s.trail ??= [];
-      for (const point of s.trail) point.age = (point.age || 0) + dt;
-      s.trailCd = (s.trailCd || 0) - dt;
-      if (dt > 0 && s.trailCd <= 0) {
-        s.trail.push({x: s.x, y: s.y, age: 0});
-        s.trailCd = Math.max(0, s.trailCd + 1 / 60);
-      }
-      s.trail = s.trail.filter(point => point.age < 0.12).slice(-8);
-      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      s.emberCd = (s.emberCd || 0) - dt;
-      if (s.kind === 'chispa' && s.emberCd <= 0) {
-        s.emberCd = 0.035;
-        this.particle({x: s.x, y: s.y, vx: -s.vx * 0.06 + rand(-12, 12), vy: -s.vy * 0.06 + rand(-12, 12), life: 0.22, size: 2, color: (ATTACK_PALETTE[s.tone] || ATTACK_PALETTE.ember).edge, glow: true});
-      }
-      for (const e of this.queryGrid(s.x, s.y, 36)) {
-        if (e.hp <= 0 || e.dissolve || s.hit.has(e.id)) continue;
-        const rr = e.r + s.r;
-        if ((e.x - s.x) ** 2 + (e.y - 4 - s.y) ** 2 < rr * rr) {
-          s.hit.add(e.id);
-          this.hurt(e, s.dmg, {knock: s.knock, from: {x: s.x - s.vx * 0.05, y: s.y - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
-          if (--s.pierce <= 0) { s.life = 0; break; }
-        }
-      }
-    }
-    this.shots = this.shots.filter(s => s.life > 0);
-    if (this.shots.length > 160) this.shots.splice(0, this.shots.length - 160);
-    const p = this.player;
-    for (const s of this.enemyShots) {
-      if (s.delay > 0) { s.delay -= dt; continue; }
-      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
-      if ((p.x - s.x) ** 2 + (p.y - 6 - s.y) ** 2 < (s.r + 8) ** 2) { s.life = 0; this.damagePlayer(s.dmg, s); if (this.state !== 'running') return; }
-    }
-    this.enemyShots = this.enemyShots.filter(s => s.life > 0);
-  }
+  },
 
   updateHazards(dt) {
     const p = this.player;
@@ -3787,34 +3395,24 @@ class VigilGame {
       if (m.t <= 0 && !m.done) { m.done = true; const e = this.spawn('hermano', m); if (e) e.summoned = true; }
     }
     this.marks = this.marks.filter(m => !m.done);
-  }
+  },
+};
 
-  updatePickups(dt) {
-    const p = this.player, R = this.st.pickup;
-    for (const g of this.gems) {
-      const dx = p.x - g.x, dy = p.y - 4 - g.y, d = Math.hypot(dx, dy);
-      if (d < R) g.magnet = true;
-      if (g.magnet) { const s = Math.max(200, 460 - d); g.x += dx / (d || 1) * s * dt; g.y += dy / (d || 1) * s * dt; }
-      if (d < 15) {
-        g.got = true;
-        if (g.cafe) {
-          p.hp = Math.min(this.st.maxHp, p.hp + 25);
-          this.audio.sfx('cafe');
-          for (let i = 0; i < 6; i++) this.particle({x: p.x, y: p.y - 10, vx: rand(-30, 30), vy: rand(-60, -30), life: 0.8, size: 2, color: '#f1e8d2', glow: false});
-        } else {
-          this.xp += g.v * this.st.memory;
-          this.audio.sfx('luz', {pan: 0});
-        }
-      }
-    }
-    this.gems = this.gems.filter(g => !g.got && Math.abs(g.x - p.x) < 2600 && Math.abs(g.y - p.y) < 2600);
-  }
+return {bossMethods};
+})();
+/* ---- fx.js ---- */
+const __fx_js = (() => {
+/*
+ * Partículas, anillos y números: lo que se ve un instante y se va.
+ */
 
+
+const fxMethods = {
   particle(o) {
     if (this.particles.length >= 420) this.particles.shift();
     o.total = o.life;
     this.particles.push(o);
-  }
+  },
 
   updateFx(dt) {
     this.combatFx.update(dt);
@@ -3831,177 +3429,19 @@ class VigilGame {
     this.corpses = this.corpses.filter(c => c.life > 0);
     for (const g of this.ghosts) g.life -= dt;
     this.ghosts = this.ghosts.filter(g => g.life > 0);
-  }
+  },
+};
 
-  /* ---------- recuerdos ---------- */
+return {fxMethods};
+})();
+/* ---- bot.js ---- */
+const __bot_js = (() => {
+/*
+ * Piloto automático para las pruebas. bot = 1 juega con reflejos; bot = 2, como quien vela por primera vez.
+ */
 
-  levelUp() {
-    this.xp -= this.xpNext;
-    this.level++;
-    this.xpNext = this.xpFor(this.level);
-    this.keys.clear(); this.pointer = null;
-    const owned = MEMORIES.filter(m => this.mem[m.id] > 0 && this.mem[m.id] < MAX_LEVEL);
-    const fresh = MEMORIES.filter(m => this.mem[m.id] === 0);
-    const pool = [...owned, ...fresh].sort(() => Math.random() - 0.5);
-    let picks = pool.slice(0, 3);
-    // Que siempre haya algo nuevo y algo conocido, si se puede.
-    if (owned.length && !picks.some(c => this.mem[c.id] > 0)) picks[2] = pick(owned);
-    if (fresh.length && !picks.some(c => this.mem[c.id] === 0)) picks[1] = pick(fresh);
-    picks = [...new Set(picks)].filter(Boolean);
-    for (const f of FALLBACK_CHOICES) if (picks.length < 3) picks.push(f);
-    this.choices = picks.map(c => ({...c, level: (this.mem[c.id] || 0) + 1, isNew: !this.mem[c.id] && MEMORY[c.id] !== undefined}));
-    this.audio.sfx('recuerdo');
-    this.setState('upgrade');
-    this.emitStats();
-    if (this.bot) { this.chooseUpgrade(this.choices[Math.floor(Math.random() * this.choices.length)].id); return; }
-    this.hooks.onLevelUp?.({level: this.level, choices: this.choices});
-  }
 
-  chooseUpgrade(id) {
-    if (this.state !== 'upgrade') return false;
-    const choice = this.choices.find(c => c.id === id);
-    if (!choice) return false;
-    const p = this.player;
-    if (id === 'cafe') p.hp = Math.min(this.st.maxHp, p.hp + 35);
-    else if (id === 'silencio') this.dashCd = 0;
-    else {
-      const first = this.mem[id] === 0;
-      this.mem[id] = Math.min(MAX_LEVEL, this.mem[id] + 1);
-      if (first) { this.order.push(id); this.hooks.onDiscover?.({kind: 'memory', id}); }
-      this.computeStats();
-      if (id === 'caldo') p.hp = Math.min(this.st.maxHp, p.hp + 30);
-      if (id === 'campana' && first) this.t.campana = 0.6;
-      const said = this.bark('memory_' + id, {priority: 2});
-      if (!said && first && Math.random() < 0.4) {
-        const line = AMPARO.lines.find(l => !this.amparoSaid.has(l));
-        if (line) { this.amparoSaid.add(line); this.say(line, AMPARO.name, {italic: true}); }
-      }
-    }
-    this.choices = [];
-    this.rings.push({x: p.x, y: p.y, r: 12, max: 120, life: 0.7, total: 0.7, color: '#ffd59a', width: 2, light: 160});
-    for (let i = 0; i < 18; i++) { const a = i / 18 * TAU; this.particle({x: p.x, y: p.y - 6, vx: Math.cos(a) * 110, vy: Math.sin(a) * 110, life: 0.6, size: 2, color: '#ffe2a0', glow: true}); }
-    this.lastFrame = performance.now();
-    this.setState('running');
-    this.emitStats();
-    this.canvas.focus?.({preventScroll: true});
-    return true;
-  }
-
-  /* ---------- final ---------- */
-
-  beginDying(cause) {
-    if (this.state !== 'running') return;
-    this.cause = cause;
-    this.dyingT = 0;
-    this.deathClock = fmtClock(this.time);
-    this.audio.sfx('apagon');
-    this.flash = 0;
-    this.setState('dying');
-    this.hooks.onSubtitle?.(null);
-    this.sub = null; this.subQueue = [];
-  }
-
-  updateDying(dt) {
-    this.dyingT += dt;
-    this.updateFx(dt);
-    for (const e of this.enemies) {
-      if (e.hp <= 0) continue;
-      const dx = this.player.x - e.x, dy = this.player.y - e.y, d = Math.hypot(dx, dy) || 1;
-      if (d > 40) { e.x += dx / d * e.speed * 0.4 * dt; e.y += dy / d * e.speed * 0.4 * dt; }
-    }
-    if (this.dyingT > 2.4) this.end(false);
-  }
-
-  beginDawn() {
-    this.time = NIGHT;
-    this.phase = 'dawn';
-    this.dawnT = 0;
-    for (const e of this.enemies) if (e.hp > 0 && !e.dissolve) { e.dissolve = true; e.dissolveT = rand(0.3, 1.8); }
-    this.enemyShots = []; this.hazards = []; this.marks = [];
-    this.audio.sfx('hora', {count: 6, gap: 1.6});
-    this.audio.sfx('alba');
-    this.banner(HOURS[6].name, HOURS[6].mood, 'dawn');
-    this.subQueue = this.subQueue.filter(q => q.priority >= 4 && q.speaker !== 'Carmela');
-    this.bark('dawn', {priority: 4, delay: 1});
-    this.say(AMPARO.dawn, AMPARO.name, {italic: true, priority: 4, delay: 0.6});
-    this.player.inv = 99;
-    this.emitStats();
-    this.setState('dawn');
-  }
-
-  updateDawn(dt) {
-    this.dawnT += dt;
-    this.updateFx(dt);
-    for (const e of this.enemies) {
-      if (e.hp <= 0) continue;
-      e.dissolveT -= dt;
-      if (Math.random() < 0.3) this.particle({x: e.x + rand(-8, 8), y: e.y + rand(-10, 6), vx: rand(-10, 10), vy: rand(-50, -25), life: 0.8, size: 2, color: '#ffd59a', glow: true});
-      if (e.dissolveT <= 0) e.hp = 0;
-    }
-    this.enemies = this.enemies.filter(e => e.hp > 0);
-    const p = this.player, mv = this.bot ? {x: 0, y: 0} : this.movement();
-    p.x += mv.x * this.st.speed * 0.5 * dt; p.y += mv.y * this.st.speed * 0.5 * dt;
-    if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1;
-    p.moving = Math.hypot(mv.x, mv.y) > 0.05;
-    if (p.moving) p.walk += dt * 6;
-    for (const g of this.gems) { if (!g.cafe) { g.y -= (18 + (g.bob % 3) * 6) * dt; g.x += Math.sin(this.clock * 2 + g.bob) * 6 * dt; } }
-    // Que la última frase sea la de Amparo, aunque haya que esperar un poco.
-    if ((this.dawnT > 11 && !this.sub && !this.subQueue.length) || this.dawnT > 24) this.end(true);
-  }
-
-  end(victory) {
-    if (this.state === 'ended') return;
-    this.lastVictory = victory;
-    const result = {victory, cause: victory ? 'dawn' : this.cause, time: this.time, clock: victory ? '06:00' : this.deathClock || fmtClock(this.time),
-      kills: this.kills, level: this.level, character: this.character, memories: {...this.mem}, order: [...this.order],
-      freed: !!(this.boss && this.boss.hp <= 0)};
-    this.setState('ended');
-    this.keys.clear(); this.pointer = null;
-    this.hooks.onSubtitle?.(null);
-    this.emitStats();
-    this.hooks.onEnd?.(result);
-  }
-
-  /* ---------- voces ---------- */
-
-  say(text, speaker, {italic = false, priority = 1, delay = 0} = {}) {
-    if (this.subQueue.length > 3) this.subQueue = this.subQueue.filter(s => s.priority >= priority);
-    this.subQueue.push({text, speaker, italic, priority, delay});
-    this.subQueue.sort((a, b) => b.priority - a.priority);
-  }
-
-  bark(key, {once = true, line, priority = 1, delay = 0} = {}) {
-    const set = BARKS[this.character];
-    let text = line || set?.[key];
-    if (!text) return false;
-    if (Array.isArray(text)) text = pick(text);
-    if (once && this.said.has(key)) return false;
-    this.said.add(key);
-    this.say(text, CHARACTERS[this.character].name, {priority, delay});
-    return true;
-  }
-
-  updateSubtitles(dt) {
-    if (this.sub) {
-      this.subT -= dt;
-      if (this.subT <= 0) { this.sub = null; this.hooks.onSubtitle?.(null); }
-    }
-    if (!this.sub && this.subQueue.length) {
-      const next = this.subQueue[0];
-      next.delay -= dt;
-      if (next.delay > 0) return;
-      this.subQueue.shift();
-      this.sub = next;
-      const quick = this.state === 'dawn' || this.phase === 'rush';
-      this.subT = (quick ? 1.8 : 2.4) + next.text.length * (quick ? 0.04 : 0.052);
-      this.hooks.onSubtitle?.(next);
-    }
-  }
-
-  banner(title, sub, tone = 'hour') { this.hooks.onBanner?.({title, sub, tone}); }
-
-  /* ---------- piloto automático para pruebas ---------- */
-
+const botMethods = {
   botMove() {
     const p = this.player;
     // bot = 2 imita a alguien que juega por primera vez: reacciona tarde y esquiva a medias.
@@ -4048,27 +3488,377 @@ class VigilGame {
     const mv = len > 0.05 ? {x: fx / len, y: fy / len} : {x: 0, y: 0};
     if (sloppy) this.botMemo = {at: this.clock, mv};
     return mv;
+  },
+};
+
+return {botMethods};
+})();
+/* ---- world.js ---- */
+const __world_js = (() => {
+/*
+ * El camposanto: el suelo, las tumbas, el velatorio de Amparo y la niebla.
+ * Todo se dibuja con código y siempre queda en el mismo sitio.
+ */
+const { TAU } = __util_js;
+const { makeCanvas, hash } = __art_js;
+
+/* ---------- piezas sueltas ---------- */
+
+function px(c, u, x, y, w, h, color) {
+  c.fillStyle = color;
+  c.fillRect(Math.round(x * u), Math.round(y * u), Math.round(w * u), Math.round(h * u));
+}
+
+/* Lamparilla de cristal rojo, como las del día de Todos los Santos. */
+function votive(c, x, y, flames, lights, time, seed) {
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  px(c, 2, -2, 0, 4, 1, '#07080d');
+  px(c, 2, -2, -4, 4, 4, '#5e1d14');
+  px(c, 2, -1, -4, 2, 3, '#a8331f');
+  px(c, 2, -2, -5, 4, 1, '#07080d');
+  c.restore();
+  const flick = 0.85 + Math.sin(time * 9 + seed * 7) * 0.08 + Math.sin(time * 23 + seed) * 0.05;
+  flames.push({x, y: y - 11, kind: 'votive', f: flick});
+  lights.push({x, y: y - 8, r: 46 * flick, i: 0.85, c: 'red', g: 0.9});
+}
+
+function cirioStand(c, x, y, flames, lights, time, seed) {
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  px(c, 2, -4, 0, 8, 2, '#07080d');
+  px(c, 2, -3, -1, 6, 2, '#8a6a2c');
+  px(c, 2, -1, -14, 2, 14, '#8a6a2c');
+  px(c, 2, -1, -14, 1, 14, '#c9a04c');
+  px(c, 2, -3, -15, 6, 2, '#c9a04c');
+  px(c, 2, -1, -22, 2, 7, '#f1e8d2');
+  px(c, 2, 0, -22, 1, 7, '#c9bb9a');
+  c.restore();
+  const flick = 0.9 + Math.sin(time * 7 + seed * 3) * 0.06 + Math.sin(time * 19 + seed) * 0.04;
+  flames.push({x, y: y - 48, kind: 'cirio', f: flick});
+  lights.push({x, y: y - 44, r: 120 * flick, i: 1, c: 'warm', g: 1});
+}
+
+function flowers(c, x, y, seed) {
+  for (let i = 0; i < 7; i++) {
+    const fx = x + (hash(seed, i, 3) - 0.5) * 18, fy = y + (hash(seed, i, 5) - 0.5) * 8;
+    c.fillStyle = '#26402c'; c.fillRect(Math.round(fx) - 1, Math.round(fy), 3, 3);
+    c.fillStyle = hash(seed, i, 9) > 0.45 ? '#ebe8dc' : '#e8c25a';
+    c.fillRect(Math.round(fx) - 1, Math.round(fy) - 2, 3, 3);
+    c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(Math.round(fx), Math.round(fy) - 1, 1, 1);
   }
+}
 
-  /* ---------- estado para la interfaz ---------- */
+function tomb(c, x, y, v, flames, lights, time, seed) {
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  const u = 2;
+  px(c, u, -12, 6, 25, 4, 'rgba(2,3,8,.45)');
+  // losa
+  px(c, u, -10, -2, 20, 11, '#07080d');
+  px(c, u, -9, -1, 18, 9, '#3c4447');
+  px(c, u, -9, -1, 18, 2, '#4d5659');
+  px(c, u, -9, 6, 18, 2, '#2a3134');
+  // cabecera
+  px(c, u, -7, -16, 14, 15, '#07080d');
+  px(c, u, -6, -15, 12, 14, '#4a5356');
+  px(c, u, -5, -17, 10, 2, '#07080d');
+  px(c, u, -5, -16, 10, 2, '#5a6366');
+  px(c, u, 4, -14, 2, 13, '#353d40');
+  if (v > 0.5) { px(c, u, -1, -13, 2, 8, '#2a3134'); px(c, u, -3, -11, 6, 2, '#2a3134'); }
+  else { for (let i = 0; i < 4; i++) px(c, u, -4, -12 + i * 3, i === 3 ? 5 : 8, 1, '#30383b'); }
+  // musgo
+  px(c, u, -6, -3, 3, 2, '#2f4632'); px(c, u, 4, -2, 2, 2, '#2f4632');
+  c.restore();
+  if (hash(seed, 2, 41) > 0.5) flowers(c, x - 6, y + 4, seed);
+  if (hash(seed, 3, 17) > 0.45) votive(c, x + 9, y + 10, flames, lights, time, seed);
+}
 
-  getSnapshot() {
-    const b = this.boss;
-    const hourIdx = Math.min(6, Math.floor(this.time / HOUR));
-    return {
-      state: this.state, phase: this.phase, time: this.time, clock: fmtClock(this.time), hour: hourIdx,
-      mood: this.phase === 'stopped' ? 'El reloj se ha parado' : this.phase === 'rush' ? 'Clarea' : HOURS[hourIdx].mood,
-      kills: this.kills, level: this.level, xp: this.xp, xpNext: this.xpNext,
-      hp: this.player.hp, maxHp: this.st.maxHp, dashCd: this.dashCd, dashMax: this.st.dashCd,
-      character: this.character, mem: {...this.mem}, order: [...this.order],
-      boss: b ? {alive: b.hp > 0, hp: Math.max(0, b.hp), maxHp: b.maxHp, soul: this.soul} : null
-    };
+function ironCross(c, x, y, seed) {
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  const u = 2;
+  px(c, u, -6, 8, 12, 3, 'rgba(2,3,8,.45)');
+  px(c, u, -3, 6, 6, 3, '#2a3134');
+  px(c, u, -1, -20, 2, 27, '#07080d');
+  px(c, u, -7, -14, 14, 2, '#07080d');
+  px(c, u, -1, -20, 1, 26, '#3a3f4a');
+  px(c, u, -7, -14, 13, 1, '#3a3f4a');
+  px(c, u, -3, -16, 1, 1, '#3a3f4a'); px(c, u, 2, -16, 1, 1, '#3a3f4a');
+  px(c, u, -3, -12, 1, 1, '#3a3f4a'); px(c, u, 2, -12, 1, 1, '#3a3f4a');
+  c.restore();
+  if (hash(seed, 7, 2) > 0.5) flowers(c, x, y + 10, seed);
+}
+
+function woodCross(c, x, y, seed) {
+  c.save(); c.translate(Math.round(x), Math.round(y)); c.rotate((hash(seed, 1, 1) - 0.5) * 0.18);
+  const u = 2;
+  px(c, u, -6, 7, 12, 3, 'rgba(2,3,8,.4)');
+  px(c, u, -2, -16, 4, 24, '#07080d');
+  px(c, u, -7, -10, 14, 4, '#07080d');
+  px(c, u, -1, -15, 2, 22, '#5a3e27');
+  px(c, u, -6, -9, 12, 2, '#5a3e27');
+  px(c, u, -1, -15, 1, 22, '#7a5434');
+  c.restore();
+}
+
+function cypress(c, x, y, seed) {
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  c.fillStyle = 'rgba(2,3,8,.5)';
+  c.beginPath(); c.ellipse(4, 4, 22, 8, 0, 0, TAU); c.fill();
+  c.fillStyle = '#2b1f16'; c.fillRect(-2, -8, 5, 12);
+  const h = 92 + hash(seed, 1, 8) * 30;
+  for (let i = 0; i < h; i += 4) {
+    const t = i / h;
+    const wv = (Math.sin(t * Math.PI) * 0.85 + 0.15) * (13 + hash(seed, i, 2) * 3) * (1 - t * 0.35);
+    const jag = hash(seed, i, 4) * 3;
+    c.fillStyle = '#07080d'; c.fillRect(Math.round(-wv - 1 - jag), -8 - i - 4, Math.round(wv * 2 + 2 + jag), 5);
+    c.fillStyle = '#12211a'; c.fillRect(Math.round(-wv - jag), -8 - i - 4, Math.round(wv * 2 + jag), 4);
+    c.fillStyle = '#1c3226'; c.fillRect(Math.round(-wv * 0.4), -8 - i - 4, Math.round(wv * 0.7), 3);
   }
+  c.restore();
+}
 
-  emitStats() { this.hooks.onStats?.(this.getSnapshot()); }
+function angel(c, x, y) {
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  const u = 2;
+  px(c, u, -9, 8, 18, 3, 'rgba(2,3,8,.45)');
+  px(c, u, -7, 0, 14, 9, '#07080d'); px(c, u, -6, 1, 12, 7, '#4a5356'); px(c, u, -6, 1, 12, 1, '#5d6669');
+  // alas
+  px(c, u, -9, -22, 6, 16, '#07080d'); px(c, u, 3, -22, 6, 16, '#07080d');
+  px(c, u, -8, -21, 4, 14, '#7c8388'); px(c, u, 4, -21, 4, 14, '#7c8388');
+  px(c, u, -8, -21, 2, 10, '#9aa1a5'); px(c, u, 6, -21, 2, 10, '#9aa1a5');
+  // figura
+  px(c, u, -3, -24, 6, 25, '#07080d'); px(c, u, -2, -18, 4, 18, '#9aa1a5'); px(c, u, -2, -18, 1, 18, '#b6bcbf');
+  px(c, u, -2, -23, 4, 5, '#9aa1a5'); px(c, u, -1, -22, 2, 2, '#b6bcbf');
+  px(c, u, -1, -19, 2, 1, '#7c8388');
+  px(c, u, -3, -16, 6, 2, '#7c8388');
+  c.restore();
+}
 
-  /* ---------- dibujo ---------- */
+function niches(c, x, y, flames, lights, time, seed) {
+  c.save(); c.translate(Math.round(x), Math.round(y));
+  const u = 2;
+  px(c, u, -33, 18, 66, 4, 'rgba(2,3,8,.5)');
+  px(c, u, -32, -26, 64, 45, '#07080d');
+  px(c, u, -31, -25, 62, 43, '#535b5d');
+  px(c, u, -31, -25, 62, 3, '#6a7274');
+  for (let row = 0; row < 3; row++) for (let col = 0; col < 5; col++) {
+    const nx = -29 + col * 12, ny = -21 + row * 13;
+    px(c, u, nx, ny, 11, 11, '#07080d');
+    px(c, u, nx + 1, ny + 1, 9, 9, row === 1 && col === 2 ? '#2a3134' : '#3e4648');
+    px(c, u, nx + 2, ny + 3, 6, 1, '#2c3336');
+    px(c, u, nx + 2, ny + 5, 5, 1, '#2c3336');
+    const h = hash(seed + col, row, 77);
+    if (h > 0.62) { c.fillStyle = h > 0.8 ? '#e8c25a' : '#ebe8dc'; c.fillRect(Math.round((nx + 7) * u), Math.round((ny + 7) * u), 4, 4); c.fillStyle = '#26402c'; c.fillRect(Math.round((nx + 7) * u), Math.round((ny + 9) * u), 4, 2); }
+    if (h < 0.22) votive(c, x + (nx + 3) * u, y + (ny + 10) * u, flames, lights, time, seed + row * 7 + col);
+  }
+  c.restore();
+}
 
+/* ---------- el velatorio de Amparo, en el centro del mundo ---------- */
+
+function drawVelatorio(c, sx, sy, time, flames, lights) {
+  const u = 2;
+  c.save(); c.translate(Math.round(sx), Math.round(sy));
+  // alfombra de luz sucia en el suelo
+  c.fillStyle = 'rgba(70,52,30,.22)';
+  c.beginPath(); c.ellipse(0, 6, 120, 58, 0, 0, TAU); c.fill();
+  // sombra
+  px(c, u, -22, 6, 44, 6, 'rgba(2,3,8,.5)');
+  // caballetes
+  px(c, u, -16, 4, 2, 8, '#07080d'); px(c, u, 14, 4, 2, 8, '#07080d');
+  px(c, u, -15, 4, 1, 7, '#4e3420'); px(c, u, 15, 4, 1, 7, '#4e3420');
+  // ataúd
+  px(c, u, -21, -8, 42, 15, '#07080d');
+  px(c, u, -20, -7, 40, 13, '#7a4a31');
+  px(c, u, -20, -7, 40, 2, '#94603f');
+  px(c, u, -19, -5, 38, 9, '#4f2e20');
+  px(c, u, -18, -4, 36, 7, '#ece6e9');
+  px(c, u, -18, 2, 36, 1, '#bcb2bb');
+  // almohada y Amparo
+  px(c, u, -17, -3, 5, 5, '#f7f3f0');
+  px(c, u, -17, -2, 2, 3, '#e4e2da');
+  px(c, u, -15, -2, 3, 3, '#d9c7b4');
+  px(c, u, -13, -1, 1, 1, '#b88a6a');
+  px(c, u, -12, -3, 22, 5, '#1d1d27');
+  px(c, u, -12, -3, 22, 1, '#30313f');
+  px(c, u, -6, -2, 3, 2, '#d9c7b4');
+  px(c, u, -5, 0, 1, 1, '#f1e8d2'); px(c, u, -3, 0, 1, 1, '#f1e8d2'); px(c, u, -4, 1, 1, 1, '#c9a04c');
+  px(c, u, 10, -2, 4, 3, '#1d1d27');
+  // corona de crisantemos a los pies
+  for (let i = 0; i < 12; i++) {
+    const a = i / 12 * TAU;
+    c.fillStyle = i % 3 ? '#ebe8dc' : '#e8c25a';
+    c.fillRect(Math.round(52 + Math.cos(a) * 9) - 2, Math.round(-2 + Math.sin(a) * 6) - 2, 4, 4);
+  }
+  c.fillStyle = '#26402c'; c.fillRect(48, -4, 3, 3);
+  // la silla de quien vela, vacía
+  px(c, u, -30, 14, 10, 2, '#07080d'); px(c, u, -29, 8, 8, 7, '#07080d');
+  px(c, u, -28, 9, 6, 5, '#7a5434'); px(c, u, -28, 9, 6, 1, '#94603f');
+  px(c, u, -29, 2, 2, 7, '#07080d'); px(c, u, -22, 2, 2, 7, '#07080d');
+  px(c, u, -29, 2, 9, 2, '#07080d'); px(c, u, -28, 2, 7, 1, '#7a5434');
+  px(c, u, -28, 3, 1, 6, '#4e3420'); px(c, u, -22, 3, 1, 6, '#4e3420');
+  // taburete con el termo de café y dos tazas
+  px(c, u, 20, 13, 9, 2, '#07080d'); px(c, u, 21, 10, 7, 4, '#4e3420');
+  px(c, u, 21, 4, 3, 7, '#07080d'); px(c, u, 21, 5, 2, 5, '#5b646c'); px(c, u, 21, 5, 1, 5, '#9aa6ae');
+  px(c, u, 25, 8, 2, 2, '#f1e8d2'); px(c, u, 25, 8, 2, 1, '#07080d');
+  c.restore();
+  const corners = [[-50, -26], [50, -26], [-50, 34], [50, 34]];
+  corners.forEach(([x, y], i) => cirioStand(c, sx + x, sy + y, flames, lights, time, i + 1));
+  lights.push({x: sx, y: sy, r: 230, i: 0.55, c: 'warm', g: 0.6});
+}
+
+/* ---------- el suelo y lo que hay sobre él ---------- */
+
+let ground;
+function groundTile() {
+  if (ground) return ground;
+  ground = makeCanvas(256, 256);
+  const c = ground.getContext('2d');
+  c.fillStyle = '#121a1b'; c.fillRect(0, 0, 256, 256);
+  for (let y = 0; y < 128; y++) for (let x = 0; x < 128; x++) {
+    const n = hash(x, y, 39);
+    if (n < 0.13) c.fillStyle = '#152022';
+    else if (n < 0.24) c.fillStyle = '#16231f';
+    else if (n < 0.3) c.fillStyle = '#0d1314';
+    else continue;
+    c.fillRect(x * 2, y * 2, 2, 2);
+  }
+  for (let i = 0; i < 40; i++) {
+    const x = Math.floor(hash(i, 2) * 124) * 2, y = Math.floor(hash(i, 3) * 124) * 2;
+    c.fillStyle = i % 3 ? '#1d2f28' : '#243a30';
+    c.fillRect(x, y, 2, 4); c.fillRect(x - 2, y + 2, 2, 2); c.fillRect(x + 2, y - 2, 2, 4);
+  }
+  for (let i = 0; i < 14; i++) {
+    const x = hash(i, 18) * 245 | 0, y = hash(i, 17) * 245 | 0;
+    c.fillStyle = '#2b3236'; c.fillRect(x, y, 4, 2); c.fillRect(x + 1, y + 2, 3, 1);
+    c.fillStyle = '#0b1012'; c.fillRect(x, y + 3, 4, 1);
+  }
+  // hojas secas de noviembre
+  for (let i = 0; i < 18; i++) {
+    const x = hash(i, 51) * 250 | 0, y = hash(i, 52) * 250 | 0;
+    c.fillStyle = i % 2 ? '#3a2a1c' : '#4a3420'; c.fillRect(x, y, 3, 2); c.fillRect(x + 1, y + 2, 2, 1);
+  }
+  return ground;
+}
+
+const PATH = 640;
+
+/*
+ * Dibuja el mundo visible. Rellena flames (llamas para la capa que brilla) y lights (agujeros en la oscuridad).
+ * Coordenadas de pantalla en píxeles CSS.
+ */
+function drawWorld(c, camX, camY, w, h, time, flames, lights) {
+  c.save();
+  c.imageSmoothingEnabled = false;
+  const tile = groundTile(), ts = 256;
+  const sx0 = Math.floor(camX / ts), sy0 = Math.floor(camY / ts);
+  for (let y = sy0; y <= (camY + h) / ts; y++) for (let x = sx0; x <= (camX + w) / ts; x++) c.drawImage(tile, Math.floor(x * ts - camX), Math.floor(y * ts - camY));
+  // paseos de grava
+  for (let i = Math.floor((camX - 40) / PATH); i <= (camX + w + 40) / PATH; i++) {
+    const xx = Math.round(i * PATH - camX);
+    c.fillStyle = 'rgba(122,112,92,.13)'; c.fillRect(xx - 26, 0, 52, h);
+    for (let y = Math.floor(camY / 6) * 6; y < camY + h; y += 6) {
+      const n = hash(i, y, 5);
+      if (n > 0.55) { c.fillStyle = n > 0.85 ? 'rgba(170,160,140,.18)' : 'rgba(30,30,28,.3)'; c.fillRect(xx - 24 + Math.floor(hash(i, y, 6) * 48), Math.floor(y - camY), 2, 2); }
+    }
+  }
+  for (let j = Math.floor((camY - 40) / PATH); j <= (camY + h + 40) / PATH; j++) {
+    const yy = Math.round(j * PATH - camY);
+    c.fillStyle = 'rgba(122,112,92,.13)'; c.fillRect(0, yy - 26, w, 52);
+    for (let x = Math.floor(camX / 6) * 6; x < camX + w; x += 6) {
+      const n = hash(x, j, 7);
+      if (n > 0.55) { c.fillStyle = n > 0.85 ? 'rgba(170,160,140,.18)' : 'rgba(30,30,28,.3)'; c.fillRect(Math.floor(x - camX), yy - 24 + Math.floor(hash(x, j, 8) * 48), 2, 2); }
+    }
+  }
+  // objetos en una rejilla con azar fijo: el camposanto es siempre el mismo
+  const cell = 150, objects = [];
+  for (let gy = Math.floor((camY - 150) / cell); gy <= (camY + h + 170) / cell; gy++) {
+    for (let gx = Math.floor((camX - 120) / cell); gx <= (camX + w + 120) / cell; gx++) {
+      const wx = gx * cell + hash(gx, gy, 25) * 80 + 35, wy = gy * cell + hash(gx, gy, 88) * 80 + 35;
+      if (Math.hypot(wx, wy * 1.4) < 230) continue;
+      // nada encima de los paseos
+      const mx = ((wx % PATH) + PATH) % PATH, my = ((wy % PATH) + PATH) % PATH;
+      if (mx < 46 || mx > PATH - 46 || my < 50 || my > PATH - 40) continue;
+      objects.push({sx: Math.round(wx - camX), sy: Math.round(wy - camY), v: hash(gx, gy, 73), gx, gy});
+    }
+  }
+  objects.sort((a, b) => a.sy - b.sy);
+  for (const o of objects) {
+    const seed = o.gx * 31 + o.gy * 17;
+    if (o.gx % 7 === 3 && o.gy % 5 === 1) { niches(c, o.sx, o.sy, flames, lights, time, seed); continue; }
+    if (o.v < 0.12) cypress(c, o.sx, o.sy, seed);
+    else if (o.v < 0.44) tomb(c, o.sx, o.sy, hash(o.gx, o.gy, 11), flames, lights, time, seed);
+    else if (o.v < 0.54) ironCross(c, o.sx, o.sy, seed);
+    else if (o.v < 0.62) woodCross(c, o.sx, o.sy, seed);
+    else if (o.v < 0.66) angel(c, o.sx, o.sy);
+    else if (o.v < 0.74) flowers(c, o.sx, o.sy, seed);
+    else if (o.v > 0.97) votive(c, o.sx, o.sy, flames, lights, time, seed);
+  }
+  if (Math.abs(camX + w / 2) < w + 200 && Math.abs(camY + h / 2) < h + 200) drawVelatorio(c, -camX, -camY, time, flames, lights);
+  c.restore();
+}
+
+/* Llamas de vela, dibujadas después de la oscuridad para que brillen. */
+function drawFlames(c, flames, time) {
+  c.save();
+  for (const f of flames) {
+    const x = Math.round(f.x), y = Math.round(f.y), tall = f.kind === 'cirio' ? 1 : 0;
+    const lean = Math.round(Math.sin(time * 3 + x) * 0.6);
+    c.fillStyle = f.kind === 'votive' ? 'rgba(255,107,58,.55)' : 'rgba(255,176,74,.6)';
+    c.fillRect(x - 2, y - 1, 4, 5 + tall * 2);
+    c.fillStyle = '#ffb04a';
+    c.fillRect(x - 1 + lean, y - 2 - tall * 2, 2, 5 + tall * 2);
+    c.fillStyle = '#fff1bd';
+    c.fillRect(x - 1 + lean, y + (f.f > 0.95 ? -1 : 0) - tall, 2, 2 + tall);
+  }
+  c.restore();
+}
+
+/* ---------- niebla ---------- */
+
+let fogBlob;
+function fogSprite() {
+  if (fogBlob) return fogBlob;
+  fogBlob = makeCanvas(256, 128);
+  const c = fogBlob.getContext('2d');
+  const g = c.createRadialGradient(128, 64, 4, 128, 64, 126);
+  g.addColorStop(0, 'rgba(190,205,215,1)'); g.addColorStop(0.45, 'rgba(190,205,215,.45)'); g.addColorStop(1, 'rgba(190,205,215,0)');
+  c.save(); c.scale(1, 0.5); c.translate(0, 64);
+  c.fillStyle = g; c.fillRect(0, -64, 256, 256);
+  c.restore();
+  return fogBlob;
+}
+
+function drawFog(c, camX, camY, w, h, time, density) {
+  if (density <= 0.01) return;
+  const img = fogSprite(), cell = 360;
+  c.save();
+  for (let gy = Math.floor((camY - 200) / cell); gy <= (camY + h + 200) / cell; gy++) {
+    for (let gx = Math.floor((camX - 500) / cell); gx <= (camX + w + 300) / cell; gx++) {
+      const n = hash(gx, gy, 101);
+      if (n < 0.35) continue;
+      const drift = (time * (9 + n * 8)) % (cell * 3);
+      const x = gx * cell + hash(gx, gy, 102) * cell + drift - camX - cell;
+      const y = gy * cell + hash(gx, gy, 103) * cell - camY;
+      const sc = 1.6 + n * 1.8;
+      c.globalAlpha = density * (0.05 + n * 0.08);
+      c.drawImage(img, x - 128 * sc, y - 64 * sc, 256 * sc, 128 * sc);
+    }
+  }
+  c.restore();
+}
+
+return {drawVelatorio, drawWorld, drawFlames, drawFog};
+})();
+/* ---- render.js ---- */
+const __render_js = (() => {
+/*
+ * El dibujo de cada fotograma: mundo, criaturas, oscuridad, luces y lo que brilla encima.
+ */
+const { TAU, clamp, rand, lerp } = __util_js;
+const { NIGHT, COFFIN, ENEMIES } = __balance_js;
+const { drawSprite, drawShadow, sprite } = __art_js;
+const { drawWorld, drawFlames, drawFog } = __world_js;
+
+const renderMethods = {
   nightLook() {
     const t = this.time;
     let dark;
@@ -4092,7 +3882,7 @@ class VigilGame {
     const fog = this.state === 'ready' ? 0.7 : t < 300 ? 0.55 + t / 300 * 0.45 : t < 450 ? 1 : 1 - (t - 450) / 150 * 0.5;
     const dawnFog = this.state === 'dawn' ? fog * Math.max(0.25, 1 - this.dawnT / 6) : this.state === 'ended' && this.lastVictory ? fog * 0.25 : fog;
     return {dark, tint: tint.map(v => Math.round(v)).join(','), warm, fog: dawnFog};
-  }
+  },
 
   render() {
     const ctx = this.ctx, w = this.width, h = this.height, p = this.player;
@@ -4264,7 +4054,7 @@ class VigilGame {
       ctx.beginPath(); ctx.arc(this.pointer.start.x + mv.x * 30, this.pointer.start.y + mv.y * 30, 13, 0, TAU); ctx.fill();
     }
     ctx.restore();
-  }
+  },
 
   titleCast(items, camX, camY, lights) {
     const sel = this.character;
@@ -4291,7 +4081,7 @@ class VigilGame {
       items.push({kind: 'decor', key: 'anima', x, y: y + Math.sin(this.clock * 2 + i) * 5, flip: false, sortY: y});
       lights.push({x, y, r: 44, i: 0.7, c: 'blue', g: 0.7});
     }
-  }
+  },
 
   drawItem(ctx, it, lights, layer) {
     const t = this.clock;
@@ -4364,7 +4154,7 @@ class VigilGame {
       drawSprite(ctx, e.type, x, y, {scale, flip: e.flip, bob, sx, sy, rot, layer: 'glow'});
       ctx.restore();
     }
-  }
+  },
 
   drawTelegraphs(ctx, camX, camY) {
     const t = this.clock;
@@ -4408,7 +4198,7 @@ class VigilGame {
       ctx.fillStyle = '#fff1bd'; ctx.fillRect(x - 1, y - 3 - k * 3, 2, 3);
     }
     ctx.restore();
-  }
+  },
 
   /* Flechas hacia Amparo y hacia la Guía cuando quedan fuera de la vista. */
   drawPointers(ctx, camX, camY) {
@@ -4432,7 +4222,7 @@ class VigilGame {
     };
     arrow(COFFIN.x, COFFIN.y, 'rgba(255,213,154,.85)', 'Amparo');
     if (this.boss && this.boss.hp > 0) arrow(this.boss.x, this.boss.y, 'rgba(255,120,90,.95)', 'La Guía');
-  }
+  },
 
   drawOverlays(ctx, look) {
     const w = this.width, h = this.height;
@@ -4471,10 +4261,362 @@ class VigilGame {
       ctx.fillStyle = `rgba(${this.flashColor},${this.flash * 0.6})`;
       ctx.fillRect(0, 0, w, h);
     }
+  },
+};
+
+return {renderMethods};
+})();
+/* ---- game.js ---- */
+const __game_js = (() => {
+/*
+ * La noche de Difuntos, de 00:00 a 06:00 (cien segundos por hora).
+ * Este archivo lleva el compás: arranca la noche, la hace avanzar y la termina.
+ * Cada sistema vive en su módulo y se suma aquí al juego.
+ */
+const { TAU, clamp, rand, pick } = __util_js;
+const { NIGHT, HOUR, BOSS_AT, COFFIN, fmtClock } = __balance_js;
+const { Lighting } = __art_js;
+const { AudioEngine } = __audio_js;
+const { CombatEffects } = __combat_fx_js;
+const { CHARACTERS, MEMORIES, BARKS, AMPARO, HOURS } = __story_js;
+const { inputMethods } = __input_js;
+const { directorMethods } = __director_js;
+const { weaponMethods } = __weapons_js;
+const { memoryMethods } = __memories_js;
+const { enemyMethods } = __enemies_js;
+const { bossMethods } = __boss_js;
+const { fxMethods } = __fx_js;
+const { botMethods } = __bot_js;
+const { renderMethods } = __render_js;
+
+class VigilGame {
+  constructor(canvas, hooks = {}) {
+    this.canvas = canvas;
+    this.ctx = canvas.getContext('2d', {alpha: false});
+    this.hooks = hooks;
+    this.audio = new AudioEngine();
+    this.lighting = new Lighting();
+    this.combatFx = new CombatEffects();
+    this.options = {shake: true, flashes: true, numbers: false, softDark: false};
+    this.muted = false;
+    this.state = 'ready';
+    this.character = 'lucia';
+    this.keys = new Set();
+    this.pointer = null;
+    this.width = 900; this.height = 560;
+    this.clock = 0;
+    this.lastFrame = performance.now();
+    this.timeScale = 1;
+    this.bot = false;
+    this.god = false;
+    this.handlers = [];
+    this.cam = {x: 0, y: 24};
+    this.titleFocus = {x: 0, y: 30};
+    this.grid = new Map();
+    this.reset();
+    this.resize();
+    this.bindInput();
+    this.resizeObserver = new ResizeObserver(() => this.resize());
+    this.resizeObserver.observe(canvas);
+    this.frame = this.frame.bind(this);
+    this.raf = requestAnimationFrame(this.frame);
   }
+
+  /* ---------- ciclo de vida ---------- */
+
+  reset() {
+    const ch = CHARACTERS[this.character] || CHARACTERS.lucia;
+    this.time = 0; this.kills = 0; this.level = 1; this.xp = 0; this.xpNext = this.xpFor(1);
+    this.mem = Object.fromEntries(MEMORIES.map(m => [m.id, 0]));
+    this.order = [];
+    for (const [k, v] of Object.entries(ch.start)) { this.mem[k] = v; this.order.push(k); }
+    this.player = {x: 0, y: 92, hp: ch.hp, face: 1, inv: 0, dip: 0, walk: 0, moving: false};
+    this.computeStats();
+    this.player.hp = this.st.maxHp;
+    this.enemies = []; this.shots = []; this.enemyShots = []; this.hazards = [];
+    this.gems = []; this.particles = []; this.rings = []; this.numbers = [];
+    this.corpses = []; this.marks = []; this.moths = []; this.ghosts = [];
+    this.combatFx.clear();
+    this.t = {chispas: 0.35, sal: 0.4, campana: 2.5, farol: 0.4, spawn: 0.6, procession: 48, swarm: 26, ghost: 0,
+      bossSummon: 5, bossWater: 3, bossSpiral: 4, regenFx: 0, stats: 0, danger: 0};
+    this.dashCd = 0; this.dashTime = 0; this.dashDir = {x: 1, y: 0}; this.lastMove = {x: 1, y: 0};
+    this.phase = 'night'; this.hourShown = 0; this.boss = null; this.soul = 0; this.stoppedFor = 0;
+    this.rushFrom = 0; this.dawnT = 0; this.dyingT = 0; this.cause = null; this.bossReached = false; this.bossRaged = false;
+    this.dawnBreaks = false; this.deathClock = null; this.lastVictory = false;
+    this.damageTaken = 0; this.minHp = Infinity;
+    this.shake = 0; this.flash = 0; this.flashColor = '255,255,255'; this.freeze = 0;
+    this.seen = new Set(); this.said = new Set(); this.subQueue = []; this.sub = null; this.subT = 0;
+    this.lowHpCd = 0; this.amparoSaid = new Set(); this.danger = 0;
+    this.choices = []; this.enemyId = 0; this.cafeDrops = 0;
+    this.keys.clear(); this.pointer = null;
+  }
+
+  start(character) {
+    this.character = CHARACTERS[character] ? character : 'lucia';
+    this.reset();
+    this.audio.init();
+    this.audio.setMuted(this.muted);
+    this.cam.x = this.player.x; this.cam.y = this.player.y;
+    this.setState('running');
+    this.banner(HOURS[0].name, HOURS[0].mood);
+    this.audio.sfx('hora', {count: 12, gap: 1.5});
+    for (const id of this.order) this.hooks.onDiscover?.({kind: 'memory', id});
+    this.bark('start', {line: pick(BARKS[this.character].start), delay: 2.2});
+    for (let i = 0; i < 7; i++) {
+      const e = this.spawn('anima');
+      if (e) { const a = i / 7 * TAU + 0.4, r = Math.max(this.width, this.height) * 0.62; e.x = this.player.x + Math.cos(a) * r; e.y = this.player.y + Math.sin(a) * r; }
+    }
+    this.emitStats();
+    this.canvas.focus?.({preventScroll: true});
+  }
+
+  /* Para pruebas: salta a un momento de la noche. */
+  skipTo(seconds) {
+    if (this.state !== 'running') return;
+    this.time = clamp(seconds, 0, NIGHT - 2);
+    this.hourShown = Math.min(5, Math.floor(this.time / HOUR));
+  }
+
+  setState(state) { this.state = state; this.hooks.onState?.(state); }
+  pause() { if (this.state !== 'running') return; this.keys.clear(); this.pointer = null; this.setState('paused'); }
+  resume() { if (this.state !== 'paused') return; this.keys.clear(); this.pointer = null; this.lastFrame = performance.now(); this.setState('running'); this.canvas.focus?.({preventScroll: true}); }
+  setMuted(v) { this.muted = !!v; this.audio.setMuted(this.muted); if (!this.muted) this.audio.init(); }
+  setVolume(v) { this.audio.setVolume(v); }
+  setOptions(o) { Object.assign(this.options, o); }
+  backToTitle() { this.reset(); this.setState('ready'); this.hooks.onSubtitle?.(null); this.emitStats(); }
+  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); }
+
+  resize() {
+    const rect = this.canvas.getBoundingClientRect();
+    const cssW = Math.max(1, rect.width || 900), cssH = Math.max(1, rect.height || 560);
+    // En pantallas pequeñas se aleja un poco la cámara para ver venir a la Compaña.
+    this.zoom = Math.min(cssW, cssH) < 520 ? 0.75 : 1;
+    this.width = cssW / this.zoom;
+    this.height = cssH / this.zoom;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    this.canvas.width = Math.round(cssW * dpr);
+    this.canvas.height = Math.round(cssH * dpr);
+    this.ctx.setTransform(dpr * this.zoom, 0, 0, dpr * this.zoom, 0, 0);
+    this.ctx.imageSmoothingEnabled = false;
+    this.lighting.resize(this.width, this.height);
+  }
+
+  /* ---------- bucle ---------- */
+
+  frame(ts) {
+    const dt = Math.min(0.05, Math.max(0, (ts - this.lastFrame) / 1000));
+    this.lastFrame = ts;
+    this.clock += dt;
+    const steps = this.state === 'running' ? Math.max(1, Math.floor(this.timeScale)) : 1;
+    for (let i = 0; i < steps; i++) this.step(dt);
+    try { this.render(dt); } catch (err) { console.error(err); }
+    this.audio.update(dt, this.audioState());
+    this.raf = requestAnimationFrame(this.frame);
+  }
+
+  step(dt) {
+    if (this.state === 'running') {
+      if (this.freeze > 0) this.freeze -= dt;
+      else this.update(dt);
+      this.updateSubtitles(dt);
+    } else if (this.state === 'dying') { this.updateDying(dt); this.updateSubtitles(dt); }
+    else if (this.state === 'dawn') { this.updateDawn(dt); this.updateSubtitles(dt); }
+    else if (this.state === 'ready') this.updateFx(dt);
+  }
+
+  audioState() {
+    const scene = {ready: 'title', running: 'run', paused: 'pause', upgrade: 'pause', dying: 'end', dawn: 'dawn', ended: this.lastVictory ? 'dawn' : 'end'}[this.state] || 'title';
+    return {scene, hour: this.time / HOUR, danger: this.danger, hp: this.player.hp / this.st.maxHp, boss: !!(this.boss && this.boss.hp > 0)};
+  }
+
+  update(dt) {
+    const p = this.player, st = this.st;
+    // El reloj de la noche
+    if (this.phase === 'rush') this.time = Math.min(NIGHT, this.time + dt * Math.max(10, (NIGHT - this.rushFrom) / 5.5));
+    else if (this.phase === 'stopped') this.stoppedFor += dt;
+    else this.time += dt;
+    if (this.phase === 'night' && this.boss && this.boss.hp > 0 && this.time >= NIGHT - 1) this.stopClock();
+    if (this.time >= NIGHT && this.phase !== 'stopped') { this.beginDawn(); return; }
+    const hour = Math.floor(this.time / HOUR);
+    if (hour > this.hourShown && hour <= 5 && this.phase === 'night') { this.hourShown = hour; this.onHour(hour); }
+    if (!this.boss && this.time >= BOSS_AT) this.spawnBoss();
+    if (this.phase === 'stopped' && this.stoppedFor > 75 && !this.dawnBreaks) {
+      this.dawnBreaks = true;
+      this.banner('La luz se abre paso', 'La Guía se debilita');
+    }
+
+    // Quien vela
+    p.inv = Math.max(0, p.inv - dt);
+    p.dip = Math.max(0, p.dip - dt * 1.8);
+    this.dashCd = Math.max(0, this.dashCd - dt);
+    this.lowHpCd = Math.max(0, this.lowHpCd - dt);
+    const mv = this.bot ? this.botMove() : this.movement();
+    p.moving = Math.hypot(mv.x, mv.y) > 0.05;
+    if (p.moving) { this.lastMove = {x: mv.x, y: mv.y}; if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1; p.walk += dt * 11; }
+    if (this.dashTime > 0) {
+      this.dashTime -= dt;
+      p.x += this.dashDir.x * st.speed * 4.2 * dt; p.y += this.dashDir.y * st.speed * 4.2 * dt;
+      this.t.ghost -= dt;
+      if (this.t.ghost <= 0) { this.t.ghost = 0.035; this.ghosts.push({x: p.x, y: p.y, face: p.face, life: 0.28}); }
+    } else { p.x += mv.x * st.speed * dt; p.y += mv.y * st.speed * dt; }
+    if (st.regen) p.hp = Math.min(st.maxHp, p.hp + st.regen * dt);
+    // Junto a Amparo se descansa.
+    if (Math.hypot(p.x - COFFIN.x, p.y - COFFIN.y) < 125 && p.hp < st.maxHp) {
+      p.hp = Math.min(st.maxHp, p.hp + 2.2 * dt);
+      this.t.regenFx -= dt;
+      if (this.t.regenFx <= 0) { this.t.regenFx = 0.25; this.particle({x: p.x + rand(-10, 10), y: p.y + rand(-6, 10), vx: 0, vy: -24, life: 0.9, size: 2, color: '#ffd59a', glow: true}); }
+    }
+
+    this.weapons(dt);
+    this.spawning(dt);
+    this.updateEnemies(dt);
+    if (this.state !== 'running') return;
+    this.updateShots(dt);
+    this.updateHazards(dt);
+    if (this.state !== 'running') return;
+    this.updatePickups(dt);
+    this.updateFx(dt);
+    if (this.boss && this.boss.hp > 0) this.updateSoul(dt);
+    if (this.state !== 'running') return;
+    if (this.xp >= this.xpNext) this.levelUp();
+    this.t.stats -= dt;
+    if (this.t.stats <= 0) { this.t.stats = 0.1; this.emitStats(); }
+  }
+
+  /* ---------- final ---------- */
+
+  beginDying(cause) {
+    if (this.state !== 'running') return;
+    this.cause = cause;
+    this.dyingT = 0;
+    this.deathClock = fmtClock(this.time);
+    this.audio.sfx('apagon');
+    this.flash = 0;
+    this.setState('dying');
+    this.hooks.onSubtitle?.(null);
+    this.sub = null; this.subQueue = [];
+  }
+
+  updateDying(dt) {
+    this.dyingT += dt;
+    this.updateFx(dt);
+    for (const e of this.enemies) {
+      if (e.hp <= 0) continue;
+      const dx = this.player.x - e.x, dy = this.player.y - e.y, d = Math.hypot(dx, dy) || 1;
+      if (d > 40) { e.x += dx / d * e.speed * 0.4 * dt; e.y += dy / d * e.speed * 0.4 * dt; }
+    }
+    if (this.dyingT > 2.4) this.end(false);
+  }
+
+  beginDawn() {
+    this.time = NIGHT;
+    this.phase = 'dawn';
+    this.dawnT = 0;
+    for (const e of this.enemies) if (e.hp > 0 && !e.dissolve) { e.dissolve = true; e.dissolveT = rand(0.3, 1.8); }
+    this.enemyShots = []; this.hazards = []; this.marks = [];
+    this.audio.sfx('hora', {count: 6, gap: 1.6});
+    this.audio.sfx('alba');
+    this.banner(HOURS[6].name, HOURS[6].mood, 'dawn');
+    this.subQueue = this.subQueue.filter(q => q.priority >= 4 && q.speaker !== 'Carmela');
+    this.bark('dawn', {priority: 4, delay: 1});
+    this.say(AMPARO.dawn, AMPARO.name, {italic: true, priority: 4, delay: 0.6});
+    this.player.inv = 99;
+    this.emitStats();
+    this.setState('dawn');
+  }
+
+  updateDawn(dt) {
+    this.dawnT += dt;
+    this.updateFx(dt);
+    for (const e of this.enemies) {
+      if (e.hp <= 0) continue;
+      e.dissolveT -= dt;
+      if (Math.random() < 0.3) this.particle({x: e.x + rand(-8, 8), y: e.y + rand(-10, 6), vx: rand(-10, 10), vy: rand(-50, -25), life: 0.8, size: 2, color: '#ffd59a', glow: true});
+      if (e.dissolveT <= 0) e.hp = 0;
+    }
+    this.enemies = this.enemies.filter(e => e.hp > 0);
+    const p = this.player, mv = this.bot ? {x: 0, y: 0} : this.movement();
+    p.x += mv.x * this.st.speed * 0.5 * dt; p.y += mv.y * this.st.speed * 0.5 * dt;
+    if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1;
+    p.moving = Math.hypot(mv.x, mv.y) > 0.05;
+    if (p.moving) p.walk += dt * 6;
+    for (const g of this.gems) { if (!g.cafe) { g.y -= (18 + (g.bob % 3) * 6) * dt; g.x += Math.sin(this.clock * 2 + g.bob) * 6 * dt; } }
+    // Que la última frase sea la de Amparo, aunque haya que esperar un poco.
+    if ((this.dawnT > 11 && !this.sub && !this.subQueue.length) || this.dawnT > 24) this.end(true);
+  }
+
+  end(victory) {
+    if (this.state === 'ended') return;
+    this.lastVictory = victory;
+    const result = {victory, cause: victory ? 'dawn' : this.cause, time: this.time, clock: victory ? '06:00' : this.deathClock || fmtClock(this.time),
+      kills: this.kills, level: this.level, character: this.character, memories: {...this.mem}, order: [...this.order],
+      freed: !!(this.boss && this.boss.hp <= 0)};
+    this.setState('ended');
+    this.keys.clear(); this.pointer = null;
+    this.hooks.onSubtitle?.(null);
+    this.emitStats();
+    this.hooks.onEnd?.(result);
+  }
+
+  /* ---------- voces ---------- */
+
+  say(text, speaker, {italic = false, priority = 1, delay = 0} = {}) {
+    if (this.subQueue.length > 3) this.subQueue = this.subQueue.filter(s => s.priority >= priority);
+    this.subQueue.push({text, speaker, italic, priority, delay});
+    this.subQueue.sort((a, b) => b.priority - a.priority);
+  }
+
+  bark(key, {once = true, line, priority = 1, delay = 0} = {}) {
+    const set = BARKS[this.character];
+    let text = line || set?.[key];
+    if (!text) return false;
+    if (Array.isArray(text)) text = pick(text);
+    if (once && this.said.has(key)) return false;
+    this.said.add(key);
+    this.say(text, CHARACTERS[this.character].name, {priority, delay});
+    return true;
+  }
+
+  updateSubtitles(dt) {
+    if (this.sub) {
+      this.subT -= dt;
+      if (this.subT <= 0) { this.sub = null; this.hooks.onSubtitle?.(null); }
+    }
+    if (!this.sub && this.subQueue.length) {
+      const next = this.subQueue[0];
+      next.delay -= dt;
+      if (next.delay > 0) return;
+      this.subQueue.shift();
+      this.sub = next;
+      const quick = this.state === 'dawn' || this.phase === 'rush';
+      this.subT = (quick ? 1.8 : 2.4) + next.text.length * (quick ? 0.04 : 0.052);
+      this.hooks.onSubtitle?.(next);
+    }
+  }
+
+  banner(title, sub, tone = 'hour') { this.hooks.onBanner?.({title, sub, tone}); }
+
+  /* ---------- estado para la interfaz ---------- */
+
+  getSnapshot() {
+    const b = this.boss;
+    const hourIdx = Math.min(6, Math.floor(this.time / HOUR));
+    return {
+      state: this.state, phase: this.phase, time: this.time, clock: fmtClock(this.time), hour: hourIdx,
+      mood: this.phase === 'stopped' ? 'El reloj se ha parado' : this.phase === 'rush' ? 'Clarea' : HOURS[hourIdx].mood,
+      kills: this.kills, level: this.level, xp: this.xp, xpNext: this.xpNext,
+      hp: this.player.hp, maxHp: this.st.maxHp, dashCd: this.dashCd, dashMax: this.st.dashCd,
+      character: this.character, mem: {...this.mem}, order: [...this.order],
+      boss: b ? {alive: b.hp > 0, hp: Math.max(0, b.hp), maxHp: b.maxHp, soul: this.soul} : null
+    };
+  }
+
+  emitStats() { this.hooks.onStats?.(this.getSnapshot()); }
 }
 
-return {fmtClock, VigilGame};
+Object.assign(VigilGame.prototype, inputMethods, directorMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods);
+
+return {VigilGame};
 })();
 /* ---- app.js ---- */
 const __app_js = (() => {
