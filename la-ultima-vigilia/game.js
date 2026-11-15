@@ -6,6 +6,7 @@
 import { TAU, clamp, rand, pick } from './util.js';
 import { NIGHT, HOUR, BOSS_AT, COFFIN, fmtClock } from './balance.js';
 import { Lighting } from './art.js';
+import { Cemetery } from './world.js';
 import { AudioEngine } from './audio.js';
 import { CombatEffects } from './combat-fx.js';
 import { CHARACTERS, MEMORIES, BARKS, AMPARO, HOURS } from './story.js';
@@ -26,6 +27,7 @@ export class VigilGame {
     this.hooks = hooks;
     this.audio = new AudioEngine();
     this.lighting = new Lighting();
+    this.cemetery = new Cemetery();
     this.combatFx = new CombatEffects();
     this.options = {shake: true, flashes: true, numbers: false, softDark: false};
     this.muted = false;
@@ -120,7 +122,8 @@ export class VigilGame {
     const rect = this.canvas.getBoundingClientRect();
     const cssW = Math.max(1, rect.width || 900), cssH = Math.max(1, rect.height || 560);
     // En pantallas pequeñas se aleja un poco la cámara para ver venir a la Compaña.
-    this.zoom = Math.min(cssW, cssH) < 520 ? 0.75 : 1;
+    // En las grandes se acerca, a saltos de medio punto para que el píxel quede limpio.
+    this.zoom = Math.min(cssW, cssH) < 520 ? 0.75 : clamp(Math.floor(Math.min(cssW / 1100, cssH / 640) * 2) / 2, 1, 3);
     this.width = cssW / this.zoom;
     this.height = cssH / this.zoom;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -151,7 +154,7 @@ export class VigilGame {
       this.updateSubtitles(dt);
     } else if (this.state === 'dying') { this.updateDying(dt); this.updateSubtitles(dt); }
     else if (this.state === 'dawn') { this.updateDawn(dt); this.updateSubtitles(dt); }
-    else if (this.state === 'ready') this.updateFx(dt);
+    else if (this.state === 'ready') { this.updateFx(dt); this.cemetery.warm(); }
   }
 
   audioState() {
@@ -189,6 +192,7 @@ export class VigilGame {
       this.t.ghost -= dt;
       if (this.t.ghost <= 0) { this.t.ghost = 0.035; this.ghosts.push({x: p.x, y: p.y, face: p.face, life: 0.28}); }
     } else { p.x += mv.x * st.speed * dt; p.y += mv.y * st.speed * dt; }
+    this.cemetery.resolve(p);
     if (st.regen) p.hp = Math.min(st.maxHp, p.hp + st.regen * dt);
     // Junto a Amparo se descansa.
     if (Math.hypot(p.x - COFFIN.x, p.y - COFFIN.y) < 125 && p.hp < st.maxHp) {
@@ -267,6 +271,7 @@ export class VigilGame {
     this.enemies = this.enemies.filter(e => e.hp > 0);
     const p = this.player, mv = this.bot ? {x: 0, y: 0} : this.movement();
     p.x += mv.x * this.st.speed * 0.5 * dt; p.y += mv.y * this.st.speed * 0.5 * dt;
+    this.cemetery.resolve(p);
     if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1;
     p.moving = Math.hypot(mv.x, mv.y) > 0.05;
     if (p.moving) p.walk += dt * 6;

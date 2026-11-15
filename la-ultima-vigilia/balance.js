@@ -35,7 +35,7 @@ export const ENEMIES = {
  * es cuánto deja ver la cámara al otro lado (al este, el mar y el faro).
  */
 export const WORLD = {left: -1560, right: 1560, top: -1160, bottom: 1160, margin: {n: 250, s: 110, w: 230, e: 520}};
-export const LIGHTHOUSE = {x: 1905, y: 420, lampY: -168};
+export const LIGHTHOUSE = {x: 1905, y: 420, lampY: -174};
 
 /* Los cuatro cirios del velatorio, alrededor del ataúd. */
 export const CIRIOS = [{x: -58, y: -30}, {x: 58, y: -30}, {x: -58, y: 38}, {x: 58, y: 38}];

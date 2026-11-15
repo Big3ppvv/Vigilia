@@ -2,9 +2,9 @@
  * El dibujo de cada fotograma: mundo, criaturas, oscuridad, luces y lo que brilla encima.
  */
 import { TAU, clamp, rand, lerp } from './util.js';
-import { NIGHT, COFFIN, ENEMIES } from './balance.js';
+import { NIGHT, COFFIN, ENEMIES, WORLD, LIGHTHOUSE } from './balance.js';
 import { drawSprite, drawShadow, sprite } from './art.js';
-import { drawWorld, drawFlames, drawFog } from './world.js';
+import { drawFlames, drawFog } from './world.js';
 
 export const renderMethods = {
   nightLook() {
@@ -32,19 +32,40 @@ export const renderMethods = {
     return {dark, tint: tint.map(v => Math.round(v)).join(','), warm, fog: dawnFog};
   },
 
+  /* La cámara no sale del camposanto: deja ver un poco de lo que hay al otro lado del muro. */
+  clampCamera() {
+    const w = this.width, h = this.height, m = WORLD.margin;
+    const x0 = WORLD.left - m.w + w / 2, x1 = WORLD.right + m.e - w / 2;
+    const y0 = WORLD.top - m.n + h / 2, y1 = WORLD.bottom + m.s - h / 2;
+    this.cam.x = x0 > x1 ? (x0 + x1) / 2 : clamp(this.cam.x, x0, x1);
+    this.cam.y = y0 > y1 ? (y0 + y1) / 2 : clamp(this.cam.y, y0, y1);
+  },
+
+  /* Lo que el camposanto necesita saber del velatorio para dibujarse. */
+  wakeLook() {
+    const cirios = this.cirios || null;
+    return {cirios, lit: cirios ? cirios.filter(c => c.lit).length : 4, bell: this.bellT || 0, dim: this.flameDim ?? 1};
+  },
+
+  /* El faro da una vuelta cada quince segundos. */
+  beamAngle() { return this.clock * 0.42; },
+
   render() {
     const ctx = this.ctx, w = this.width, h = this.height, p = this.player;
     const title = this.state === 'ready';
     const target = title ? this.titleFocus : p;
     if (title) { this.cam.x = target.x; this.cam.y = target.y; }
     else { const k = 1 - Math.exp(-0.016 * 12); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
+    this.clampCamera();
     const camX = Math.round(this.cam.x - w / 2), camY = Math.round(this.cam.y - h / 2);
     const look = this.nightLook();
-    const flames = [], lights = [];
+    const flames = [], lights = [], items = [];
+    const wake = this.wakeLook();
     ctx.save();
     if (this.shake > 0.2 && this.options.shake) ctx.translate(Math.round(rand(-1, 1) * this.shake), Math.round(rand(-1, 1) * this.shake));
-    drawWorld(ctx, camX, camY, w, h, this.clock, flames, lights);
-    drawFog(ctx, camX, camY, w, h, this.clock, look.fog * 0.9);
+    this.cemetery.ground(ctx, camX, camY, w, h);
+    this.cemetery.sea(ctx, camX, camY, w, h, this.clock);
+    this.cemetery.collect(ctx, camX, camY, w, h, this.clock, wake, items, flames, lights);
     if (this.mem.farol && !title && this.state !== 'ended') this.combatFx.drawLanternAura(ctx, p, this.lightRadius() * 0.7, this.clock, camX, camY, this.options.flashes);
 
     // Café en el suelo
@@ -57,16 +78,16 @@ export const renderMethods = {
       lights.push({x, y, r: 34, i: 0.6, c: 'warm', g: 0.3});
     }
 
-    // Quién y qué hay en escena, ordenado de arriba abajo
-    const items = [];
+    // Quién y qué hay en escena, ordenado de arriba abajo por donde pisa.
     if (title) this.titleCast(items, camX, camY, lights);
     for (const e of this.enemies) {
       const x = e.x - camX, y = e.y - camY;
       if (x < -90 || x > w + 90 || y < -110 || y > h + 90) continue;
-      items.push({kind: 'enemy', e, x, y, sortY: y});
+      const flying = e.type === 'anima' || e.type === 'curuxa';
+      items.push({kind: 'enemy', e, x, y, sortY: y + (flying ? 18 : e.r * 0.6)});
     }
-    for (const c of this.corpses) items.push({kind: 'corpse', c, x: c.x - camX, y: c.y - camY, sortY: c.y - camY});
-    if (!title && this.state !== 'ended' || (this.state === 'ended' && this.lastVictory)) items.push({kind: 'player', x: p.x - camX, y: p.y - camY, sortY: p.y - camY});
+    for (const c of this.corpses) items.push({kind: 'corpse', c, x: c.x - camX, y: c.y - camY, sortY: c.y - camY + 8});
+    if (!title && this.state !== 'ended' || (this.state === 'ended' && this.lastVictory)) items.push({kind: 'player', x: p.x - camX, y: p.y - camY, sortY: p.y - camY + 10});
     items.sort((a, b) => a.sortY - b.sortY);
 
     for (const g of this.ghosts) {
@@ -82,6 +103,7 @@ export const renderMethods = {
       entityLights.length = 56;
     }
     for (const L of entityLights) lights.push(L);
+    drawFog(ctx, camX, camY, w, h, this.clock, look.fog * 0.9);
 
     // Polillas
     for (const m of this.moths) {
@@ -128,7 +150,7 @@ export const renderMethods = {
     for (const m of this.marks) lights.push({x: m.x - camX, y: m.y - camY, r: 40, i: 0.8, c: 'warm', g: 0.5});
 
     // El faro de su padre barre el camposanto
-    const beams = [{x: 2600 - camX, y: 1500 - camY, a: this.clock * 0.42, spread: 0.06, len: 4600, i: this.state === 'dawn' ? 0.2 : 0.55}];
+    const beams = [{x: LIGHTHOUSE.x - camX, y: LIGHTHOUSE.y + LIGHTHOUSE.lampY - camY, a: this.beamAngle(), spread: 0.06, len: 4600, i: this.state === 'dawn' ? 0.2 : 0.55}];
 
     this.lighting.render(ctx, lights, look.dark, look.tint, beams);
     this.lighting.glow(ctx, lights, 0.55 * (1 - look.warm * 0.6));
@@ -207,32 +229,36 @@ export const renderMethods = {
   titleCast(items, camX, camY, lights) {
     const sel = this.character;
     const cast = [
-      {key: 'lucia', x: -112, y: 26, flip: false},
-      {key: 'julian', x: 116, y: 22, flip: true},
-      {key: 'matilde', x: -8, y: 92, flip: false}
+      {key: 'lucia', x: -132, y: 36, flip: false},
+      {key: 'julian', x: 134, y: 34, flip: true},
+      {key: 'matilde', x: -6, y: 98, flip: false}
     ];
     for (const c of cast) {
       const on = c.key === sel;
       const x = c.x - camX, y = c.y - camY;
-      items.push({kind: 'cast', key: c.key, x, y, flip: c.flip, on, sortY: y});
+      items.push({kind: 'cast', key: c.key, x, y, flip: c.flip, on, sortY: y + 22});
       lights.push({x: x + (c.flip ? -6 : 6), y: y - 8, r: on ? 150 : 70, i: on ? 1 : 0.55, c: 'warm', g: on ? 0.45 : 0.15});
     }
     // La Compaña pasa a lo lejos, sin mirar.
     const n = 8, base = ((this.clock * 20 + 1100) % 2600) - 1300;
     for (let i = 0; i < n; i++) {
       const x = base - i * 30 - camX, y = -230 + Math.sin((base - i * 30) * 0.004) * 30 - camY;
-      items.push({kind: 'decor', key: 'hermano', x, y, flip: false, sortY: y, alpha: 0.9});
+      items.push({kind: 'decor', key: 'hermano', x, y, flip: false, sortY: y + 20, alpha: 0.9});
       lights.push({x: x + 4, y: y - 4, r: 46, i: 0.8, c: 'warm', g: 0.5});
     }
     for (let i = 0; i < 5; i++) {
       const a = this.clock * 0.25 + i * TAU / 5, x = Math.cos(a) * 330 - camX, y = Math.sin(a) * 170 + 40 - camY;
-      items.push({kind: 'decor', key: 'anima', x, y: y + Math.sin(this.clock * 2 + i) * 5, flip: false, sortY: y});
+      items.push({kind: 'decor', key: 'anima', x, y: y + Math.sin(this.clock * 2 + i) * 5, flip: false, sortY: y + 18});
       lights.push({x, y, r: 44, i: 0.7, c: 'blue', g: 0.7});
     }
   },
 
   drawItem(ctx, it, lights, layer) {
     const t = this.clock;
+    if (it.kind === 'prop') {
+      if (layer === 'base') this.cemetery.drawProp(ctx, it, this.wakeLook());
+      return;
+    }
     if (it.kind === 'cast' || it.kind === 'decor') {
       const bob = it.key === 'anima' ? 0 : Math.sin(t * 2 + it.x) * 0.6;
       if (layer === 'base' && it.key !== 'anima') drawShadow(ctx, it.x, it.y + 20, 11);
