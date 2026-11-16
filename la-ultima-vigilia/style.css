@@ -147,6 +147,16 @@ h1 {
 .night-track .moon, .night-track .sun { position: absolute; top: -3px; width: 8px; height: 8px; border-radius: 50%; }
 .night-track .moon { left: -12px; background: #cfd8e6; box-shadow: inset -3px 0 0 #07080c; }
 .night-track .sun { right: -12px; background: #ffcf8a; box-shadow: 0 0 8px rgba(255, 176, 74, .6); }
+.wake { display: flex; justify-content: center; gap: 9px; margin: 12px auto 0; height: 20px; }
+.wake i { position: relative; width: 5px; height: 12px; margin-top: 8px; background: rgba(239, 230, 212, .22); border-radius: 1px; transition: background .25s; }
+.wake i::before { content: ''; position: absolute; left: 50%; top: -8px; width: 5px; height: 7px; margin-left: -2.5px; border-radius: 50% 50% 45% 45%; background: transparent; transition: background .25s, box-shadow .25s; }
+.wake i.on { background: var(--paper); }
+.wake i.on::before { background: var(--flame); box-shadow: 0 0 9px 2px rgba(255, 176, 74, .7); }
+.wake i.half { animation: pulse .35s ease-in-out infinite alternate; background: var(--paper-dim); }
+.wake i.half::before { background: rgba(255, 176, 74, .55); }
+.wake.dark i { background: rgba(255, 110, 90, .55); animation: pulse .45s ease-in-out infinite alternate; }
+.night .soul { margin-top: 6px; }
+.night .soul.danger { animation: pulse .5s ease-in-out infinite alternate; }
 .tally { justify-self: end; display: flex; align-items: center; gap: 14px; }
 .tally b { display: block; text-align: right; font-family: var(--serif); font-weight: 500; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
 .tally span { font-family: var(--sc); font-size: 13px; letter-spacing: .06em; color: var(--muted); }
@@ -160,7 +170,7 @@ h1 {
 .soul { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 8px; font-family: var(--sc); font-size: 13px; letter-spacing: .06em; color: var(--soul); }
 .soul .bar { width: 160px; margin: 0; height: 5px; }
 .soul-bar i { width: 0; background: var(--soul); }
-.boss.danger .soul { animation: pulse .7s ease-in-out infinite alternate; }
+.boss.danger .boss-name b { animation: pulse .7s ease-in-out infinite alternate; }
 
 .banner { position: absolute; top: 37%; left: 50%; transform: translate(-50%, -50%); text-align: center; opacity: 0; width: 92vw; }
 .banner b { display: block; font-family: var(--serif); font-weight: 500; font-size: clamp(42px, 6.4vw, 80px); line-height: 1; text-shadow: 0 2px 26px rgba(0, 0, 0, .9); }
@@ -168,6 +178,11 @@ h1 {
 .banner.show { animation: banner 4.4s ease forwards; }
 .banner.boss b { color: #ffcfb0; }
 .banner.dawn b { color: #fff3dc; }
+.banner.elite b { color: #ffe2c8; font-size: clamp(34px, 5vw, 62px); }
+.banner.elite span { max-width: 30em; margin-left: auto; margin-right: auto; }
+.banner.vigil b { color: #ffb8a0; font-size: clamp(34px, 5vw, 62px); }
+.banner.room b { color: #f3e3c0; font-size: clamp(36px, 5.4vw, 68px); }
+.banner.elite.show, .banner.vigil.show, .banner.room.show { animation-duration: 3.6s; }
 @keyframes banner {
   0% { opacity: 0; transform: translate(-50%, -38%); }
   12% { opacity: 1; transform: translate(-50%, -50%); }
@@ -208,6 +223,11 @@ h1 {
 }
 .dash i { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--flame); transition: width .1s linear; }
 .dash.cooling { opacity: .6; }
+.actions { display: flex; align-items: flex-end; gap: 10px; }
+.dash.lull { border-color: rgba(243, 227, 192, .35); }
+.dash.lull i { background: #f3e3c0; }
+.dash.lull.singing { border-color: #f3e3c0; box-shadow: 0 0 18px rgba(243, 227, 192, .35); opacity: 1; }
+.dash.lull.ready-now { animation: fresh 1.2s ease-out; }
 .memory-track { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(239, 230, 212, .08); }
 .memory-track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8a5a2a, var(--flame-soft)); transition: width .15s; }
 
@@ -239,6 +259,11 @@ h1 {
 .card canvas { width: 60px; height: 60px; padding: 6px; image-rendering: pixelated; margin: 2px 0 8px; background: #1c1915; border-radius: 3px; }
 .card .kind { font-family: var(--sc); font-size: 13px; letter-spacing: .1em; color: #6b5d48; }
 .card .kind .new { color: #a3381f; }
+.card .room { margin: 0 0 8px; font-family: var(--sc); font-size: 13px; letter-spacing: .06em; color: #6b5d48; }
+.card .room b { font-weight: 700; color: #1c1915; }
+.card .room.closes { color: #a3381f; }
+.card .room.closes b { color: #a3381f; }
+.card .room small { display: block; margin-top: 3px; font-family: var(--sans); font-size: 14px; letter-spacing: 0; line-height: 1.35; color: #4f463b; }
 .card h3 { margin: 6px 0 10px; font-family: var(--serif); font-weight: 700; font-size: 25px; line-height: 1.1; }
 .card .memory { margin: 0 0 14px; font-family: var(--serif); font-style: italic; font-size: 17px; line-height: 1.45; color: #3a332a; }
 .card .effect { margin: auto 0 0; padding-top: 10px; width: 100%; border-top: 1px solid rgba(28, 25, 21, .2); font-size: 15px; line-height: 1.4; color: #4f463b; }
@@ -248,6 +273,11 @@ h1 {
 .pause-card { text-align: center; max-width: 520px; }
 .pause-card > p:not(.eyebrow) { margin: -8px 0 26px; font-family: var(--serif); font-size: 18px; color: var(--paper-dim); }
 .pause-card .links { justify-content: center; margin-top: 18px; }
+.pause-build { margin: 0 0 22px; text-align: left; font-size: 15px; color: var(--paper-dim); }
+.pause-build:empty { display: none; }
+.pause-build h3 { margin: 0 0 6px; font-family: var(--sc); font-weight: 500; font-size: 13px; letter-spacing: .1em; color: var(--muted); text-align: center; }
+.pause-build p { margin: 0 0 6px; }
+.pause-build b { font-family: var(--serif); font-weight: 500; font-size: 17px; color: var(--flame-soft); }
 
 .memorial {
   width: min(580px, 100%);
@@ -297,6 +327,14 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
 .album .item small { font-family: var(--sc); font-size: 12px; letter-spacing: .06em; color: #6b5d48; }
 .album .item.unknown { background: transparent; color: var(--muted); outline: 1px dashed var(--line); outline-offset: -1px; grid-template-columns: 1fr; }
 .album .item.unknown p { color: var(--muted); }
+.rooms, .elites { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
+.rooms .room, .elites .elite { padding: 14px 16px; border: 1px solid var(--line); border-radius: 4px; background: rgba(239, 230, 212, .02); }
+.rooms b, .elites b { font-family: var(--serif); font-weight: 500; font-size: 20px; }
+.rooms small, .elites small { display: block; font-family: var(--sc); font-size: 12px; letter-spacing: .08em; color: var(--flame-soft); }
+.rooms p, .elites p { margin: 6px 0 0; font-family: var(--serif); font-size: 15px; line-height: 1.45; color: var(--paper-dim); }
+.rooms .room.unknown, .elites .elite.unknown { border-style: dashed; }
+.rooms .room.unknown b, .rooms .room.unknown p, .elites .elite.unknown b, .elites .elite.unknown p { color: var(--muted); }
+.rooms .room em { display: block; margin-top: 6px; font-family: var(--serif); font-size: 15px; color: #f3e3c0; }
 .bestiary { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; }
 .bestiary .beast { padding: 14px 16px 16px; border: 1px solid var(--line); border-radius: 4px; background: rgba(239, 230, 212, .02); }
 .bestiary canvas { display: block; width: 100%; height: 92px; image-rendering: pixelated; margin-bottom: 8px; background: radial-gradient(ellipse at center, rgba(120, 140, 180, .12), transparent 70%); }
@@ -326,6 +364,7 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
 .settings { margin-top: 18px; }
 .settings .row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--line); font-size: 17px; }
 .settings .row small { display: block; font-size: 13px; color: var(--muted); }
+.settings .row.sub { padding: 10px 0 10px 18px; font-size: 16px; color: var(--paper-dim); }
 .settings input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--flame); }
 .settings input[type="range"] { width: 180px; accent-color: var(--flame); }
 
@@ -394,8 +433,15 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   .mem { width: 30px; height: 34px; }
   .mem canvas { width: 20px; height: 20px; }
   .memories { max-width: 58vw; gap: 4px; }
-  .dash { padding: 16px 16px; font-size: 15px; }
+  .dash { padding: 16px 14px; font-size: 15px; }
   .dash kbd { display: none; }
+  .actions { gap: 8px; }
+  .dash.lull span { display: none; }
+  .wake { margin-top: 8px; gap: 7px; }
+  .memories { max-width: 46vw; }
+  .card .room small { font-size: 13px; }
+  .hint { display: block; }
+  .hint .keys { display: none; }
 
   .cards { grid-template-columns: 1fr; gap: 10px; }
   .card { display: grid; grid-template-columns: 48px 1fr; column-gap: 14px; text-align: left; align-items: start; padding: 16px 18px; outline-offset: -6px; }
@@ -404,7 +450,6 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   .card .memory { font-size: 15px; margin-bottom: 8px; }
   .card .effect { font-size: 14px; padding-top: 6px; }
   .card kbd { display: none; }
-  .hint { display: none; }
 
   .memorial { padding: 26px 22px 22px; outline-offset: -7px; }
   .epilogue, .last-words { font-size: 17px; }

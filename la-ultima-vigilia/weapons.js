@@ -1,8 +1,9 @@
 /*
- * Las armas atacan solas. Aquí también vive el daño: quién hiere a quién y cuánto.
+ * Las armas atacan solas. Aquí también vive el daño: quién hiere a quién y cuánto,
+ * y lo que añade cada rincón de Amparo cuando se reúnen sus recuerdos.
  */
 import { TAU, clamp, rand, pick, lerp } from './util.js';
-import { ENEMIES } from './balance.js';
+import { ENEMIES, ACTS, HOUR, VIGIL, LIGHTHOUSE } from './balance.js';
 import { ATTACK_PALETTE } from './art.js';
 import { AMPARO, BARKS } from './story.js';
 
@@ -67,6 +68,8 @@ export const weaponMethods = {
             this.shots.push({kind: 'sal', ...origin, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, a, life, total: life, trail: [], tone: 'salt', r: 4, dmg, pierce: m.sal >= 4 ? 2 : 1, knock: 260, hit: new Set()});
           }
           for (let i = 0; i < 6; i++) this.particle({x: p.x + Math.cos(aim) * 16, y: p.y - 4 + Math.sin(aim) * 10, vx: Math.cos(aim + rand(-0.5, 0.5)) * rand(80, 200), vy: Math.sin(aim + rand(-0.5, 0.5)) * rand(80, 200), life: 0.25, size: 2, color: '#fff6e0', glow: true});
+          // La sal queda un rato en el suelo, delante de la escopeta.
+          for (let i = 0; i < 2; i++) { const d = rand(70, 150), a = aim + rand(-0.28, 0.28); this.ambient.decal('salt', p.x + Math.cos(a) * d, p.y + 8 + Math.sin(a) * d, 7); }
           this.audio.sfx('sal', {pan: (target.x - p.x) / this.width});
           if (this.options.shake) this.shake = Math.max(this.shake, 1.5);
         } else this.t.sal = 0.1;
@@ -85,8 +88,17 @@ export const weaponMethods = {
         }
         this.audio.sfx('campana');
         this.freeze = Math.max(this.freeze, 0.025);
+        if (this.rooms.has('iglesia')) {
+          // Su banco en la iglesia: cada tañido suelta una corona de chispas.
+          const sparks = 8, sdmg = 20 * (1 + 0.15 * Math.max(0, m.chispas - 1)), tone = this.character === 'matilde' ? 'sacred' : 'ember';
+          for (let i = 0; i < sparks; i++) {
+            const a = i / sparks * TAU + this.clock;
+            this.shots.push({kind: 'chispa', x: p.x, y: p.y - 8, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340, a, life: 0.9, total: 0.9, trail: [], tone, r: 5, dmg: sdmg, pierce: 2, knock: 70, hit: new Set()});
+          }
+        }
       }
     }
+    if (this.rooms.has('faro')) this.beamBurn();
     if (m.farol) {
       this.t.farol -= dt;
       if (this.t.farol <= 0) {
@@ -148,10 +160,38 @@ export const weaponMethods = {
     }
   },
 
+  /* La alcoba: al esquivar, las polillas del armario abren paso. */
+  dashThrough() {
+    const p = this.player, hit = 26 + 8 * this.mem.polillas;
+    for (const e of this.queryGrid(p.x, p.y, 44)) {
+      if (e.hp <= 0 || e.dissolve || this.dashHit.has(e.id)) continue;
+      if (Math.hypot(e.x - p.x, e.y - p.y) > e.r + 22) continue;
+      this.dashHit.add(e.id);
+      this.hurt(e, hit, {knock: 240, from: p, fx: 'sacred'});
+      this.combatFx.emit('moth', e.x, e.y - 6, {a: Math.atan2(this.dashDir.y, this.dashDir.x), tone: 'sacred'});
+    }
+  },
+
+  /* El faro de su padre: el haz quema a las criaturas que barre. */
+  beamBurn() {
+    const ox = LIGHTHOUSE.x, oy = LIGHTHOUSE.y + LIGHTHOUSE.lampY, a = this.beamA;
+    const dmg = 60 + 20 * this.mem.farol;
+    for (const e of this.enemies) {
+      if (e.hp <= 0 || e.dissolve || e.beamCd > 0) continue;
+      const diff = ((Math.atan2(e.y - oy, e.x - ox) - a + Math.PI * 3) % TAU + TAU) % TAU - Math.PI;
+      if (Math.abs(diff) > 0.07) continue;
+      e.beamCd = 1.5;
+      this.hurt(e, dmg, {knock: 90, from: {x: ox, y: oy}, fx: 'ember'});
+    }
+  },
+
   lightRadius() {
     const p = this.player, hpRatio = clamp(p.hp / this.st.maxHp, 0, 1);
     const flicker = 1 + Math.sin(this.clock * 7.3) * 0.012 + Math.sin(this.clock * 17.9) * 0.01;
     let r = this.st.light * (0.72 + 0.28 * hpRatio) * (1 - 0.14 * p.dip) * flicker;
+    // A las cuatro, lo más oscuro de la noche, la luz alcanza menos.
+    if (this.phase === 'night') r *= ACTS[Math.min(5, Math.floor(this.time / HOUR))].dark || 1;
+    if (this.lull > 0) r *= 1 + 0.22 * Math.min(1, this.lull);
     if (this.state === 'dying') r *= Math.max(0, 1 - this.dyingT / 1.7);
     return r;
   },
@@ -161,11 +201,12 @@ export const weaponMethods = {
     const crit = Math.random() < this.st.crit;
     let dmg = amount * (crit ? 2 : 1);
     if (e.type === 'guia' && this.dawnBreaks) dmg *= 2;
+    if (e.lulled) dmg *= VIGIL.lullHurt;
     e.hp -= dmg;
     e.hit = 0.09;
     if (knock && from) {
       const dx = e.x - from.x, dy = e.y - from.y, d = Math.hypot(dx, dy) || 1;
-      const resist = e.type === 'guia' ? 0.06 : e.type === 'espantajo' ? 0.3 : e.type === 'ahogado' ? 0.6 : 1;
+      const resist = e.type === 'guia' ? 0.06 : e.elite ? 0.25 : e.type === 'espantajo' ? 0.3 : e.type === 'ahogado' ? 0.6 : 1;
       e.kx += dx / d * knock * resist; e.ky += dy / d * knock * resist;
     }
     if (!silent) {
@@ -173,12 +214,13 @@ export const weaponMethods = {
         const a = Math.atan2(e.y - from.y, e.x - from.x);
         this.combatFx.emit('impact', e.x - Math.cos(a) * e.r * 0.35, e.y - 4 - Math.sin(a) * e.r * 0.35, {a, tone: fx, radius: crit ? 28 : 18});
       }
-      this.audio.sfx('golpe', {pan: (e.x - this.player.x) / this.width});
+      this.audio.sfx('golpe', {pan: (e.x - this.player.x) / this.width, tone: fx, crit});
       const color = {anima: '#9cc8ff', ahogado: '#7fb3c4', espantajo: '#d6b466', curuxa: '#c9b28a'}[e.type] || '#c9c2b8';
       for (let i = 0; i < 2; i++) this.particle({x: e.x, y: e.y - 4, vx: rand(-70, 70), vy: rand(-80, 20), life: 0.3, size: 2, color, grav: 260});
     }
     if (crit) this.particle({x: e.x, y: e.y - e.r, vx: 0, vy: -30, life: 0.35, size: 4, color: '#fff1bd', glow: true});
     if (this.options.numbers && !silent) this.numbers.push({x: e.x, y: e.y - e.r - 6, text: String(Math.round(dmg)), color: crit ? '#ffe2a0' : '#d8d2c4', life: 0.7});
+    if (crit && !silent) this.freeze = Math.max(this.freeze, 0.018);
     if (e.type === 'guia') this.bossHit(e);
     if (e.hp <= 0) this.kill(e);
   },
@@ -187,21 +229,23 @@ export const weaponMethods = {
     e.hp = 0;
     if (e.type === 'guia') { this.freeBoss(e); return; }
     this.kills++;
-    this.corpses.push({type: e.type, x: e.x, y: e.y, flip: e.flip, life: 0.35, total: 0.35, scale: ENEMIES[e.type].scale});
-    const pan = (e.x - this.player.x) / this.width;
-    if (e.type === 'hermano' || e.type === 'anima') this.audio.sfx('apagar', {pan}); else this.audio.sfx('muerte', {pan});
-    const fx = {
-      hermano: () => { for (let i = 0; i < 6; i++) this.particle({x: e.x, y: e.y - 8, vx: rand(-20, 20), vy: rand(-50, -20), life: 1, size: 3, color: '#55505c'}); this.particle({x: e.x + 4, y: e.y - 6, vx: 0, vy: -10, life: 0.5, size: 3, color: '#ffb04a', glow: true}); },
-      anima: () => { for (let i = 0; i < 8; i++) this.particle({x: e.x, y: e.y, vx: rand(-90, 90), vy: rand(-90, 60), life: 0.5, size: 2, color: '#a8d4ff', glow: true}); },
-      ahogado: () => { for (let i = 0; i < 10; i++) this.particle({x: e.x, y: e.y, vx: rand(-110, 110), vy: rand(-140, -20), life: 0.6, size: 2, color: '#7fb3c4', grav: 420}); },
-      espantajo: () => { for (let i = 0; i < 16; i++) this.particle({x: e.x, y: e.y - 10, vx: rand(-140, 140), vy: rand(-160, 20), life: 0.9, size: 2, color: i % 2 ? '#d6b466' : '#9a7a3a', grav: 300}); },
-      curuxa: () => { for (let i = 0; i < 8; i++) this.particle({x: e.x, y: e.y, vx: rand(-80, 80), vy: rand(-60, 40), life: 1.1, size: 2, color: '#e6dabd', grav: 60}); },
-      planidera: () => { for (let i = 0; i < 6; i++) this.particle({x: e.x, y: e.y, vx: rand(-60, 60), vy: rand(-80, 0), life: 0.7, size: 2, color: '#86bff2', glow: true, grav: 200}); },
-      urco: () => { for (let i = 0; i < 7; i++) this.particle({x: e.x, y: e.y, vx: rand(-60, 60), vy: rand(-50, -10), life: 0.9, size: 4, color: '#14141a'}); }
-    }[e.type];
-    fx?.();
-    if (!e.summoned || Math.random() < 0.5) this.dropGem(e.x, e.y, e.value);
-    if (Math.random() < 0.028 && this.player.hp < this.st.maxHp * 0.85) this.gems.push({x: e.x + 8, y: e.y - 4, cafe: true, v: 0, magnet: false, bob: Math.random() * 6});
+    this.corpses.push({type: e.type, x: e.x, y: e.y, flip: e.flip, life: e.elite ? 0.8 : 0.35, total: e.elite ? 0.8 : 0.35, scale: ENEMIES[e.type].scale * (e.size || 1)});
+    this.audio.sfx('muerte', {pan: (e.x - this.player.x) / this.width, type: e.type});
+    this.deathFx(e);
+    if (e.elite) {
+      // Un difunto con nombre deja su recordatorio y un buen puñado de luz.
+      if (this.eliteAlive === e) this.eliteAlive = null;
+      this.elitesDown++;
+      for (let i = 0; i < 6; i++) this.dropGem(e.x + rand(-22, 22), e.y + rand(-16, 16), Math.ceil(e.value / 6));
+      this.gems.push({x: e.x, y: e.y, card: true, v: 0, magnet: false, bob: Math.random() * 6});
+      this.rings.push({x: e.x, y: e.y, r: 12, max: 150, life: 0.7, total: 0.7, color: '#fff1bd', width: 3, light: 200});
+      for (let i = 0; i < 22; i++) this.particle({x: e.x, y: e.y - 10, vx: rand(-150, 150), vy: rand(-190, 30), life: rand(0.6, 1.3), size: rand(2, 4), color: i % 3 ? '#fff1bd' : '#ffb04a', glow: true, grav: 60});
+      this.freeze = Math.max(this.freeze, 0.09);
+      if (this.options.shake) this.shake = Math.max(this.shake, 6);
+      this.audio.sfx('difuntoCae');
+    } else if (!e.summoned || Math.random() < 0.5) this.dropGem(e.x, e.y, e.value);
+    const cafe = 0.028 * (this.rooms.has('cocina') ? 2 : 1);
+    if (Math.random() < cafe && this.player.hp < this.st.maxHp * 0.85) this.gems.push({x: e.x + 8, y: e.y - 4, cafe: true, v: 0, magnet: false, bob: Math.random() * 6});
     // Si muere uno de la procesión, el de detrás sigue al de delante.
     if (e.follower) { e.follower.leader = e.leader; }
     if (e.leader) e.leader.follower = e.follower;
@@ -221,7 +265,22 @@ export const weaponMethods = {
     this.audio.sfx('herida');
     if (this.options.numbers) this.numbers.push({x: p.x, y: p.y - 30, text: '−' + dmg, color: '#ff8a7a', life: 0.8});
     if (source) { const dx = p.x - source.x, dy = p.y - source.y, d = Math.hypot(dx, dy) || 1; p.x += dx / d * 10; p.y += dy / d * 10; }
-    if (p.hp <= 0) { p.hp = 0; this.beginDying('out'); return; }
+    if (p.hp <= 0) {
+      p.hp = 0;
+      if (!this.revive()) this.beginDying('out');
+      return;
+    }
+    if (this.rooms.has('ella') && this.ellaCd <= 0) {
+      // Ella: su risa aparta y hiere a lo que rodea a quien vela.
+      this.ellaCd = 1.2;
+      const R = 124, hit = 20 + 6 * (this.mem.risa + this.mem.manos);
+      this.rings.push({x: p.x, y: p.y, r: 14, max: R, life: 0.4, total: 0.4, color: '#fff1bd', width: 3, light: 150});
+      for (const e of this.queryGrid(p.x, p.y, R + 30)) {
+        if (e.hp <= 0 || e.dissolve) continue;
+        if (Math.hypot(e.x - p.x, e.y - p.y) < R + e.r) this.hurt(e, hit, {knock: 340, from: p, fx: 'sacred'});
+      }
+      this.audio.sfx('risa');
+    }
     if (p.hp < this.st.maxHp * 0.3 && this.lowHpCd === 0) {
       this.lowHpCd = 28;
       if (!this.amparoSaid.has('low')) { this.amparoSaid.add('low'); this.say(AMPARO.lowHp, AMPARO.name, {italic: true, priority: 3}); }
@@ -252,6 +311,7 @@ export const weaponMethods = {
         if ((e.x - s.x) ** 2 + (e.y - 4 - s.y) ** 2 < rr * rr) {
           s.hit.add(e.id);
           this.hurt(e, s.dmg, {knock: s.knock, from: {x: s.x - s.vx * 0.05, y: s.y - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
+          if (s.kind === 'chispa' && Math.random() < 0.3) this.ambient.decal('scorch', e.x, e.y + e.r * 0.6 + 4, 8);
           if (--s.pierce <= 0) { s.life = 0; break; }
         }
       }

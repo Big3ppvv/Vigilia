@@ -906,11 +906,11 @@ export class Cemetery {
 }
 
 /* Llamas dibujadas después de la oscuridad, para que brillen. */
-export function drawFlames(c, flames, time) {
+export function drawFlames(c, flames, time, wind = 0) {
   c.save();
   for (const f of flames) {
     const x = Math.round(f.x), y = Math.round(f.y);
-    const lean = Math.round(Math.sin(time * 3 + x) * 0.6);
+    const lean = Math.round(Math.sin(time * 3 + x) * 0.6 + wind);
     if (f.kind === 'sanctuary') {
       c.fillStyle = 'rgba(255,92,52,.5)'; c.fillRect(x - 2, y - 2, 4, 4);
       c.fillStyle = '#ff6b3a'; c.fillRect(x - 1, y - 1, 2, 2);

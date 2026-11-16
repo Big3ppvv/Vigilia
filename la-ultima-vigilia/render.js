@@ -5,6 +5,10 @@ import { TAU, clamp, rand, lerp } from './util.js';
 import { NIGHT, COFFIN, ENEMIES, WORLD, LIGHTHOUSE } from './balance.js';
 import { drawSprite, drawShadow, sprite } from './art.js';
 import { drawFlames, drawFog } from './world.js';
+import { ELITES, VIGIL_TEXT } from './story.js';
+
+const STEPS = [undefined, 'step1', undefined, 'step2'];
+const RUN = ['run1', undefined, 'run2', undefined];
 
 export const renderMethods = {
   nightLook() {
@@ -65,6 +69,8 @@ export const renderMethods = {
     if (this.shake > 0.2 && this.options.shake) ctx.translate(Math.round(rand(-1, 1) * this.shake), Math.round(rand(-1, 1) * this.shake));
     this.cemetery.ground(ctx, camX, camY, w, h);
     this.cemetery.sea(ctx, camX, camY, w, h, this.clock);
+    this.drawPools(ctx, camX, camY);
+    this.ambient.drawDecals(ctx, camX, camY, w, h);
     this.cemetery.collect(ctx, camX, camY, w, h, this.clock, wake, items, flames, lights);
     if (this.mem.farol && !title && this.state !== 'ended') this.combatFx.drawLanternAura(ctx, p, this.lightRadius() * 0.7, this.clock, camX, camY, this.options.flashes);
 
@@ -103,13 +109,12 @@ export const renderMethods = {
       entityLights.length = 56;
     }
     for (const L of entityLights) lights.push(L);
+    const sky = this.weatherLook();
+    this.ambient.drawWeather(ctx, camX, camY, w, h, this.clock, sky.rain, sky.wind, sky.a);
     drawFog(ctx, camX, camY, w, h, this.clock, look.fog * 0.9);
 
     // Polillas
-    for (const m of this.moths) {
-      const flap = Math.sin(m.flap) > 0 ? 1 : 0.55;
-      drawSprite(ctx, 'polilla', m.x - camX, m.y - camY, {scale: 2, sx: flap});
-    }
+    for (const m of this.moths) drawSprite(ctx, 'polilla', m.x - camX, m.y - camY, {scale: 2, frame: Math.sin(m.flap) > 0 ? undefined : 'shut'});
     // Partículas sin luz propia
     for (const q of this.particles) {
       if (q.glow) continue;
@@ -120,7 +125,7 @@ export const renderMethods = {
     ctx.globalAlpha = 1;
 
     // Luces de lo que se mueve
-    if (!title && (this.state !== 'ended' || this.lastVictory)) lights.push({x: p.x - camX + p.face * 8, y: p.y - camY - 10, r: this.lightRadius(), i: 1, c: 'warm', g: 0.5});
+    if (!title && (this.state !== 'ended' || this.lastVictory)) lights.push({x: p.x - camX + p.face * 8, y: p.y - camY - 10, r: this.lightRadius() * (1 + 0.04 * this.flare), i: 1, c: 'warm', g: 0.5 + 0.3 * this.flare});
     let budget = 48;
     for (const s of this.shots) {
       if (s.x - camX < -100 || s.x - camX > w + 100 || s.y - camY < -100 || s.y - camY > h + 100 || budget <= 0) continue;
@@ -144,7 +149,8 @@ export const renderMethods = {
       const x = g.x - camX, y = g.y - camY;
       if (x < -20 || x > w + 20 || y < -20 || y > h + 20) continue;
       budget--;
-      lights.push({x, y, r: 22, i: 0.55, c: 'warm', g: 0.35});
+      if (g.card) lights.push({x, y, r: 70, i: 0.95, c: 'white', g: 0.8});
+      else lights.push({x, y, r: 22, i: 0.55, c: 'warm', g: 0.35});
     }
     for (const r of this.rings) if (r.light) lights.push({x: r.x - camX, y: r.y - camY, r: r.light * (0.6 + 0.4 * r.r / r.max), i: 0.75 * r.life / r.total, c: 'warm', g: 0.4});
     for (const m of this.marks) lights.push({x: m.x - camX, y: m.y - camY, r: 40, i: 0.8, c: 'warm', g: 0.5});
@@ -154,7 +160,8 @@ export const renderMethods = {
 
     this.lighting.render(ctx, lights, look.dark, look.tint, beams);
     this.lighting.glow(ctx, lights, 0.55 * (1 - look.warm * 0.6));
-    drawFlames(ctx, flames, this.clock);
+    drawFlames(ctx, flames, this.clock, this.gustT > 0 ? Math.cos(this.gustA) * 3 * Math.min(1, this.gustT) : 0);
+    this.ambient.drawMoths(ctx, flames, this.clock);
     for (const it of items) this.drawItem(ctx, it, null, 'glow');
 
     // Luz que se recoge (al amanecer, sube y se va)
@@ -164,6 +171,15 @@ export const renderMethods = {
       if (g.cafe || gemAlpha <= 0) continue;
       const x = Math.round(g.x - camX), y = Math.round(g.y - camY + Math.sin(this.clock * 4 + g.bob) * 2);
       if (x < -10 || x > w + 10 || y < -10 || y > h + 10) continue;
+      if (g.card) {
+        // El recordatorio: una estampa con su cruz y su orla negra.
+        ctx.fillStyle = 'rgba(255,241,189,.35)'; ctx.fillRect(x - 8, y - 11, 16, 20);
+        ctx.fillStyle = '#07080d'; ctx.fillRect(x - 6, y - 9, 12, 16);
+        ctx.fillStyle = '#f1e8d2'; ctx.fillRect(x - 5, y - 8, 10, 14);
+        ctx.fillStyle = '#1c1915'; ctx.fillRect(x - 1, y - 6, 2, 7); ctx.fillRect(x - 3, y - 4, 6, 2);
+        ctx.fillRect(x - 3, y + 3, 6, 1);
+        continue;
+      }
       const big = g.v > 2;
       ctx.fillStyle = 'rgba(255,176,74,.3)'; ctx.fillRect(x - 4, y - 4, 8, big ? 11 : 9);
       ctx.fillStyle = big ? '#ffe9a8' : '#ffc46a'; ctx.fillRect(x - 2, y - (big ? 5 : 4), 4, big ? 9 : 8);
@@ -262,9 +278,11 @@ export const renderMethods = {
     if (it.kind === 'cast' || it.kind === 'decor') {
       const bob = it.key === 'anima' ? 0 : Math.sin(t * 2 + it.x) * 0.6;
       if (layer === 'base' && it.key !== 'anima') drawShadow(ctx, it.x, it.y + 20, 11);
+      const frame = it.kind === 'cast' ? ((t + it.x * 0.37) % 4.3 < 0.13 ? 'blink' : undefined)
+        : it.key === 'anima' ? (Math.floor(t * 7 + it.x) % 2 ? 'flick' : undefined) : STEPS[Math.floor(t * 4.5 + it.x * 0.1) & 3];
       ctx.save();
       if (it.alpha !== undefined) ctx.globalAlpha = it.alpha;
-      drawSprite(ctx, it.key, it.x, it.y, {scale: 2, flip: it.flip, bob, layer});
+      drawSprite(ctx, it.key, it.x, it.y, {scale: 2, flip: it.flip, bob, layer, frame});
       ctx.restore();
       return;
     }
@@ -275,7 +293,9 @@ export const renderMethods = {
       const step = p.moving ? Math.abs(Math.sin(p.walk)) : 0;
       const recoil = this.options.shake && p.attack?.life > 0 ? Math.pow(p.attack.life / p.attack.total, 2) * (p.attack.kind === 'sal' ? 3 : 1.5) : 0;
       const a = p.attack?.a || 0;
-      drawSprite(ctx, this.character, it.x - Math.cos(a) * recoil, it.y - 12 - Math.sin(a) * recoil, {scale: 2, flip: p.face < 0, bob: -step * 2, sy: 1 + step * 0.03 - recoil * 0.012, rot: -Math.cos(a) * recoil * 0.012, layer});
+      // Al andar levanta un pie y luego el otro; parado, parpadea de vez en cuando.
+      const frame = p.moving ? (step > 0.45 ? (Math.floor(p.walk / Math.PI) & 1 ? 'walk2' : 'walk1') : undefined) : (t % 4.3 < 0.13 ? 'blink' : undefined);
+      drawSprite(ctx, this.character, it.x - Math.cos(a) * recoil, it.y - 12 - Math.sin(a) * recoil, {scale: 2, flip: p.face < 0, bob: -step * 2, sy: 1 + step * 0.03 - recoil * 0.012, rot: -Math.cos(a) * recoil * 0.012, layer, frame});
       ctx.globalAlpha = 1;
       return;
     }
@@ -290,11 +310,23 @@ export const renderMethods = {
       ctx.restore();
       return;
     }
-    const e = it.e, d = ENEMIES[e.type], s = sprite(e.type), scale = d.scale;
+    const e = it.e, d = ENEMIES[e.type], s = sprite(e.type), scale = d.scale * (e.size || 1);
     const flying = e.type === 'anima' || e.type === 'curuxa';
     let bob = flying ? Math.sin(t * (e.type === 'anima' ? 5 : 7) + e.seed) * 4 : Math.sin(t * 6 + e.seed) * 0.7;
     let sx = 1, sy = 1, rot = 0, x = it.x, y = it.y - (s.h * scale) / 2 + e.r * 0.6;
-    if (e.type === 'curuxa') sx = 0.85 + Math.abs(Math.sin(t * 9 + e.seed)) * 0.2;
+    // Cada criatura se mueve a su manera: unas dan pasos, otras aletean o tiemblan.
+    let frame;
+    switch (e.type) {
+      case 'anima': frame = Math.floor(t * 7 + e.seed) % 2 ? 'flick' : undefined; break;
+      case 'hermano': frame = e.blowing ? 'blow' : STEPS[Math.floor(t * 4.5 + e.seed) & 3]; break;
+      case 'urco': frame = e.mode === 'lunge' ? 'run1' : e.mode === 'windup' ? 'run2' : e.mode === 'rest' ? undefined : RUN[Math.floor(t * 9 + e.seed) & 3]; break;
+      case 'curuxa': frame = Math.floor(t * (e.mode === 'swoop' ? 14 : 8) + e.seed) % 2 ? 'down' : undefined; break;
+      case 'ahogado': frame = STEPS[Math.floor(t * 3 + e.seed) & 3]; break;
+      case 'planidera': frame = e.mode === 'cry' ? (Math.floor(t * 10) % 2 ? 'cry' : undefined) : STEPS[Math.floor(t * 4 + e.seed) & 3]; break;
+      case 'espantajo': frame = e.mode === 'swing' || Math.floor(t * 2.5 + e.seed) % 3 === 0 ? 'rustle' : undefined; break;
+      case 'guia': frame = Math.floor(t * 3) % 2 ? 'step1' : undefined; break;
+      default: break;
+    }
     if (e.type === 'urco') {
       if (e.mode === 'windup') { sy = 0.86; sx = 1.1; x += Math.sin(t * 60) * 1.5; }
       else if (e.mode === 'lunge') { sx = 1.18; sy = 0.92; }
@@ -307,25 +339,35 @@ export const renderMethods = {
     if (e.type === 'guia') { bob = Math.sin(t * 2) * 1.5; if (e.stun > 0) x += Math.sin(t * 50) * 2; }
     let alpha = 1;
     if (e.dissolve) alpha = clamp(e.dissolveT / 1.2, 0, 1);
+    if (e.rising > 0) {
+      // Sale del charco: asoma de abajo arriba.
+      const k = clamp(1 - e.rising / 0.7, 0.12, 1);
+      y += s.h * scale * (1 - k) / 2; sy *= k;
+    }
+    if (e.blowing) rot = (e.flip ? -1 : 1) * 0.2;
+    // El golpe se nota: la criatura se encoge un instante.
+    if (e.hit > 0 && e.type !== 'guia') { const k = Math.min(1, e.hit / 0.09); sx *= 1 + 0.14 * k; sy *= 1 - 0.1 * k; }
     if (layer === 'base') {
       if (!flying) drawShadow(ctx, it.x, it.y + e.r * 0.6 + 4, s.w * scale * 0.33);
       else drawShadow(ctx, it.x, it.y + 18, 8, 0.25);
       ctx.save();
       ctx.globalAlpha = alpha;
-      drawSprite(ctx, e.type, x, y, {scale, flip: e.flip, bob, sx, sy, rot});
+      drawSprite(ctx, e.type, x, y, {scale, flip: e.flip, bob, sx, sy, rot, frame});
       // A la Guía le llueven golpes: un destello suave para que se la siga viendo.
-      if (e.hit > 0) { ctx.globalAlpha = alpha * (e.type === 'guia' ? 0.28 : 0.85); drawSprite(ctx, e.type, x, y, {scale, flip: e.flip, bob, sx, sy, rot, layer: 'white'}); }
+      if (e.hit > 0) { ctx.globalAlpha = alpha * (e.type === 'guia' ? 0.28 : 0.85); drawSprite(ctx, e.type, x, y, {scale, flip: e.flip, bob, sx, sy, rot, frame, layer: 'white'}); }
       ctx.restore();
       if (lights) {
-        if (e.type === 'hermano') lights.push({x: x + (e.flip ? -7 : 7), y: y - 4 + bob, r: 56, i: 0.85 * alpha, c: 'warm', g: 0.55});
+        if (e.type === 'hermano') lights.push({x: x + (e.flip ? -7 : 7), y: y - 4 + bob, r: e.carry ? 110 : 56, i: e.carry ? 1 : 0.85 * alpha, c: 'warm', g: e.carry ? 0.9 : 0.55});
         else if (e.type === 'anima') lights.push({x, y: y + bob, r: 48, i: 0.75 * alpha, c: 'blue', g: 0.75});
         else if (e.type === 'guia') lights.push({x: x + (e.flip ? -26 : 26), y: y + bob - 6, r: 170, i: 1, c: 'warm', g: 0.7});
         else if (e.type === 'planidera' && e.mode === 'cry') lights.push({x, y: y - 10, r: 40, i: 0.6, c: 'blue', g: 0.6});
+        // A los difuntos con nombre se les ve venir.
+        if (e.elite) lights.push({x, y: y + bob, r: 96 + Math.sin(t * 3 + e.seed) * 8, i: 0.8 * alpha, c: e.type === 'hermano' ? 'warm' : 'pale', g: 0.8});
       }
     } else {
       ctx.save();
       ctx.globalAlpha = alpha;
-      drawSprite(ctx, e.type, x, y, {scale, flip: e.flip, bob, sx, sy, rot, layer: 'glow'});
+      drawSprite(ctx, e.type, x, y, {scale, flip: e.flip, bob, sx, sy, rot, frame, layer: 'glow'});
       ctx.restore();
     }
   },
@@ -371,10 +413,90 @@ export const renderMethods = {
       ctx.fillStyle = `rgba(255,176,74,${0.3 + k * 0.5})`; ctx.fillRect(x - 2, y - 6 - k * 4, 4, 6 + k * 4);
       ctx.fillStyle = '#fff1bd'; ctx.fillRect(x - 1, y - 3 - k * 3, 2, 3);
     }
+    // Los charcos se adivinan también fuera de la luz.
+    for (const q of this.pools) {
+      const grow = Math.min(1, q.t / 1.2), a = grow * Math.min(1, (q.life - q.t) / 1.5), rx = q.r * (0.3 + 0.7 * grow);
+      ctx.strokeStyle = `rgba(127,179,196,${0.26 * a})`; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.ellipse(q.x - camX, q.y - camY, rx, rx * 0.7, 0, 0, TAU); ctx.stroke();
+    }
+    // Los cirios: el que está apagado se deja ver; encender y apagar llevan su cuenta.
+    if (this.state !== 'ready' && this.state !== 'ended') for (const c of this.cirios) {
+      const x = Math.round(c.x - camX), y = Math.round(c.y - 56 - camY);
+      if (!c.lit) {
+        const pulse = 0.35 + 0.25 * Math.sin(t * 5 + c.i);
+        ctx.strokeStyle = `rgba(190,224,242,${pulse})`; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(x, y, 13, 0, TAU); ctx.stroke();
+        ctx.fillStyle = `rgba(255,116,46,${0.5 + pulse * 0.5})`; ctx.fillRect(x - 1, y - 1, 2, 2);
+        if (c.relight > 0) {
+          ctx.strokeStyle = '#ffd59a'; ctx.lineWidth = 3;
+          ctx.beginPath(); ctx.arc(x, y, 13, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(c.relight, 0, 1)); ctx.stroke();
+        }
+      } else if (c.snuff > 0.03) {
+        ctx.strokeStyle = 'rgba(159,180,216,.9)'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.arc(x, y - 4, 14, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(c.snuff, 0, 1)); ctx.stroke();
+      }
+    }
+    // El arrullo: el corro hasta donde llega la nana.
+    if (this.lull > 0) {
+      const p = this.player, k = clamp(this.lull / 4, 0, 1);
+      ctx.strokeStyle = `rgba(243,227,192,${0.1 + 0.16 * k})`; ctx.lineWidth = 2; ctx.setLineDash([3, 9]);
+      ctx.lineDashOffset = -t * 14;
+      ctx.beginPath(); ctx.arc(p.x - camX, p.y - camY, this.lullR, 0, TAU); ctx.stroke();
+      ctx.setLineDash([]);
+      for (const e of this.enemies) {
+        if (!e.lulled || e.hp <= 0 || e.dissolve) continue;
+        const x = Math.round(e.x - camX + Math.sin(t * 3 + e.seed) * 4), y = Math.round(e.y - camY - e.r - 20 - ((t * 14 + e.seed * 9) % 12));
+        ctx.fillStyle = 'rgba(243,227,192,.8)'; ctx.fillRect(x, y, 2, 2); ctx.fillRect(x + 2, y - 3, 1, 4);
+      }
+    }
+    // Los difuntos con nombre llevan el suyo encima.
+    for (const e of this.enemies) {
+      if (!e.elite || e.hp <= 0 || e.dissolve) continue;
+      const x = clamp(Math.round(e.x - camX), 70, this.width - 70), y = Math.max(34, Math.round(e.y - camY - e.r * 2.6 - 26)), k = clamp(e.hp / e.maxHp, 0, 1);
+      if (e.x - camX < -60 || e.x - camX > this.width + 60 || e.y - camY < -60 || e.y - camY > this.height + 80) continue;
+      ctx.font = `600 ${Math.round(13 / (this.zoom || 1) + 2)}px Alegreya, Georgia, serif`; ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(7,8,12,.85)'; ctx.fillText(ELITES[e.elite].name, x + 1, y + 1);
+      ctx.fillStyle = '#ffe2c8'; ctx.fillText(ELITES[e.elite].name, x, y);
+      ctx.fillStyle = 'rgba(7,8,12,.8)'; ctx.fillRect(x - 31, y + 5, 62, 5);
+      ctx.fillStyle = '#e0763a'; ctx.fillRect(x - 30, y + 6, Math.round(60 * k), 3);
+    }
     ctx.restore();
   },
 
-  /* Flechas hacia Amparo y hacia la Guía cuando quedan fuera de la vista. */
+  /* Los charcos de la marea, a ras de suelo. */
+  drawPools(ctx, camX, camY) {
+    if (!this.pools.length) return;
+    const t = this.clock, w = this.width, h = this.height;
+    ctx.save();
+    for (const q of this.pools) {
+      const x = Math.round(q.x - camX), y = Math.round(q.y - camY);
+      if (x < -90 || x > w + 90 || y < -70 || y > h + 70) continue;
+      const grow = Math.min(1, q.t / 1.2), a = grow * Math.min(1, (q.life - q.t) / 1.5);
+      const rx = q.r * (0.3 + 0.7 * grow), ry = rx * 0.7;
+      ctx.fillStyle = `rgba(8,20,34,${0.8 * a})`;
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.fill();
+      ctx.strokeStyle = `rgba(127,179,196,${0.4 * a})`; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.ellipse(x, y, rx, ry, 0, 0, TAU); ctx.stroke();
+      for (let i = 0; i < 2; i++) {
+        const k = (t * 0.45 + q.seed + i * 0.5) % 1;
+        ctx.strokeStyle = `rgba(150,196,214,${(1 - k) * 0.32 * a})`; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.ellipse(x, y, rx * k, ry * k, 0, 0, TAU); ctx.stroke();
+      }
+      ctx.fillStyle = `rgba(190,224,242,${0.5 * a})`;
+      for (let i = 0; i < 3; i++) {
+        const gx = Math.sin(t * 0.7 + q.seed * 3 + i * 2.1) * rx * 0.55, gy = Math.cos(t * 0.5 + q.seed + i * 1.7) * ry * 0.5;
+        ctx.fillRect(Math.round(x + gx), Math.round(y + gy), 4, 1);
+      }
+      if (q.rise && !q.done) {
+        // Algo sube: burbujas antes de que asome.
+        ctx.fillStyle = `rgba(207,232,255,${0.5 + 0.4 * Math.sin(t * 18)})`;
+        for (let i = 0; i < 4; i++) ctx.fillRect(Math.round(x + Math.sin(t * 9 + i * 1.9) * 9), Math.round(y - ((t * 30 + i * 5) % 10)), 2, 2);
+      }
+    }
+    ctx.restore();
+  },
+
+  /* Flechas hacia lo que importa cuando queda fuera de la vista: Amparo, la Guía, la procesión, un difunto, su recordatorio. */
   drawPointers(ctx, camX, camY) {
     const w = this.width, h = this.height;
     const arrow = (wx, wy, color, label) => {
@@ -394,8 +516,14 @@ export const renderMethods = {
       ctx.fillText(label, lx, ly + 4);
       ctx.restore();
     };
-    arrow(COFFIN.x, COFFIN.y, 'rgba(255,213,154,.85)', 'Amparo');
+    const lit = this.litCount(), blink = 0.75 + 0.25 * Math.sin(this.clock * 9);
+    arrow(COFFIN.x, COFFIN.y, lit === 4 ? 'rgba(255,213,154,.85)' : lit > 0 ? 'rgba(255,170,110,.95)' : `rgba(255,96,80,${blink})`, lit === 0 ? 'Amparo, a oscuras' : 'Amparo');
     if (this.boss && this.boss.hp > 0) arrow(this.boss.x, this.boss.y, 'rgba(255,120,90,.95)', 'La Guía');
+    const head = this.boss ? null : this.processionHead();
+    if (head && Math.hypot(head.x - COFFIN.x, head.y - COFFIN.y) < 1100) arrow(head.x, head.y, 'rgba(232,214,255,.9)', VIGIL_TEXT.procession);
+    const elite = this.eliteAlive;
+    if (elite && elite.hp > 0 && !elite.proc) arrow(elite.x, elite.y, 'rgba(255,226,200,.95)', ELITES[elite.elite].name);
+    for (const g of this.gems) if (g.card) arrow(g.x, g.y, 'rgba(255,241,189,.95)', VIGIL_TEXT.card[0]);
   },
 
   drawOverlays(ctx, look) {

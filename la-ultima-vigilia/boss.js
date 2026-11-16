@@ -1,8 +1,9 @@
 /*
- * La Guía: va directa al ataúd y hay que apartarla antes de que se lleve a Amparo.
+ * La Guía: va directa al ataúd. Allí apaga los cirios uno a uno y, a oscuras,
+ * se lleva a Amparo. Cada golpe fuerte la aparta y da tiempo a encenderlos.
  */
 import { TAU, rand } from './util.js';
-import { COFFIN } from './balance.js';
+import { COFFIN, VIGIL } from './balance.js';
 import { BOSS } from './story.js';
 
 export const bossMethods = {
@@ -22,6 +23,7 @@ export const bossMethods = {
     this.banner(BOSS.name, BOSS.arrive, 'boss');
     this.bark('boss', {priority: 3, delay: 2.4});
     this.flash = this.options.flashes ? 0.35 : 0; this.flashColor = '255,236,200';
+    this.flameDim = 0.45;
   },
 
   behaveBoss(e, dx, dy, len, dt, slow) {
@@ -31,6 +33,23 @@ export const bossMethods = {
     const speed = e.speed * (this.dawnBreaks ? 0.5 : 1) * (e.hp < e.maxHp * 0.5 ? 1.15 : 1);
     if (td > 62) { e.x += tx / td * speed * dt * (slow > 0.9 ? 1 : 0.8); e.y += ty / td * speed * dt * (slow > 0.9 ? 1 : 0.8); }
     e.flip = tx < 0;
+    // Junto al ataúd apaga los cirios uno a uno: solo a oscuras puede llevársela.
+    e.atCoffin = td <= 68;
+    const cirio = e.atCoffin ? this.nearestCirio(e, true) : null;
+    if (e.atCoffin && !this.bossReached) { this.bossReached = true; this.say(BOSS.reach, 'Carmela', {priority: 3}); }
+    if (cirio && !e.lulled) {
+      e.snuffing = cirio;
+      cirio.snuffing = true;
+      cirio.snuff += dt / (e.hp < e.maxHp * 0.5 ? VIGIL.bossSnuffRage : VIGIL.bossSnuff);
+      if (Math.random() < dt * 20) {
+        const k = Math.random();
+        this.particle({x: e.x + (cirio.x - e.x) * k, y: e.y - 30 + (cirio.y - 58 - e.y + 30) * k, vx: rand(-10, 10), vy: rand(-20, 0), life: 0.4, size: 2, color: '#9fb4d8', glow: true});
+      }
+      if (cirio.snuff >= 1) {
+        this.snuffCirio(cirio);
+        this.rings.push({x: e.x, y: e.y - 20, r: 10, max: 70, life: 0.4, total: 0.4, color: '#9fb4d8', width: 2});
+      }
+    } else e.snuffing = null;
     const engaged = len < 560;
     // Procesión invocada
     this.t.bossSummon -= dt;
@@ -85,16 +104,6 @@ export const bossMethods = {
     }
   },
 
-  updateSoul(dt) {
-    const b = this.boss, d = Math.hypot(b.x - COFFIN.x, b.y - COFFIN.y);
-    if (d < 70 && b.stun <= 0) {
-      if (!this.bossReached) { this.bossReached = true; this.say(BOSS.reach, 'Carmela', {priority: 3}); }
-      this.soul = Math.min(1, this.soul + dt / 16);
-      if (Math.random() < 0.4) this.particle({x: COFFIN.x + rand(-30, 30), y: COFFIN.y + rand(-8, 8), vx: (b.x - COFFIN.x) * 0.6, vy: (b.y - COFFIN.y) * 0.6 - 20, life: 0.9, size: 2, color: '#e8f5ff', glow: true});
-      if (this.soul >= 1) this.beginDying('took');
-    } else this.soul = Math.max(0, this.soul - dt / 20);
-  },
-
   freeBoss(e) {
     this.corpses.push({type: 'guia', x: e.x, y: e.y, flip: e.flip, life: 1.6, total: 1.6, scale: 3, kneel: true});
     this.freeze = 0.3;
@@ -108,9 +117,13 @@ export const bossMethods = {
     this.hooks.onDiscover?.({kind: 'freed', id: 'guia'});
     this.soul = 0;
     for (const o of this.enemies) if (o !== e && o.hp > 0) { o.dissolve = true; o.dissolveT = rand(0.6, 2.4); }
+    // Con la Guía libre, los cirios vuelven a arder solos.
+    this.cirios.forEach((c, i) => this.later(0.4 + i * 0.35, () => this.lightCirio(c)));
+    this.pools = [];
     this.marks = [];
     this.enemyShots = [];
     this.hazards = [];
+    this.freedAt = this.phase === 'stopped' ? `parado+${Math.round(this.stoppedFor)}` : Math.round(this.time);
     this.phase = 'rush';
     this.rushFrom = this.time;
     this.player.inv = 99;

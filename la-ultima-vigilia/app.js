@@ -1,6 +1,6 @@
 import { VigilGame } from './game.js';
 import { drawPortrait, drawSprite, sprite } from './art.js';
-import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP } from './story.js';
+import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP, ROOMS, ELITES, VIGIL_TEXT } from './story.js';
 
 const $ = id => document.getElementById(id);
 const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
@@ -13,10 +13,11 @@ const store = {
   get(key, fallback) { try { const v = JSON.parse(localStorage.getItem('vigilia2.' + key)); return v ?? fallback; } catch { return fallback; } },
   set(key, value) { try { localStorage.setItem('vigilia2.' + key, JSON.stringify(value)); } catch { /* sin almacenamiento */ } }
 };
-const settings = Object.assign({muted: false, volume: 0.8, shake: !reducedMotion, flashes: !reducedMotion, numbers: false, softDark: false}, store.get('settings', {}));
+const settings = Object.assign({muted: false, volume: 0.8, music: 1, sfx: 1, amb: 1, shake: !reducedMotion, flashes: !reducedMotion, weather: !reducedMotion, numbers: false, softDark: false}, store.get('settings', {}));
 let nights = store.get('nights', []);
 if (!Array.isArray(nights)) nights = [];
-const found = Object.assign({memories: [], creatures: [], dawns: {}, freed: 0}, store.get('found', {}));
+const found = Object.assign({memories: [], creatures: [], rooms: [], elites: [], dawns: {}, freed: 0, lulled: false}, store.get('found', {}));
+for (const key of ['memories', 'creatures', 'rooms', 'elites']) if (!Array.isArray(found[key])) found[key] = [];
 let selected = store.get('selected', 'lucia');
 if (!CHARACTERS[selected]) selected = 'lucia';
 
@@ -28,7 +29,8 @@ game.reset();
 game.muted = settings.muted;
 game.audio.muted = settings.muted;
 game.audio.volume = settings.volume;
-game.setOptions({shake: settings.shake, flashes: settings.flashes, numbers: settings.numbers, softDark: settings.softDark});
+game.audio.setMix({music: settings.music, sfx: settings.sfx, amb: settings.amb});
+game.setOptions({shake: settings.shake, flashes: settings.flashes, weather: settings.weather, numbers: settings.numbers, softDark: settings.softDark});
 if (params.has('debug')) window.vigilia = game;
 const speed = Number(params.get('speed'));
 if (speed > 1) game.timeScale = Math.min(20, speed);
@@ -40,6 +42,9 @@ let choices = [];
 let subTimer = null;
 let memSignature = '';
 let toastTimer = null;
+let wakeSignature = '';
+let lullWasReady = false;
+let lastStats = null;
 
 function toast(text) {
   const el = $('toast');
@@ -113,7 +118,7 @@ function start() {
   game.audio.init();
   game.setMuted(settings.muted);
   game.start(selected);
-  memSignature = '';
+  memSignature = ''; wakeSignature = ''; lullWasReady = false;
   const ch = CHARACTERS[selected];
   $('hudName').textContent = ch.name;
   $('hudRole').textContent = ch.role;
@@ -128,6 +133,7 @@ $('quitButton').addEventListener('click', () => { game.backToTitle(); selectChar
 $('resumeButton').addEventListener('click', () => game.resume());
 $('pauseButton').addEventListener('click', () => game.state === 'paused' ? game.resume() : game.pause());
 $('dashButton').addEventListener('click', () => game.dash());
+$('lullButton').addEventListener('click', () => game.arrullo());
 
 /* ---------- durante la noche ---------- */
 
@@ -146,12 +152,36 @@ function onStats(s) {
   $('dashFill').style.width = `${ready ? 100 : (1 - s.dashCd / s.dashMax) * 100}%`;
   $('dashButton').classList.toggle('cooling', !ready);
   $('dashKey').textContent = ready ? 'Espacio' : `${Math.ceil(s.dashCd)} s`;
+  lastStats = s;
+  // El arrullo
+  const lullReady = s.lullCd <= 0, singing = s.lull > 0;
+  $('lullFill').style.width = `${lullReady ? 100 : (1 - s.lullCd / s.lullMax) * 100}%`;
+  $('lullButton').classList.toggle('cooling', !lullReady && !singing);
+  $('lullButton').classList.toggle('singing', singing);
+  $('lullKey').textContent = lullReady ? 'E' : `${Math.ceil(s.lullCd)} s`;
+  if (lullReady && !lullWasReady && s.state === 'running') {
+    $('lullButton').classList.remove('ready-now'); void $('lullButton').offsetWidth; $('lullButton').classList.add('ready-now');
+    if (!found.lulled) toast(`${matchMedia('(pointer: coarse)').matches ? 'Arrullar' : 'E'} · ${VIGIL_TEXT.lullHint}`);
+  }
+  if (singing && !found.lulled) { found.lulled = true; store.set('found', found); }
+  lullWasReady = lullReady;
+  // Los cirios y el alma
+  const wakeSig = s.cirios.join('');
+  if (wakeSig !== wakeSignature) {
+    wakeSignature = wakeSig;
+    const lit = s.cirios.filter(v => v === 1).length;
+    [...$('wake').children].forEach((el, i) => { el.className = s.cirios[i] === 1 ? 'on' : s.cirios[i] ? 'half' : ''; });
+    $('wake').classList.toggle('dark', lit === 0);
+    $('wake').setAttribute('aria-label', `Cirios encendidos: ${lit} de 4`);
+  }
+  $('soulBox').classList.toggle('hidden', s.soul < 0.01);
+  $('soulBar').style.width = `${s.soul * 100}%`;
+  $('soulBox').classList.toggle('danger', s.soul > 0.5);
   const boss = s.boss && s.boss.alive;
   $('bossBox').classList.toggle('hidden', !boss);
   if (boss) {
     $('bossBar').style.width = `${s.boss.hp / s.boss.maxHp * 100}%`;
-    $('soulBar').style.width = `${s.boss.soul * 100}%`;
-    $('bossBox').classList.toggle('danger', s.boss.soul > 0.5);
+    $('bossBox').classList.toggle('danger', s.soul > 0.5);
   }
   $('pauseClock').textContent = `${s.clock} · ${s.mood}`;
   const sig = s.order.map(id => id + s.mem[id]).join('|');
@@ -189,13 +219,32 @@ function onState(state) {
   $('choice').classList.toggle('hidden', state !== 'upgrade');
   $('pause').classList.toggle('hidden', state !== 'paused');
   $('end').classList.toggle('hidden', state !== 'ended');
-  if (state === 'paused') requestAnimationFrame(() => $('resumeButton').focus({preventScroll: true}));
+  if (state === 'paused') { renderPauseBuild(); requestAnimationFrame(() => $('resumeButton').focus({preventScroll: true})); }
   if (state === 'ready') { updateNightCount(); onSubtitle(null); }
   if (state === 'running') $('game').focus({preventScroll: true});
 }
 
-function onLevelUp({choices: list}) {
+/* Lo que se lleva reunido de cada rincón, para la pausa. */
+function renderPauseBuild() {
+  const wrap = $('pauseBuild');
+  wrap.replaceChildren();
+  const s = lastStats;
+  if (!s || !s.rooms.length) return;
+  const h = document.createElement('h3'); h.textContent = 'Rincones reunidos';
+  wrap.append(h);
+  for (const room of ROOMS) {
+    if (!s.rooms.includes(room.id)) continue;
+    const p = document.createElement('p');
+    const b = document.createElement('b'); b.textContent = room.name;
+    p.append(b, ` · ${room.effect}`);
+    wrap.append(p);
+  }
+}
+
+function onLevelUp({choices: list, free, slots}) {
   choices = list;
+  $('choiceEyebrow').textContent = free ? VIGIL_TEXT.cardEyebrow : VIGIL_TEXT.levelEyebrow;
+  $('choiceSlots').textContent = slots ? `Armas ${slots.arma[0]} de ${slots.arma[1]} · Recuerdos ${slots.recuerdo[0]} de ${slots.recuerdo[1]}` : '';
   const wrap = $('choiceCards');
   wrap.replaceChildren();
   list.forEach((c, i) => {
@@ -203,11 +252,23 @@ function onLevelUp({choices: list}) {
     b.className = 'card';
     const kindLabel = c.kind === 'arma' ? 'Arma' : c.kind === 'consuelo' ? 'Consuelo' : 'Recuerdo';
     const level = c.kind === 'consuelo' ? '' : c.isNew ? '<span class="new">· nuevo</span>' : `· nivel ${c.level}`;
-    b.innerHTML = `<kbd>${i + 1}</kbd><span class="kind">${kindLabel} ${level}</span><h3></h3><p class="memory"></p><p class="effect"></p>`;
+    b.innerHTML = `<kbd>${i + 1}</kbd><span class="kind">${kindLabel} ${level}</span><h3></h3><p class="memory"></p><p class="room"></p><p class="effect"></p>`;
     b.prepend(iconCanvas(c.id, 48, 4));
     b.querySelector('h3').textContent = c.name;
     b.querySelector('.memory').textContent = c.line;
     b.querySelector('.effect').textContent = c.effect;
+    const roomEl = b.querySelector('.room');
+    if (c.room) {
+      // A qué rincón pertenece y cuánto falta para reunirlo.
+      const name = document.createElement('b'); name.textContent = c.room.name;
+      const have = c.room.have + (c.isNew ? 1 : 0);
+      roomEl.append(name, ` · ${have} de ${c.room.total}`);
+      if (c.room.completes) {
+        roomEl.classList.add('closes');
+        const what = document.createElement('small'); what.textContent = c.room.effect;
+        roomEl.append(what);
+      }
+    } else roomEl.remove();
     b.addEventListener('click', () => game.chooseUpgrade(c.id));
     wrap.append(b);
   });
@@ -220,12 +281,14 @@ function onSubtitle(item) {
   if (!item) { el.classList.remove('show'); return; }
   el.className = 'subtitle show' + (item.speaker === AMPARO.name ? ' amparo' : item.speaker === 'Carmela' ? ' carmela' : '');
   $('subSpeaker').textContent = item.speaker;
-  if (reducedMotion) { line.textContent = item.text; return; }
-  let i = 0;
+  if (reducedMotion) { line.textContent = item.text; game.audio.sfx('voz', {speaker: item.speaker}); return; }
+  let i = 0, tick = 0;
   line.textContent = '';
   subTimer = setInterval(() => {
     i = Math.min(item.text.length, i + 2);
     line.textContent = item.text.slice(0, i);
+    // Cada cual tiene su voz: un murmullo mientras se escribe la frase.
+    if (tick++ % 3 === 0 && /[a-záéíóúñ]/i.test(item.text.slice(i - 2, i))) game.audio.sfx('voz', {speaker: item.speaker});
     if (i >= item.text.length) clearInterval(subTimer);
   }, 30);
 }
@@ -240,9 +303,9 @@ function onBanner({title, sub, tone}) {
 }
 
 function onDiscover({kind, id}) {
-  if (kind === 'memory' && !found.memories.includes(id)) found.memories.push(id);
-  else if (kind === 'creature' && !found.creatures.includes(id)) found.creatures.push(id);
-  else return;
+  const list = {memory: found.memories, creature: found.creatures, room: found.rooms, elite: found.elites}[kind];
+  if (!list || list.includes(id)) return;
+  list.push(id);
   store.set('found', found);
 }
 
@@ -286,14 +349,15 @@ function onEnd(result) {
     $('loopLine').textContent = WORLD.loop;
   }
   $('endStats').innerHTML = '';
-  for (const [value, label] of [[result.clock, 'la hora'], [result.kills.toLocaleString('es-ES'), 'ahuyentados'], [total, 'recuerdos']]) {
+  for (const [value, label] of [[result.clock, 'la hora'], [result.kills.toLocaleString('es-ES'), 'ahuyentados'], [total, 'recuerdos'], [result.relit, result.relit === 1 ? 'cirio encendido' : 'cirios encendidos']]) {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = value;
     const s = document.createElement('span'); s.textContent = label;
     d.append(b, s);
     $('endStats').append(d);
   }
-  nights.push({n, character: result.character, victory: result.victory, cause: result.cause, clock: result.clock, kills: result.kills, memories: total, date: new Date().toISOString()});
+  nights.push({n, character: result.character, victory: result.victory, cause: result.cause, clock: result.clock, kills: result.kills, memories: total,
+    rooms: result.rooms, relit: result.relit, revives: result.revives, date: new Date().toISOString()});
   if (nights.length > 60) nights = nights.slice(-60);
   store.set('nights', nights);
   store.set('found', found);
@@ -321,6 +385,32 @@ function renderAlbum() {
       el.append(p);
     }
     grid.append(el);
+  }
+  const roomGrid = $('roomGrid');
+  roomGrid.replaceChildren();
+  $('roomCount').textContent = `${found.rooms.length} de ${ROOMS.length}`;
+  for (const room of ROOMS) {
+    const known = found.rooms.includes(room.id);
+    const el = document.createElement('div');
+    el.className = 'room' + (known ? '' : ' unknown');
+    const b = document.createElement('b'); b.textContent = known ? room.name : 'Un rincón que aún no has reunido';
+    const small = document.createElement('small');
+    small.textContent = room.members.map(id => found.memories.includes(id) ? MEMORY[id].name : '···').join(' · ');
+    const p = document.createElement('p'); p.textContent = known ? room.effect : 'Hay recuerdos que van juntos.';
+    el.append(b, small, p);
+    if (known) { const em = document.createElement('em'); em.textContent = room.line; el.append(em); }
+    roomGrid.append(el);
+  }
+  const eliteGrid = $('eliteGrid');
+  eliteGrid.replaceChildren();
+  for (const [id, elite] of Object.entries(ELITES)) {
+    const known = found.elites.includes(id);
+    const el = document.createElement('div');
+    el.className = 'elite' + (known ? '' : ' unknown');
+    const b = document.createElement('b'); b.textContent = known ? elite.name : 'Alguien que aún no ha venido';
+    const p = document.createElement('p'); p.textContent = known ? elite.epitaph : 'Cada hora viene uno. Todos tienen nombre.';
+    el.append(b, p);
+    eliteGrid.append(el);
   }
   const best = $('bestiaryGrid');
   best.replaceChildren();
@@ -380,7 +470,7 @@ function renderRecords() {
     what.textContent = r.victory ? 'Amaneció' : r.cause === 'took' ? `Se la llevaron a las ${r.clock}` : `La vela se apagó a las ${r.clock}`;
     if (r.victory) what.className = 'won';
     const meta = document.createElement('small');
-    meta.textContent = `${r.kills} ahuyentados · ${r.memories} recuerdos`;
+    meta.textContent = `${r.kills} ahuyentados · ${r.memories} recuerdos${r.rooms?.length ? ` · ${r.rooms.length} ${r.rooms.length === 1 ? 'rincón' : 'rincones'}` : ''}`;
     li.append(n, who, what, meta);
     ol.append(li);
   }
@@ -390,7 +480,7 @@ function renderRecords() {
 
 function saveSettings() {
   store.set('settings', settings);
-  game.setOptions({shake: settings.shake, flashes: settings.flashes, numbers: settings.numbers, softDark: settings.softDark});
+  game.setOptions({shake: settings.shake, flashes: settings.flashes, weather: settings.weather, numbers: settings.numbers, softDark: settings.softDark});
 }
 
 function syncSoundButton() {
@@ -412,7 +502,11 @@ $('soundButton').addEventListener('click', () => { setMuted(!settings.muted); to
 $('optSound').addEventListener('change', e => setMuted(!e.target.checked));
 $('optVolume').value = Math.round(settings.volume * 100);
 $('optVolume').addEventListener('input', e => { settings.volume = Number(e.target.value) / 100; game.setVolume(settings.volume); saveSettings(); });
-for (const [id, key] of [['optShake', 'shake'], ['optFlashes', 'flashes'], ['optNumbers', 'numbers'], ['optSoftDark', 'softDark']]) {
+for (const [id, key] of [['optMusic', 'music'], ['optSfx', 'sfx'], ['optAmb', 'amb']]) {
+  $(id).value = Math.round(settings[key] * 100);
+  $(id).addEventListener('input', e => { settings[key] = Number(e.target.value) / 100; game.audio.setMix({[key]: settings[key]}); saveSettings(); });
+}
+for (const [id, key] of [['optShake', 'shake'], ['optFlashes', 'flashes'], ['optWeather', 'weather'], ['optNumbers', 'numbers'], ['optSoftDark', 'softDark']]) {
   $(id).checked = !!settings[key];
   $(id).addEventListener('change', e => { settings[key] = e.target.checked; saveSettings(); });
 }
@@ -437,6 +531,7 @@ $('fullscreenButton').addEventListener('click', async () => {
 function openDialog(id) {
   const d = $(id);
   if (!d || d.open) return;
+  game.audio.sfx('ui-abrir');
   if (game.state === 'running') game.pause();
   if (id === 'albumDialog') renderAlbum();
   if (id === 'recordsDialog') renderRecords();
@@ -444,6 +539,7 @@ function openDialog(id) {
 }
 document.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => openDialog(el.dataset.open)));
 document.querySelectorAll('dialog').forEach(d => {
+  d.addEventListener('close', () => game.audio.sfx('ui-cerrar'));
   d.querySelectorAll('[data-close]').forEach(el => el.addEventListener('click', () => d.close()));
   d.addEventListener('click', e => {
     if (e.target !== d) return;
@@ -451,6 +547,21 @@ document.querySelectorAll('dialog').forEach(d => {
     if (e.clientX < r.left || e.clientX > r.right || e.clientY < r.top || e.clientY > r.bottom) d.close();
   });
 });
+
+/* ---------- sonidos de la interfaz ---------- */
+
+const pressable = el => el?.closest?.('button, .card, .cast-card');
+let lastFocus = null;
+const focusSound = e => {
+  const el = pressable(e.target);
+  if (!el || el === lastFocus || el.disabled) return;
+  lastFocus = el;
+  game.audio.sfx('ui-foco');
+};
+document.addEventListener('pointerover', focusSound);
+document.addEventListener('focusin', focusSound);
+document.addEventListener('pointerout', e => { if (pressable(e.target) === lastFocus) lastFocus = null; });
+document.addEventListener('click', e => { if (pressable(e.target)) game.audio.sfx('ui-elegir'); });
 
 /* ---------- teclado ---------- */
 

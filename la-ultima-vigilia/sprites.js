@@ -291,6 +291,62 @@ export const SPRITES = {
   ]
 };
 
+/*
+ * Fotogramas de animación. Cada uno parte del sprite base y cambia solo las
+ * filas que se mueven: [fila, 'píxeles…'].
+ */
+export const FRAMES = {
+  lucia: {
+    walk1: [[19, '..okkko..okko...'], [20, '..ooooo..okkko..'], [21, '.........ooooo..']],
+    walk2: [[19, '...okko..okkko..'], [20, '..okkko..ooooo..'], [21, '..ooooo.........']],
+    blink: [[4, '...onnhhhHhho...']]
+  },
+  julian: {
+    walk1: [[19, '...okkko.oddo...'], [20, '...ooooo.okkko..'], [21, '.........ooooo..']],
+    walk2: [[19, '....oddo.okkko..'], [20, '...okkko.ooooo..'], [21, '...ooooo........']],
+    blink: [[5, '....oWhhhhHhHo..']]
+  },
+  matilde: {
+    walk1: [[20, '...ooooo.oko....'], [21, '.........ooo....']],
+    walk2: [[20, '....okko.ooo....'], [21, '...ooooo........']],
+    blink: [[4, '...okwhhhHhho...']]
+  },
+  anima: {
+    flick: [[0, '....z......'], [1, '....zz.....'], [11, '.....zzz...'], [12, '......z....']]
+  },
+  hermano: {
+    step1: [[7, '..oPPpppppyo..'], [18, '.opppppppppppo'], [19, '.ooooooooooooo']],
+    step2: [[18, 'opppppppppppo.'], [19, 'ooooooooooooo.']],
+    blow: [[3, '...oPiiiipo...'], [4, '..oPiiiiiipo..'], [5, '..oPiiioiipo..'], [7, '..oPPpppppyo..']]
+  },
+  urco: {
+    run1: [[10, '...okko....okko..okko..'], [11, '..okko......okko..okko.'], [12, '.okkko......okkko.okkko'], [13, '.ooooo......ooooo.ooooo']],
+    run2: [[10, '.....okko..okko.okko...'], [11, '......okko.okkookko....'], [12, '.....okkko.okkkokkko...'], [13, '.....ooooo.ooooooooo...']]
+  },
+  curuxa: {
+    down: [[4, '......ouuuuuuo......'], [5, '......ouuTTuuo......'], [6, '....oootuuuutooo....'], [7, '..ootTtttttttttTtoo.'],
+      [9, 'otTTtotTttttTtotTTto'], [10, 'otTo..ottttttto.oTto'], [11, 'ooo...otTttTto...ooo']]
+  },
+  ahogado: {
+    step1: [[19, '..offo..offo..'], [20, '..oooo..offo..'], [21, '........oooo..']],
+    step2: [[20, '...offo.oooo..'], [21, '...oooo.......']]
+  },
+  planidera: {
+    step1: [[18, '.okkkkkkkkkkko'], [19, '.ooooooooooooo']],
+    step2: [[18, 'okkkkkkkkkkko.'], [19, 'ooooooooooooo.']],
+    cry: [[5, '..okkjjjjjjo..'], [6, '..okkjziizko..'], [7, '..okkkjjjjko..'], [8, '.okKkkzjjzkko.']]
+  },
+  espantajo: {
+    rustle: [[10, '..o.oooodddddddoooo.o.'], [11, '.xxodddddddddddddddoxx'], [12, 'xxxoddKdddddddddKddoxx'], [13, '.xxoooodddddddddooooxx']]
+  },
+  guia: {
+    step1: [[14, '.....oeo.oKllGlllko.y.'], [27, '.....oeoolllllllllllo.'], [28, '.....ooooooooooooooo..']]
+  },
+  polilla: {
+    shut: [[0, '.........'], [1, '..oo.oo..'], [2, '.oQqoqQo.'], [5, '..oQKQo..'], [6, '...o.o...']]
+  }
+};
+
 /* Iconos de 12×12 para los recuerdos. */
 export const ICONS = {
   chispas: [

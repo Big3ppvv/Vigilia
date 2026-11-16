@@ -1,25 +1,25 @@
 /*
- * Sonido generado en el navegador, sin archivos: viento, mar, grillos, la lechuza,
- * la campana que da las horas y la nana de Amparo tocada con una cuerda pulsada.
+ * Sonido generado en el navegador, sin archivos. Este módulo es el motor:
+ * la mezcla, las piezas con las que se hace cada sonido y el ambiente de la
+ * noche (viento, mar, orballo, grillos, la lechuza). Los efectos están en
+ * sfx.js y la música, en music.js.
  */
+import { SFX } from './sfx.js';
+import { Score, NANA, NANA_BASS } from './music.js';
 
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
 const rand = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
 
-/* La nana de Amparo, en compás de 3/4: [nota MIDI, tiempos]. */
-const NANA = [
-  [69, 2], [74, 1], [72, 2], [69, 1], [70, 1], [69, 1], [67, 1], [69, 3],
-  [65, 2], [67, 1], [69, 1], [67, 1], [65, 1], [64, 2], [61, 1], [62, 3]
-];
-/* Un bajo por compás. */
-const NANA_BASS = [50, 53, 43, 45, 50, 46, 45, 50];
-const PENTA = [62, 65, 67, 69, 72, 74, 77, 79, 81, 84];
+/* Nivel base de cada grupo; los ajustes del jugador lo multiplican. */
+const BUS = {sfx: 0.85, amb: 0.7, music: 1.15};
 
 export class AudioEngine {
   constructor() {
     this.ctx = null;
     this.muted = false;
     this.volume = 0.8;
+    this.mix = {sfx: 1, amb: 1, music: 1};
     this.ready = false;
     this.plucks = new Map();
     this.last = {};
@@ -28,7 +28,8 @@ export class AudioEngine {
     this.nanaStep = 0;
     this.clock = 0;
     this.scene = 'title';
-    this.timers = {cricket: 0.5, owl: 14, bird: 1, heart: 0, sea: 0, nana: 2.5, ctl: 0};
+    this.timers = {cricket: 0.5, owl: 14, bird: 1, heart: 0, sea: 0, nana: 2.5, ctl: 0, soul: 0, drip: 3};
+    this.score = new Score(this);
   }
 
   /* custom: un OfflineAudioContext para medir niveles en pruebas. */
@@ -48,15 +49,20 @@ export class AudioEngine {
     const comp = c.createDynamicsCompressor();
     comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 4;
     comp.attack.value = 0.004; comp.release.value = 0.25;
-    this.duck.connect(this.master); this.master.connect(comp); comp.connect(c.destination);
-    this.sfxBus = this.gain(0.85, this.duck);
-    this.ambBus = this.gain(0.7, this.duck);
-    this.musicBus = this.gain(0.75, this.duck);
+    // Detrás, un tope para los momentos en que todo suena a la vez.
+    const limiter = c.createDynamicsCompressor();
+    limiter.threshold.value = -4; limiter.knee.value = 2; limiter.ratio.value = 20;
+    limiter.attack.value = 0.001; limiter.release.value = 0.12;
+    this.duck.connect(this.master); this.master.connect(comp); comp.connect(limiter); limiter.connect(c.destination);
+    this.sfxBus = this.gain(BUS.sfx * this.mix.sfx, this.duck);
+    this.ambBus = this.gain(BUS.amb * this.mix.amb, this.duck);
+    this.musicBus = this.gain(BUS.music * this.mix.music, this.duck);
     this.reverb = c.createConvolver();
     this.reverb.buffer = this.impulse(3.4);
     this.reverb.connect(this.gain(0.55, this.duck));
     this.noise = this.noiseBuffer(2.5);
     this.buildAmbient();
+    this.score.build();
     this.ready = true;
     if (this.muted && !this.offline) c.suspend?.().catch(() => {});
   }
@@ -74,8 +80,18 @@ export class AudioEngine {
   }
 
   setVolume(value) {
-    this.volume = Math.max(0, Math.min(1, value));
+    this.volume = clamp(value, 0, 1);
     if (this.ctx && !this.muted) this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
+  }
+
+  /* Volumen de cada grupo, de 0 a 1: {music, sfx, amb}. */
+  setMix(mix) {
+    for (const key of ['music', 'sfx', 'amb']) if (mix[key] !== undefined) this.mix[key] = clamp(Number(mix[key]) || 0, 0, 1);
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.sfxBus.gain.setTargetAtTime(BUS.sfx * this.mix.sfx, now, 0.05);
+    this.ambBus.gain.setTargetAtTime(BUS.amb * this.mix.amb, now, 0.05);
+    this.musicBus.gain.setTargetAtTime(BUS.music * this.mix.music, now, 0.05);
   }
 
   get live() { return this.ready && !this.muted && (this.offline || this.ctx.state === 'running'); }
@@ -89,13 +105,14 @@ export class AudioEngine {
     return g;
   }
 
+  /* Salida de un sonido: su volumen, su sitio entre izquierda y derecha y cuánto va a la reverberación. */
   out(bus, pan = 0, send = 0) {
     const c = this.ctx;
     const g = c.createGain();
     let node = g;
     if (pan && c.createStereoPanner) {
       const p = c.createStereoPanner();
-      p.pan.value = Math.max(-1, Math.min(1, pan));
+      p.pan.value = clamp(pan, -1, 1);
       g.connect(p); node = p;
     }
     node.connect(bus);
@@ -144,18 +161,38 @@ export class AudioEngine {
     else src.start(t, Math.random() * 1.5, dur + 0.05);
   }
 
-  tone(dest, {type = 'sine', f0 = 440, f1 = f0, dur = 0.15, vol = 0.05, attack = 0.005, when = 0} = {}) {
+  /* vib: [hercios, profundidad en hercios] para un temblor de voz. */
+  tone(dest, {type = 'sine', f0 = 440, f1 = f0, dur = 0.15, vol = 0.05, attack = 0.005, when = 0, vib = null} = {}) {
     const c = this.ctx, t = when || c.currentTime;
     const o = c.createOscillator();
     o.type = type;
     o.frequency.setValueAtTime(f0, t);
     if (f1 !== f0) o.frequency.exponentialRampToValueAtTime(Math.max(20, f1), t + dur);
+    if (vib) {
+      const lfo = c.createOscillator(), depth = c.createGain();
+      lfo.frequency.value = vib[0]; depth.gain.value = vib[1];
+      lfo.connect(depth); depth.connect(o.frequency);
+      lfo.start(t); lfo.stop(t + dur + 0.05);
+    }
     const g = c.createGain();
     g.gain.setValueAtTime(0.0001, t);
     g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(dest);
     o.start(t); o.stop(t + dur + 0.05);
+  }
+
+  /* Golpe de tambor: un grave que cae y un poco de parche. */
+  thump(dest, {when = 0, f0 = 92, f1 = 44, dur = 0.2, vol = 0.1} = {}) {
+    const t = when || this.ctx.currentTime;
+    this.tone(dest, {f0, f1, dur, vol, attack: 0.003, when: t});
+    this.noiseShot(dest, {dur: 0.045, type: 'lowpass', f0: 900, f1: 300, vol: vol * 0.45, attack: 0.002, when: t});
+  }
+
+  /* Campanilla: tres parciales agudos y breves. */
+  tinkle(dest, {when = 0, f = 1568, vol = 0.03, decay = 0.9} = {}) {
+    const t = when || this.ctx.currentTime;
+    for (const [ratio, amp, life] of [[1, 1, 1], [2.76, 0.4, 0.5], [5.4, 0.16, 0.25]]) this.tone(dest, {f0: f * ratio, dur: decay * life, vol: vol * amp, attack: 0.002, when: t});
   }
 
   /* Cuerda pulsada (Karplus-Strong), calculada una vez por nota. */
@@ -185,17 +222,43 @@ export class AudioEngine {
     return buf;
   }
 
-  pluck(midi, {when = 0, vol = 0.22, pan = 0, send = 0.35, bus = this.musicBus} = {}) {
+  pluck(midi, {when = 0, vol = 0.22, pan = 0, send = 0.35, bus = this.musicBus, bright = 2600} = {}) {
     if (!this.ready) return;
     const c = this.ctx, t = when || c.currentTime;
     const src = c.createBufferSource();
     src.buffer = this.pluckBuffer(midi);
     const lp = c.createBiquadFilter();
-    lp.type = 'lowpass'; lp.frequency.value = 2600; lp.Q.value = 0.3;
+    lp.type = 'lowpass'; lp.frequency.value = bright; lp.Q.value = 0.3;
     const g = this.out(bus, pan, send);
     g.gain.value = vol;
     src.connect(lp); lp.connect(g);
     src.start(t);
+  }
+
+  /* Una nota tarareada: voz sin letra, con su temblor. */
+  hum(midi, {when = 0, dur = 0.5, vol = 0.08, vib = 5.2, depth = 0.012, bus = this.musicBus, pan = 0, send = 0.4} = {}) {
+    const c = this.ctx, t = when || c.currentTime, f = midiHz(midi);
+    const out = this.out(bus, pan, send);
+    const lp = c.createBiquadFilter();
+    lp.type = 'lowpass'; lp.frequency.value = Math.min(2200, f * 3.2); lp.Q.value = 1.1;
+    lp.connect(out);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.07);
+    g.gain.setValueAtTime(vol, t + Math.max(0.08, dur - 0.12));
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur + 0.1);
+    g.connect(lp);
+    const lfo = c.createOscillator(), lg = c.createGain();
+    lfo.frequency.value = vib; lg.gain.value = f * depth;
+    lfo.connect(lg);
+    for (const [type, mul, amp] of [['triangle', 1, 1], ['sine', 2, 0.22]]) {
+      const o = c.createOscillator(), og = c.createGain();
+      o.type = type; o.frequency.value = f * mul; og.gain.value = amp;
+      lg.connect(o.frequency);
+      o.connect(og); og.connect(g);
+      o.start(t); o.stop(t + dur + 0.2);
+    }
+    lfo.start(t); lfo.stop(t + dur + 0.2);
   }
 
   /* Campana: parciales inarmónicos con batido. */
@@ -235,6 +298,10 @@ export class AudioEngine {
     this.sea = {src: loop(), filter: c.createBiquadFilter(), gain: this.gain(0.0001, this.ambBus)};
     this.sea.filter.type = 'lowpass'; this.sea.filter.frequency.value = 380; this.sea.filter.Q.value = 0.2;
     this.sea.src.connect(this.sea.filter); this.sea.filter.connect(this.sea.gain); this.sea.src.start(0, 0.7);
+    // Orballo: un siseo fino, sin graves
+    this.rain = {src: loop(), filter: c.createBiquadFilter(), gain: this.gain(0.0001, this.ambBus)};
+    this.rain.filter.type = 'highpass'; this.rain.filter.frequency.value = 3400; this.rain.filter.Q.value = 0.3;
+    this.rain.src.connect(this.rain.filter); this.rain.filter.connect(this.rain.gain); this.rain.src.start(0, 1.3);
     // Zumbido grave que sube con el peligro
     this.drone = {gain: this.gain(0.0001, this.ambBus), filter: c.createBiquadFilter(), oscs: []};
     this.drone.filter.type = 'lowpass'; this.drone.filter.frequency.value = 160; this.drone.filter.Q.value = 3;
@@ -258,7 +325,7 @@ export class AudioEngine {
     const c = this.ctx, now = c.currentTime;
     const scene = s.scene || 'title';
     this.scene = scene;
-    const hour = s.hour || 0;
+    const hour = s.hour || 0, playing = scene === 'run' || scene === 'pause';
     const T = this.timers;
     T.ctl -= dt;
     if (T.ctl <= 0) {
@@ -268,23 +335,26 @@ export class AudioEngine {
       this.wind.gain.gain.setTargetAtTime(windVol, now, 0.4);
       this.wind.filter.frequency.setTargetAtTime(300 + gust * 520, now, 0.5);
       const danger = scene === 'run' ? (s.danger || 0) : 0;
-      const droneVol = scene === 'run' ? 0.012 + danger * 0.045 + (s.boss ? 0.03 : 0) : scene === 'end' ? 0 : 0.004;
+      const droneVol = scene === 'run' ? 0.012 + danger * 0.036 + (s.boss ? 0.012 : 0) + (s.soul || 0) * 0.03 : scene === 'end' ? 0 : 0.004;
       this.drone.gain.gain.setTargetAtTime(droneVol, now, 0.8);
       this.drone.filter.frequency.setTargetAtTime(120 + danger * 380 + (s.boss ? 160 : 0), now, 0.6);
+      this.rain.gain.gain.setTargetAtTime((scene === 'end' ? 0 : s.rain || 0) * 0.016, now, 1.2);
+      // La pausa lo baja todo; el arrullo deja oír la nana por encima de lo demás.
       this.duck.gain.setTargetAtTime(scene === 'pause' ? 0.35 : 1, now, 0.15);
+      this.ambBus.gain.setTargetAtTime(BUS.amb * this.mix.amb * (s.lull > 0 ? 0.45 : 1), now, 0.25);
     }
-    // El mar respira cada pocos segundos.
+    // El mar respira cada pocos segundos; con la marea, más cerca.
     T.sea -= dt;
     if (T.sea <= 0) {
       T.sea = rand(6.5, 10);
-      const peak = scene === 'dawn' ? 0.05 : 0.07;
+      const peak = (scene === 'dawn' ? 0.05 : 0.07) * (s.tide ? 1.45 : 1);
       this.sea.gain.gain.cancelScheduledValues(now);
       this.sea.gain.gain.setTargetAtTime(peak, now, 1.4);
       this.sea.gain.gain.setTargetAtTime(0.012, now + 3.2, 1.8);
       this.sea.filter.frequency.setTargetAtTime(rand(320, 520), now, 1.5);
     }
-    // Grillos hasta las tres; luego callan.
-    const crickets = scene === 'title' ? 1 : scene === 'run' || scene === 'pause' ? Math.max(0, 1 - hour / 3.1) : 0;
+    // Grillos hasta las tres; luego callan. Con el orballo se oyen menos.
+    const crickets = (scene === 'title' ? 1 : playing ? Math.max(0, 1 - hour / 3.1) : 0) * (1 - (s.rain || 0) * 0.7);
     T.cricket -= dt;
     if (T.cricket <= 0) {
       T.cricket = rand(0.25, 0.9) / Math.max(0.15, crickets);
@@ -308,11 +378,17 @@ export class AudioEngine {
       T.heart -= dt;
       if (T.heart <= 0) { T.heart = 0.62 + (s.hp || 0) * 1.2; this.heartbeat(); }
     } else T.heart = 0.2;
+    // A oscuras, algo tira de Amparo: un golpe grave cada vez más seguido.
+    if (scene === 'run' && (s.soul || 0) > 0.02) {
+      T.soul -= dt;
+      if (T.soul <= 0) { T.soul = 1.35 - s.soul * 0.85; this.sfx('alma', {level: s.soul}); }
+    } else T.soul = 0.3;
     // En la pantalla de título suena la nana, sin prisa.
     if (scene === 'title') {
       T.nana -= dt;
       if (T.nana <= 0) { T.nana = 34; this.nana({vol: 0.16, tempo: 0.86}); }
     } else T.nana = Math.min(T.nana, 6);
+    this.score.update(s);
   }
 
   cricket(pan, density) {
@@ -326,16 +402,9 @@ export class AudioEngine {
     const out = this.out(this.ambBus, pan, 0.5);
     out.gain.value = 0.05;
     const t = this.ctx.currentTime;
-    const hoot = (when, f, dur) => {
-      const o = this.ctx.createOscillator(), g = this.ctx.createGain(), lfo = this.ctx.createOscillator(), lg = this.ctx.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(f * 1.04, when); o.frequency.exponentialRampToValueAtTime(f, when + dur);
-      lfo.frequency.value = 7; lg.gain.value = 6; lfo.connect(lg); lg.connect(o.frequency);
-      g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(1, when + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-      o.connect(g); g.connect(out); o.start(when); lfo.start(when); o.stop(when + dur + 0.05); lfo.stop(when + dur + 0.05);
-    };
-    hoot(t, 410, 0.42);
-    hoot(t + 0.62, 372, 0.3);
-    hoot(t + 1.02, 372, 0.7);
+    this.tone(out, {f0: 426, f1: 410, dur: 0.42, vol: 1, attack: 0.06, when: t, vib: [7, 6]});
+    this.tone(out, {f0: 387, f1: 372, dur: 0.3, vol: 1, attack: 0.06, when: t + 0.62, vib: [7, 6]});
+    this.tone(out, {f0: 387, f1: 372, dur: 0.7, vol: 1, attack: 0.06, when: t + 1.02, vib: [7, 6]});
   }
 
   bird(pan) {
@@ -354,7 +423,7 @@ export class AudioEngine {
     this.tone(this.sfxBus, {f0: 62, f1: 40, dur: 0.14, vol: 0.13, when: t + 0.18});
   }
 
-  /* ---------- música ---------- */
+  /* ---------- la nana ---------- */
 
   /* La nana completa. dawn: termina en mayor, como si se abriera una ventana. */
   nana({vol = 0.2, tempo = 1, dawn = false} = {}) {
@@ -389,8 +458,23 @@ export class AudioEngine {
     this.nanaStep = (this.nanaStep + 4) % NANA.length;
   }
 
+  /* El arrullo: quien vela tararea el siguiente trozo, cada uno con su voz. */
+  hummed(voice = 'lucia') {
+    if (!this.live) return;
+    const v = {lucia: {shift: 0, vib: 5.2, depth: 0.012}, julian: {shift: -12, vib: 4.4, depth: 0.008}, matilde: {shift: -2, vib: 6.4, depth: 0.022}}[voice] || {shift: 0, vib: 5.2, depth: 0.012};
+    let t = this.ctx.currentTime + 0.05, beats = 0;
+    const beat = 0.44;
+    for (let k = 0; k < 16 && beats < 8.5; k++) {
+      const [note, len] = NANA[(this.nanaStep + k) % NANA.length];
+      this.hum(note + v.shift, {when: t, dur: len * beat * 0.94, vol: 0.085, vib: v.vib, depth: v.depth, send: 0.55});
+      t += len * beat; beats += len;
+    }
+    this.nanaStep = (this.nanaStep + 6) % NANA.length;
+  }
+
   /* ---------- efectos ---------- */
 
+  /* Para no repetir el mismo sonido demasiado seguido. */
   limit(key, gap) {
     const now = this.ctx.currentTime;
     if (this.last[key] && now - this.last[key] < gap) return false;
@@ -400,131 +484,8 @@ export class AudioEngine {
 
   sfx(name, opts = {}) {
     if (!this.live) return;
-    const pan = Math.max(-1, Math.min(1, opts.pan || 0));
-    const b = this.sfxBus;
-    switch (name) {
-      case 'chispa': {
-        if (!this.limit('chispa', 0.07)) return;
-        const out = this.out(b, pan, 0.08);
-        this.noiseShot(out, {dur: 0.05, f0: 3200, f1: 2200, q: 1.5, vol: 0.07});
-        this.tone(out, {type: 'triangle', f0: rand(1000, 1250), f1: 620, dur: 0.07, vol: 0.03});
-        break;
-      }
-      case 'sal': {
-        if (!this.limit('sal', 0.12)) return;
-        const out = this.out(b, pan, 0.12);
-        this.noiseShot(out, {dur: 0.16, type: 'lowpass', f0: 5200, f1: 700, q: 0.7, vol: 0.12, attack: 0.002});
-        this.tone(out, {f0: 120, f1: 48, dur: 0.12, vol: 0.12});
-        break;
-      }
-      case 'golpe': {
-        if (!this.limit('golpe', 0.05)) return;
-        const out = this.out(b, pan, 0);
-        this.tone(out, {f0: rand(170, 220), f1: 80, dur: 0.06, vol: 0.045});
-        break;
-      }
-      case 'muerte': {
-        if (!this.limit('muerte', 0.045)) return;
-        const out = this.out(b, pan, 0.15);
-        this.noiseShot(out, {dur: 0.18, f0: rand(1300, 1700), f1: 260, q: 0.9, vol: 0.05, attack: 0.01});
-        this.tone(out, {type: 'triangle', f0: rand(520, 600), f1: 300, dur: 0.12, vol: 0.012});
-        break;
-      }
-      case 'apagar': {
-        if (!this.limit('apagar', 0.06)) return;
-        const out = this.out(b, pan, 0.2);
-        this.noiseShot(out, {dur: 0.22, type: 'highpass', f0: 2600, f1: 1400, q: 0.5, vol: 0.04, attack: 0.02});
-        break;
-      }
-      case 'luz': {
-        if (!this.limit('luz', 0.035)) return;
-        this.combo = Math.min(PENTA.length - 1, this.combo + 1);
-        this.comboClock = 0.55;
-        const out = this.out(b, pan * 0.5, 0.25);
-        this.tone(out, {type: 'sine', f0: midiHz(PENTA[this.combo] + 12), dur: 0.11, vol: 0.022, attack: 0.003});
-        break;
-      }
-      case 'cafe': {
-        const out = this.out(b, 0, 0.3);
-        this.tone(out, {type: 'sine', f0: 660, f1: 990, dur: 0.18, vol: 0.05});
-        this.tone(out, {type: 'sine', f0: 990, dur: 0.25, vol: 0.03, when: this.ctx.currentTime + 0.09});
-        break;
-      }
-      case 'recuerdo': this.memoryMotif(); break;
-      case 'herida': {
-        if (!this.limit('herida', 0.2)) return;
-        const out = this.out(b, 0, 0.15);
-        this.tone(out, {f0: 120, f1: 44, dur: 0.26, vol: 0.32});
-        this.noiseShot(out, {dur: 0.14, type: 'lowpass', f0: 900, f1: 200, vol: 0.14});
-        break;
-      }
-      case 'esquiva': {
-        const out = this.out(b, pan, 0.2);
-        this.noiseShot(out, {dur: 0.24, f0: 380, f1: 2600, q: 1.2, vol: 0.06, attack: 0.03});
-        break;
-      }
-      case 'campana': {
-        if (!this.limit('campana', 0.3)) return;
-        this.bellStrike(rand(640, 680), {vol: 0.06, decay: 1.9, send: 0.35});
-        break;
-      }
-      case 'gruñido': {
-        if (!this.limit('gruñido', 0.6)) return;
-        const out = this.out(b, pan, 0.1);
-        this.noiseShot(out, {dur: 0.55, type: 'lowpass', f0: 260, f1: 140, q: 4, vol: 0.09, attack: 0.05});
-        break;
-      }
-      case 'chillido': {
-        if (!this.limit('chillido', 0.5)) return;
-        const out = this.out(b, pan, 0.2);
-        this.noiseShot(out, {dur: 0.32, f0: 2600, f1: 1700, q: 6, vol: 0.035, attack: 0.03});
-        break;
-      }
-      case 'lagrima': {
-        if (!this.limit('lagrima', 0.12)) return;
-        const out = this.out(b, pan, 0.25);
-        this.tone(out, {type: 'triangle', f0: 760, f1: 420, dur: 0.16, vol: 0.022});
-        break;
-      }
-      case 'salpica': {
-        if (!this.limit('salpica', 0.08)) return;
-        const out = this.out(b, pan, 0.25);
-        this.noiseShot(out, {dur: 0.25, type: 'highpass', f0: 1800, f1: 3500, vol: 0.06});
-        this.tone(out, {type: 'sine', f0: 1600, f1: 2100, dur: 0.1, vol: 0.012});
-        break;
-      }
-      case 'hora': this.toll(opts.count || 1, opts.gap || 2.3); break;
-      case 'guia': {
-        const t = this.ctx.currentTime;
-        this.bellStrike(73.4, {vol: 0.34, decay: 8, send: 0.8});
-        const out = this.out(b, 0, 0.4);
-        this.noiseShot(out, {dur: 3.2, type: 'lowpass', f0: 90, f1: 160, q: 2, vol: 0.12, attack: 1.2, when: t});
-        break;
-      }
-      case 'reloj': {
-        const t = this.ctx.currentTime;
-        this.bellStrike(98, {vol: 0.12, decay: 0.9, send: 0.5});
-        this.tone(b, {type: 'square', f0: 1200, f1: 900, dur: 0.03, vol: 0.02, when: t + 0.02});
-        this.duck.gain.cancelScheduledValues(t);
-        this.duck.gain.setValueAtTime(0.3, t + 0.05);
-        this.duck.gain.setTargetAtTime(1, t + 1.6, 0.6);
-        break;
-      }
-      case 'liberada': {
-        const t = this.ctx.currentTime;
-        [50, 57, 62, 66, 69, 74].forEach((n, i) => this.pluck(n, {when: t + i * 0.13, vol: 0.2, send: 0.6}));
-        this.bellStrike(146.8, {vol: 0.16, decay: 6, send: 0.8, when: t + 0.05});
-        break;
-      }
-      case 'apagon': {
-        const t = this.ctx.currentTime;
-        this.tone(b, {f0: 220, f1: 55, dur: 1.6, vol: 0.18, attack: 0.02});
-        this.noiseShot(this.out(b, 0, 0.6), {dur: 1.2, type: 'lowpass', f0: 800, f1: 90, vol: 0.12, attack: 0.01, when: t});
-        break;
-      }
-      case 'alba': this.nana({vol: 0.22, tempo: 0.95, dawn: true}); break;
-      default: break;
-    }
+    const play = SFX[name];
+    if (play) play(this, {...opts, pan: clamp(opts.pan || 0, -1, 1)});
   }
 
   /* La campana de la torre da la hora. */
