@@ -1,19 +1,31 @@
-/* Almacenamiento compatible con las noches de la versión anterior. */
+/*
+ * Lo que se guarda en este navegador: ajustes, progreso entre noches y la
+ * partida a medias (se guarda al entrar en el puesto de Remedios). El juego
+ * funciona igual si el almacenamiento no está disponible.
+ */
+const PREFIX = 'vigilia3.';
+
 export const store = {
   get(key, fallback) {
-    try { return JSON.parse(localStorage.getItem('vigilia2.' + key)) ?? fallback; }
+    try { return JSON.parse(localStorage.getItem(PREFIX + key)) ?? fallback; }
     catch { return fallback; }
   },
   set(key, value) {
-    try { localStorage.setItem('vigilia2.' + key, JSON.stringify(value)); }
-    catch { /* El juego también funciona sin almacenamiento. */ }
+    try { localStorage.setItem(PREFIX + key, JSON.stringify(value)); }
+    catch { /* Sin almacenamiento: se sigue jugando. */ }
+  },
+  remove(key) {
+    try { localStorage.removeItem(PREFIX + key); }
+    catch { /* nada */ }
   }
 };
 
+/* Ajustes: los de esta versión o, si no hay, los de la anterior. */
 export function loadSettings(reducedMotion) {
-  const defaults = {muted: false, volume: 0.8, music: 0.75, ambience: 0.7, effects: 0.85,
-    shake: !reducedMotion, flashes: !reducedMotion, numbers: false, softDark: false};
-  const saved = store.get('settings', {});
+  const defaults = {muted: false, volume: 0.8, music: 0.85, sfx: 1, amb: 0.8,
+    shake: !reducedMotion, flashes: !reducedMotion, numbers: true, weather: !reducedMotion, softDark: false};
+  let saved = store.get('settings', null);
+  if (!saved) { try { saved = JSON.parse(localStorage.getItem('vigilia2.settings')); } catch { saved = null; } }
   if (!saved || typeof saved !== 'object') return defaults;
   for (const key of Object.keys(defaults)) {
     if (typeof defaults[key] === 'boolean' && typeof saved[key] === 'boolean') defaults[key] = saved[key];
@@ -22,10 +34,15 @@ export function loadSettings(reducedMotion) {
   return defaults;
 }
 
-export function loadFound() {
-  const saved = store.get('found', {}) || {};
-  return {memories: Array.isArray(saved.memories) ? saved.memories : [],
-    creatures: Array.isArray(saved.creatures) ? saved.creatures : [],
-    dawns: saved.dawns && typeof saved.dawns === 'object' ? saved.dawns : {},
-    freed: Number.isFinite(saved.freed) ? saved.freed : 0};
+/* Lo que se recuerda entre noches. */
+export function loadProgress() {
+  const p = store.get('progress', {}) || {};
+  const list = v => Array.isArray(v) ? v.filter(x => typeof x === 'string') : [];
+  const obj = v => v && typeof v === 'object' && !Array.isArray(v) ? v : {};
+  return {
+    nights: Array.isArray(p.nights) ? p.nights.slice(-80) : [],
+    maxRound: Number.isFinite(p.maxRound) ? p.maxRound : 0,
+    wins: obj(p.wins), dawns: obj(p.dawns), best: obj(p.best),
+    found: {weapons: list(p.found?.weapons), items: list(p.found?.items), creatures: list(p.found?.creatures), elites: list(p.found?.elites)}
+  };
 }

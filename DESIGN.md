@@ -1,7 +1,7 @@
 ---
 version: alpha
 name: "La última vigilia"
-description: "Un camposanto de píxeles junto al mar: la luz de los cirios revela la noche y cada cosa que importa se reconoce por su forma."
+description: "Un atrio de piedra de noche: la luz de los cirios y de cada golpe revela la ronda, y cada cosa que importa se reconoce por su forma y su color de rareza."
 colors:
   background: "#07080c"
   paper: "#efe6d4"
@@ -12,6 +12,13 @@ colors:
   lull: "#f3e3c0"
   soul: "#bcdcff"
   tide: "#081422"
+  hp: "#e0483a"
+  xp: "#7fd28a"
+  wax: "#ffc46a"
+  tier1: "#c9c2b8"
+  tier2: "#6fa7ff"
+  tier3: "#c27bff"
+  tier4: "#ff6b5a"
 typography:
   display:
     fontFamily: "Alegreya, Georgia, 'Times New Roman', serif"
@@ -19,13 +26,13 @@ typography:
     fontFamily: "'Alegreya Sans', system-ui, sans-serif"
 omitted:
   - section: spacing
-    reason: "La geometría del mundo pertenece a balance.js y world.js; la interfaz conserva style.css."
+    reason: "La geometría del mundo pertenece a balance.js y arena.js; la interfaz conserva style.css."
   - section: rounded
     reason: "El mundo es de píxel recto; la interfaz usa los radios de style.css."
 components:
-  weaponEffects: {}
+  weaponRing: {}
   lighting: {}
-  cemetery: {}
+  arena: {}
   wake: {}
   ambient: {}
 ---
@@ -36,77 +43,63 @@ components:
 
 ### Creative North Star
 
-Una vela en un camposanto junto al mar durante la Noche de Difuntos. El fuego, la sal gruesa, el nácar del rosario y el bronce de la campana son materiales concretos; la magia nace de ellos. Los protagonistas y las criaturas conservan su silueta de pixel art.
+Una vela en el atrio de una ermita gallega durante la Noche de Difuntos, ronda tras ronda. El fuego, la sal gruesa, el nácar del rosario, el bronce de la campana, la paja del espantajo y el agua bendita son materiales concretos; la magia nace de ellos. Quien vela y lo que viene conservan su silueta de pixel art.
 
 ### Product context and register
 
-Juego de supervivencia de diez minutos para navegador, sin dependencias ni recursos externos necesarios para jugar. El contenido y los controles están en español; la ambientación no implica un mercado exclusivo. La fuente de producto es `README.md`, `la-ultima-vigilia/README.md` y `la-ultima-vigilia/story.js`.
+Supervivencia por rondas para navegador, en la familia de los juegos de arena con armas automáticas y tienda entre oleadas, con identidad propia: el velatorio de Amparo, la Santa Compaña, el folclore gallego y la curandera Remedios. Sin dependencias ni recursos externos necesarios para jugar. El contenido y los controles están en español.
 
-La noche gira alrededor del velatorio: cuatro cirios que la Compaña viene a apagar y que quien vela vuelve a encender. Todo lo que el jugador tiene que leer deprisa (un cirio apagado, una procesión que llega, un charco, un difunto con nombre) se distingue por su forma y por su luz, no solo por su color. Lo que es adorno —orballo, hojas, polillas, huellas— nunca cambia las reglas.
+**Propiedad de los valores:** el código es la fuente canónica. `style.css` contiene los tokens de interfaz (incluidos los colores de rareza); `sprites.js` y `sprites-extra.js`, la paleta de sprites y sus fotogramas; `ATTACK_PALETTE` en `art.js`, la paleta de combate; `arena.js`, la piedra y la hierba del atrio; `balance.js`, todas las medidas y los números. Este documento refleja esas fuentes.
 
-**Propiedad de los valores:** el código es la fuente canónica. `la-ultima-vigilia/style.css` contiene los tokens de interfaz y sus tipografías; `la-ultima-vigilia/sprites.js`, la paleta de sprites y sus fotogramas; `ATTACK_PALETTE` en `la-ultima-vigilia/art.js`, la paleta de combate, que pasa a `Lighting.glows` y al renderizador de armas; `la-ultima-vigilia/world.js`, la piedra, la hierba y el mar del camposanto; `la-ultima-vigilia/balance.js`, todas las medidas y los números. Este documento refleja esas fuentes, no genera tokens. `node build.mjs` regenera el HTML autónomo desde los módulos.
+## Principios de juego
+
+- **Leer en una fracción de segundo.** Todo lo que hiere avisa antes: marca roja en el suelo antes de aparecer, banda roja de embestida, círculo que se llena antes del rayo, aro dorado de la cruz de la Guía, flechas en el borde por donde entra una procesión.
+- **Cada golpe se siente.** Destello blanco y aplastamiento de la criatura, número de daño (dorado y más grande si es crítico), luz en el punto de contacto, una pausa de impacto mínima en los críticos y al recibir daño, temblor en explosiones y golpes fuertes. Todo se puede reducir en Ajustes.
+- **Agilidad.** Quien vela arranca y frena con una inercia muy corta, se inclina al moverse y deja estela al esquivar; la cámara se adelanta un poco hacia donde vas.
+- **La luz es información.** La oscuridad envuelve el atrio, pero los faroles, los cirios, cada proyectil, cada explosión y la propia vela abren la noche. Lo que brilla es lo que importa.
+- **La progresión se ve.** La barra de experiencia se llena gota a gota y destella al subir de nivel; los recuerdos pendientes y las ofrendas se acumulan como insignias junto a la cera; la barra de ronda y la de la noche avanzan a la vez.
 
 ## Colors
 
-La noche mantiene su fondo casi negro, el papel marfil y el fuego ámbar. Las chispas usan `ember` con núcleo `#fff2bc`; la sal usa `salt` con núcleo `#f4fbff`; el rosario y la campana usan `sacred` con núcleo `#fff4d8`. El color acompaña a formas distintas para reconocer las armas sin depender solo del tono.
-
-El velatorio tiene su propio lenguaje. Un cirio encendido es ámbar; uno apagado se señala con un aro frío que late y una brasa. Encender dibuja un arco cálido; apagar, uno azulado. El arrullo usa `lull`, un nácar cálido. El alma de Amparo y lo que tira de ella usan `soul`. Los charcos de la marea usan `tide`, con el borde claro para que se adivinen fuera de la luz. Los avisos del velatorio y los nombres de los difuntos usan tonos carne y coral, nunca el rojo puro de la herida.
-
-Las luces de ataque iluminan el terreno próximo. Sus halos se atenúan con el efecto y no sustituyen la vela como principal referencia del jugador. Las lamparillas rojas de las tumbas, los faroles de la cancela y de la escalera y el faro orientan en la oscuridad.
+Fondo casi negro, papel marfil y fuego ámbar. Vida en rojo con un fantasma claro que se vacía con retraso; experiencia en verde con brillo; la cera, en ámbar cálido. Las rarezas tienen un color fijo que se repite en cartas, ofertas, huecos de arma, objetos y el álbum: gris (I), azul (II), violeta (III), rojo (IV). Los ataques usan `ember`, `salt` y `sacred` con núcleo claro; las criaturas del agua y las ánimas, azules; los avisos de peligro, rojo coral.
 
 ## Typography
 
-Alegreya para títulos y texto narrativo; Alegreya Sans para controles y datos. Se mantienen las alternativas de sistema y el contenido español. Sobre el lienzo solo hay rótulos donde orientan: las flechas hacia lo que queda fuera de la vista y el nombre de los difuntos. Los efectos de combate no llevan texto.
+Alegreya para títulos y texto narrativo; Alegreya Sans para controles y datos; Alegreya Sans SC para etiquetas. Los números de daño usan una monoespaciada gruesa con contorno oscuro para leerse sobre cualquier fondo.
 
 ## Layout
 
-El mundo es el Camposanto del Carmen: un recinto con muro del que la cámara no sale, salvo para dejar ver lo que hay al otro lado (al este, el mar y el faro). El velatorio está en el cruce de los dos paseos principales; la ermita, la cancela, el portillo y la escalera del mar cierran cada paseo. Los cuatro cuarteles tienen carácter propio para orientarse sin mapa.
+El atrio es un rectángulo enlosado (1520 × 1000 unidades) con muro bajo, faroles en las esquinas y los lados, y una rosa de piedra en el centro. Al norte, el pórtico con el ataúd de Amparo y sus cuatro cirios; fuera del muro, cipreses, sepulturas con lamparillas y el pinar. La cámara sigue a quien vela con un pequeño adelanto y no sale del recinto más que para enseñar el pórtico.
 
-La cámara muestra siempre una porción parecida de mundo: se aleja un 25 % en pantallas pequeñas y se acerca en las grandes a saltos de medio punto, para que el píxel de arte quede entero. Las posiciones de los efectos están en coordenadas del mundo y se proyectan con la misma cámara.
-
-En el HUD, los cirios se muestran bajo el reloj porque son la medida de la noche; la barra del alma solo aparece cuando hace falta. Esquivar y arrullar comparten la esquina inferior derecha. Se conservan los controles de teclado y táctiles y sus zonas seguras.
+El HUD deja el centro libre: arriba a la izquierda, vida, experiencia y cera; arriba en el centro, ronda, cuenta atrás, reloj y las barras de ronda y de noche; arriba a la derecha, bajas y pausa; abajo a la izquierda, las armas con su color de rareza; abajo a la derecha, habilidad y esquiva. Entre rondas, las capas (recuerdos, ofrenda, tienda) ocupan la pantalla.
 
 ## Elevation & Depth
 
-De abajo arriba: el suelo, pintado una vez por trozos; el mar; los charcos y las huellas; las losas y lo que va a ras de suelo; después, ordenado por donde pisa, todo lo que tiene altura —cabeceras, cipreses, el ataúd, las criaturas y quien vela—, de modo que se pasa por detrás de un ciprés y por delante de una losa. Encima van el orballo y la niebla, que se dibujan antes que la oscuridad y por eso solo se ven donde hay luz.
-
-La máscara de oscuridad cubre todo lo anterior; las luces la abren y añaden color al suelo con sprites de gradiente cacheados. Los fogonazos pueden tener dirección: `a` orienta y `stretch` alarga su huella entre 1 y 3 veces el radio menor. Por encima de la oscuridad quedan las llamas, lo emisivo de cada sprite, los proyectiles, los avisos de ataque y los rótulos.
-
-## Shapes
-
-Los sprites, las partículas, las huellas y el suelo mantienen bordes de píxel. Las chispas dejan una estela dirigida, la sal ocupa un abanico, el rosario dibuja órbitas y la campana se expande en ondas. Los círculos y las elipses de trazo fino quedan reservados a lo que avisa o mide: el alcance de un ataque, un charco, el corro del arrullo, la cuenta de un cirio. El halo puede ser suave; la forma principal debe seguir siendo nítida.
+De abajo arriba: el suelo, pintado una vez; zonas (agua bendita, sal, red, charcos); huellas y marcas de aparición; la cera en el suelo; después, ordenado por donde pisa, todo lo que tiene altura —piezas del camposanto, criaturas, quien vela y sus armas, construcciones—. Encima van el orballo y la niebla, luego la máscara de oscuridad con sus luces, y por encima de ella las llamas, lo emisivo, los proyectiles, los efectos, los avisos, los anillos y los números.
 
 ## Components
 
-### Weapon effects
+### Armas en corro
 
-Un ataque comunica salida, recorrido y contacto con su propia forma y una duración breve. Las luces y partículas tienen límites de cantidad y se eliminan al terminar. Los efectos visuales no crean daño ni alteran colisiones. `ritual.js` es el único responsable del daño de las habilidades y del progreso de los faroles; `scene-fx.js` solo los representa.
+Hasta seis armas se reparten alrededor de quien vela. Las que apuntan giran hacia su objetivo y retroceden al disparar; las de cuerpo a cuerpo salen hacia la criatura (estocada) o barren un arco con un abanico claro; las que no apuntan (vela, campanilla, botafumeiro) se quedan derechas y se mecen. El nivel del arma se ve en su color.
 
 ### Lighting
 
-`Lighting` comparte perfil y transformación entre la apertura en la oscuridad y el halo aditivo. Los perfiles de color se construyen una vez; los fotogramas reutilizan esos lienzos. Las luces fuera de cámara se omiten.
-
-### Cemetery
-
-`Cemetery` pinta el suelo una vez por trozos a resolución de píxel de arte y prepara cada pieza —cabeceras, cruces, cipreses, la ermita, el cruceiro, el faro— como un lienzo pequeño que se reutiliza. Las piezas se colocan con azar fijo: el camposanto es siempre el mismo. Lo plano se dibuja con el suelo; lo que tiene altura se ordena con las criaturas.
+`Lighting` comparte perfil y transformación entre la apertura en la oscuridad y el halo aditivo. Los perfiles de color se construyen una vez; cada fotograma reutiliza esos lienzos. Las luces fuera de cámara se omiten y las de criaturas se limitan a las más cercanas.
 
 ### The wake
 
-Los cirios son a la vez decorado, vida y marcador. Su estado se lee en tres sitios que deben coincidir siempre: la llama sobre el cirio, su icono bajo el reloj y la flecha hacia Amparo cuando queda fuera de la vista, que se enciende y parpadea si está a oscuras.
-
-### Ambient
-
-El orballo, las hojas, las polillas de los cirios y las huellas del suelo (sal, cera, ceniza, plumas, paja) dan tiempo y lugar. Tienen un máximo fijo, caducan solos y se pueden apagar en los ajustes.
+El ataúd y los cirios están en el pórtico: dan luz y lugar, no reglas. La Guía llega en la última ronda y, mientras no se la libere, el reloj de la torre se detiene.
 
 ### Motion and accessibility
 
-Se respetan los ajustes de temblor, destellos y orballo, y la preferencia de movimiento reducido que los inicializa desactivados. El combate conserva núcleos y recorridos legibles cuando se reduce su énfasis luminoso. Las criaturas se animan con pocos fotogramas y sin parpadeos de pantalla. Evitar grandes blancos de pantalla o halos persistentes que oculten criaturas.
+Se respetan los ajustes de temblor, destellos, números, orballo y penumbra, y la preferencia de movimiento reducido, que inicializa temblor y destellos apagados. Reducir efectos conserva el daño, las colisiones y todos los avisos.
 
 ## Do's and Don'ts
 
-- **Mantener:** la atmósfera fúnebre, las siluetas y los materiales propios de cada arma.
-- **Mantener:** que el estado de los cirios se lea igual en el mundo, en el HUD y en la flecha.
-- **Reutilizar:** una paleta y un renderizador de efectos compartidos para todas las armas y protagonistas; piezas del camposanto preparadas una vez.
-- **Evitar:** destellos de pantalla añadidos a cada golpe, gradientes nuevos por partícula o efectos sin caducidad ni máximo.
+- **Mantener:** la atmósfera fúnebre y gallega, las siluetas y los materiales propios de cada arma.
+- **Mantener:** que cada ataque enemigo tenga un aviso visible antes de herir.
+- **Mantener:** un color por rareza en toda la interfaz.
+- **Evitar:** efectos sin caducidad ni máximo; gradientes nuevos por partícula.
 - **Evitar:** que un adorno cambie el daño, las colisiones o lo que se alcanza a ver de una amenaza.
-- **Evitar:** texto sobre el lienzo que no oriente; lo narrativo va en los subtítulos y en los letreros.
+- **Evitar:** contenido de relleno: cada arma y cada objeto tiene que hacer algo reconocible.

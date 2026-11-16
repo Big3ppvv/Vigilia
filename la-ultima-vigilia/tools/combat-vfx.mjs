@@ -1,9 +1,10 @@
 /*
- * Combate y efectos en Chromium, sobre el HTML descargable y sin conexión.
- * Comprueba daño, colisiones, armas combinadas, limpieza y accesibilidad.
+ * El combate y sus efectos sin conexión: cada forma de atacar hiere, los
+ * golpes destellan, y en plena horda las partículas, luces, números y efectos
+ * respetan sus límites. Con movimiento reducido, temblor y destellos empiezan
+ * apagados sin cambiar el daño.
  *
  *   node build.mjs && node tools/combat-vfx.mjs
- * Requiere Playwright y Chromium, igual que tools/smoke.mjs.
  */
 import assert from 'node:assert/strict';
 import { launchBrowser } from './browser.mjs';
@@ -11,158 +12,98 @@ import { launchBrowser } from './browser.mjs';
 const file = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
 const browser = await launchBrowser();
 
-try {
-  for (const character of ['lucia', 'julian', 'matilde']) {
-    const context = await browser.newContext({viewport: {width: 1100, height: 720}, offline: !process.env.VIGILIA_TEST_URL});
-    const page = await context.newPage();
-    const errors = [];
-    page.on('pageerror', error => errors.push(String(error)));
-    await page.goto(`${file}?debug&autostart=1&god=1&char=${character}`);
-    await page.waitForFunction(() => window.vigilia?.state === 'running');
-    const result = await page.evaluate(character => {
-      const g = window.vigilia;
-      cancelAnimationFrame(g.raf);
-      g.audio.sfx = () => {};
-      const check = (condition, message) => { if (!condition) throw new Error(message); };
-      const prepare = weapon => {
-        g.reset();
-        g.state = 'running';
-        g.setOptions({shake: false, flashes: true});
-        for (const key of Object.keys(g.mem)) g.mem[key] = 0;
-        g.mem[weapon] = 1;
-        g.computeStats();
-        g.st.crit = 0;
-        g.t.chispas = g.t.sal = g.t.campana = 999;
-        g.t[weapon] = 0;
-        const target = g.spawn('hermano', {x: g.player.x + 105, y: g.player.y});
-        target.hp = target.maxHp = 10000;
-        g.buildGrid();
-        return target;
-      };
-
-      const weapon = character === 'julian' ? 'sal' : 'chispas';
-      const target = prepare(weapon);
-      g.weapons(0);
-      const count = g.shots.length;
-      const damage = weapon === 'sal' ? 12 : 20;
-      check(count === (weapon === 'sal' ? 3 : 1), 'Cambió la cantidad de proyectiles iniciales');
-      check(g.shots.every(shot => shot.dmg === damage), 'Cambió el daño del arma');
-      check(g.t[weapon] === (weapon === 'sal' ? 0.95 : 0.62), 'Cambió la cadencia inicial');
-      check(g.combatFx.effects.length > 0, 'El disparo no genera efecto de salida');
-      if (weapon === 'chispas') {
-        check(g.shots.every(shot => shot.tone === (character === 'matilde' ? 'sacred' : 'ember')), 'Se perdió la identidad de la chispa');
-      }
-      g.updateShots(0.06);
-      check(g.shots.some(shot => shot.trail.length > 0), 'El proyectil no deja estela');
-      let impact = false;
-      for (let frame = 0; frame < 30; frame++) {
-        g.updateShots(1 / 120);
-        impact ||= g.combatFx.effects.some(effect => effect.kind === 'impact');
-        g.updateFx(1 / 120);
-      }
-      const dealt = target.maxHp - target.hp;
-      check(dealt >= damage && dealt % damage === 0, 'El proyectil no mantiene su daño al colisionar');
-      check(impact, 'El impacto no tiene respuesta visual');
-      check(g.shots.every(shot => shot.trail.length <= 8), 'Una estela crece sin límite');
-
-      const quietTarget = prepare(weapon);
-      g.setOptions({flashes: false, shake: false});
-      g.weapons(0);
-      for (let frame = 0; frame < 40; frame++) g.updateShots(1 / 120);
-      check(quietTarget.maxHp - quietTarget.hp === dealt, 'Desactivar efectos cambia el daño de combate');
-
-      // Todas las mejoras juntas: el coste debe seguir acotado en una horda.
-      prepare('chispas');
-      for (const key of ['chispas', 'sal', 'campana', 'rosario', 'farol', 'polillas', 'radio']) g.mem[key] = 5;
-      g.computeStats();
-      g.st.crit = 0;
-      g.t.chispas = g.t.sal = g.t.campana = g.t.farol = 0;
-      g.enemies = [];
-      for (let i = 0; i < 240; i++) {
-        const angle = i * Math.PI * 2 / 240, radius = 40 + i % 5 * 35;
-        const enemy = g.spawn('hermano', {x: g.player.x + Math.cos(angle) * radius, y: g.player.y + Math.sin(angle) * radius});
-        enemy.hp = enemy.maxHp = 1000000;
-      }
-      let maxFx = 0, maxParticles = 0, maxShots = 0, maxFxLights = 0;
-      for (let frame = 0; frame < 480; frame++) {
-        g.clock += 1 / 60;
-        g.buildGrid();
-        for (const enemy of g.enemies) enemy.beadCd = Math.max(0, enemy.beadCd - 1 / 60);
-        g.weapons(1 / 60);
-        if (frame === 0) check(g.combatFx.effects.some(effect => effect.kind === 'bell'), 'La horda oculta la onda de la campana al llenar el presupuesto');
-        g.updateShots(1 / 60);
-        g.updateFx(1 / 60);
-        maxFx = Math.max(maxFx, g.combatFx.effects.length);
-        maxParticles = Math.max(maxParticles, g.particles.length);
-        maxShots = Math.max(maxShots, g.shots.length);
-        const fxLights = [];
-        g.combatFx.addLights(fxLights, 0, 0, true);
-        maxFxLights = Math.max(maxFxLights, fxLights.length);
-        check(maxFx <= 96 && maxParticles <= 420 && maxShots <= 160, 'La horda supera el presupuesto de efectos');
-        check(maxFxLights <= 24, 'La horda supera el presupuesto de luces transitorias');
-        check(g.shots.every(shot => Number.isFinite(shot.x + shot.y) && shot.trail.length <= 8), 'Proyectil o estela inválidos');
-        if (frame % 120 === 0) g.render();
-      }
-
-      // Desactivar destellos quita luces transitorias, conservando geometría.
-      g.combatFx.clear();
-      g.combatFx.emit('bell', g.player.x, g.player.y, {radius: 150, tone: 'sacred', level: 3});
-      g.updateFx(0.05);
-      const originalLighting = g.lighting.render.bind(g.lighting);
-      let lightCount = 0;
-      g.lighting.render = (ctx, lights, ...rest) => {
-        lightCount = lights.length;
-        originalLighting(ctx, lights, ...rest);
-      };
-      g.setOptions({flashes: true, shake: false});
-      const effectsBeforeRender = JSON.stringify(g.combatFx.effects);
-      g.render();
-      check(JSON.stringify(g.combatFx.effects) === effectsBeforeRender, 'El render altera la duración o posición de los efectos');
-      const withFlashes = lightCount;
-      g.setOptions({flashes: false, shake: false});
-      g.render();
-      check(lightCount < withFlashes, 'Desactivar destellos conserva las luces de ráfaga');
-      g.lighting.render = originalLighting;
-      g.cam = {x: g.player.x, y: g.player.y};
-      g.flash = 1;
-      g.render();
-      const flashed = g.ctx.getImageData(0, 0, g.canvas.width, g.canvas.height).data;
-      g.flash = 0;
-      g.render();
-      const normal = g.ctx.getImageData(0, 0, g.canvas.width, g.canvas.height).data;
-      check(flashed.every((value, i) => value === normal[i]), 'Destellos apagados todavía permite un flash de pantalla');
-      check(g.ctx.globalAlpha === 1 && g.ctx.globalCompositeOperation === 'source-over', 'El render deja alterado el contexto');
-
-      // Ningún efecto de una noche puede filtrarse a la siguiente.
-      g.updateFx(10);
-      check(g.combatFx.effects.length === 0 && g.particles.length === 0, 'Quedan efectos después de expirar');
-      g.reset();
-      check(g.combatFx.effects.length === 0 && g.shots.length === 0, 'Reiniciar conserva efectos o proyectiles');
-      return {count, dealt, maxFx, maxParticles, maxShots, maxFxLights};
-    }, character);
-    assert.deepEqual(errors, [], `${character}: errores de JavaScript`);
-    console.log(`✓ ${character}: colisión y daño (${result.dealt}), proyectiles: ${result.count}; horda: ${result.maxFx} efectos, ${result.maxFxLights} luces, ${result.maxParticles} partículas, ${result.maxShots} proyectiles`);
-    await context.close();
-  }
-
-  const context = await browser.newContext({viewport: {width: 390, height: 844}, reducedMotion: 'reduce', offline: !process.env.VIGILIA_TEST_URL});
+async function open(options = {}) {
+  const context = await browser.newContext({viewport: {width: 1280, height: 800}, offline: !process.env.VIGILIA_TEST_URL, ...options});
   const page = await context.newPage();
+  await page.route('https://fonts.googleapis.com/**', route => route.fulfill({contentType: 'text/css', body: ''}));
   const errors = [];
-  page.on('pageerror', error => errors.push(String(error)));
-  await page.goto(`${file}?debug&autostart=1&god=1&char=matilde`);
+  page.on('pageerror', e => errors.push(String(e)));
+  await page.goto(`${file}?debug&autostart=1&god=1&char=tono`);
   await page.waitForFunction(() => window.vigilia?.state === 'running');
-  const options = await page.evaluate(() => {
+  await page.evaluate(() => {
     const g = window.vigilia;
     cancelAnimationFrame(g.raf);
-    g.render();
-    return {...g.options, width: g.canvas.width, height: g.canvas.height};
+    g.audio.sfx = () => {};
+    window.advance = seconds => { for (let t = 0; t < seconds; t += 1 / 60) { g.step(1 / 60); g.render(1 / 60); } };
   });
-  assert.equal(options.flashes, false, 'Reducir movimiento debe apagar destellos por defecto');
-  assert.equal(options.shake, false, 'Reducir movimiento debe apagar temblor por defecto');
-  assert(options.width > 0 && options.height > 0);
-  assert.deepEqual(errors, []);
-  console.log('✓ móvil 390 × 844: HTML sin conexión y preferencias de movimiento reducido');
+  return {context, page, errors};
+}
+
+try {
+  const {context, page, errors} = await open();
+  // Cada arma, sola contra un muñeco a su alcance, tiene que herirlo.
+  const perWeapon = await page.evaluate(() => {
+    const g = window.vigilia, out = {};
+    const ids = ['hoz', 'pala', 'mayal', 'forcado', 'navaja', 'remo', 'tea', 'botafumeiro', 'chispas', 'escopeta', 'honda', 'arpon', 'vieiras', 'pandeireta', 'foguetes', 'gaita', 'agua', 'rosario', 'campanilla', 'cirio'];
+    for (const id of ids) {
+      g.enemies = []; g.marks = []; g.shots = []; g.areas = []; g.spawnT = 999; g.procT = 999; g.hordeDone = true; g.eliteDone = true;
+      g.run.weapons = []; g.addWeapon(id, 1);
+      g.player.x = 0; g.player.y = 0; g.player.vx = 0; g.player.vy = 0;
+      const dist = ['rosario', 'botafumeiro'].includes(id) ? 76 : ['campanilla', 'cirio', 'mayal', 'navaja', 'tea', 'hoz', 'remo', 'pala'].includes(id) ? 44 : 130;
+      const e = g.spawn('ahogado', dist, -10, true);
+      e.hp = e.maxHp = 1e6; e.speed = 0; e.cd = 999; e.kx = 0; e.ky = 0;
+      g.timeLeft = 60;
+      window.advance(2.5);
+      out[id] = Math.round(1e6 - e.hp);
+    }
+    return out;
+  });
+  for (const [id, dmg] of Object.entries(perWeapon)) assert(dmg > 0, `${id}: no hiere a un muñeco a su alcance`);
+  console.log(`✓ las ${Object.keys(perWeapon).length} armas hieren a su alcance`);
+
+  // El golpe se ve: destello blanco, aplastamiento, número y luz.
+  const juice = await page.evaluate(() => {
+    const g = window.vigilia;
+    g.enemies = []; g.numbers = []; g.flashes = [];
+    const e = g.spawn('hermano', 60, 0, true);
+    e.hp = e.maxHp = 1000;
+    g.hurt(e, 10, {crit: true, tone: 'ember'});
+    return {flash: e.flash > 0, squash: e.squash > 0, number: g.numbers.length > 0, light: g.flashes.length > 0, hitstop: g.freeze > 0};
+  });
+  for (const [k, v] of Object.entries(juice)) assert(v, `un golpe crítico no produce ${k}`);
+  console.log('✓ un crítico destella, aplasta, muestra su número, ilumina y congela un instante');
+
+  // En plena horda, con todo el arsenal, los efectos respetan sus límites.
+  const horde = await page.evaluate(() => {
+    const g = window.vigilia;
+    g.run.weapons = [];
+    for (const [id, t] of [['foguetes', 3], ['gaita', 3], ['pandeireta', 3], ['campanilla', 3], ['cirio', 3], ['escopeta', 3]]) g.addWeapon(id, t);
+    g.addItem('cerillas', false); g.addItem('tizon', false); g.addItem('badajo', false); g.addItem('faro', false);
+    g.computeStats();
+    g.enemies = [];
+    for (let i = 0; i < 240; i++) { const a = i / 240 * Math.PI * 2, r = 80 + (i % 7) * 30; const e = g.spawn('anima', Math.cos(a) * r, Math.sin(a) * r, true); if (e) e.hp = e.maxHp = 400; }
+    let peak = {particles: 0, flashes: 0, numbers: 0, effects: 0, shots: 0};
+    for (let i = 0; i < 360; i++) {
+      g.step(1 / 60); g.render(1 / 60);
+      peak = {particles: Math.max(peak.particles, g.particles.length), flashes: Math.max(peak.flashes, g.flashes.length), numbers: Math.max(peak.numbers, g.numbers.length),
+        effects: Math.max(peak.effects, g.combatFx.effects.length), shots: Math.max(peak.shots, g.shots.length)};
+    }
+    return peak;
+  });
+  assert(horde.particles <= 520, `demasiadas partículas: ${horde.particles}`);
+  assert(horde.flashes <= 48, `demasiadas luces de golpe: ${horde.flashes}`);
+  assert(horde.numbers <= 90, `demasiados números: ${horde.numbers}`);
+  assert(horde.effects <= 140, `demasiados efectos: ${horde.effects}`);
+  assert(horde.shots <= 220, `demasiados proyectiles: ${horde.shots}`);
+  console.log(`✓ horda de 240 con seis armas IV: picos ${horde.particles} partículas, ${horde.flashes} luces, ${horde.numbers} números, ${horde.effects} efectos, ${horde.shots} proyectiles`);
+  assert.deepEqual(errors, [], 'errores de JavaScript');
   await context.close();
+
+  // Movimiento reducido: temblor y destellos apagados, el daño igual.
+  const reduced = await open({reducedMotion: 'reduce'});
+  const calm = await reduced.page.evaluate(() => {
+    const g = window.vigilia;
+    const e = g.spawn('hermano', 60, 0, true);
+    e.hp = e.maxHp = 1000;
+    g.hurt(e, 10, {tone: 'ember'});
+    return {shake: g.options.shake, flashes: g.options.flashes, damage: Math.round(1000 - e.hp)};
+  });
+  assert.equal(calm.shake, false, 'con movimiento reducido el temblor debe empezar apagado');
+  assert.equal(calm.flashes, false, 'con movimiento reducido los destellos deben empezar apagados');
+  assert.equal(calm.damage, 10, 'reducir efectos no puede cambiar el daño');
+  assert.deepEqual(reduced.errors, [], 'errores de JavaScript con movimiento reducido');
+  console.log('✓ movimiento reducido: sin temblor ni destellos, mismo daño');
+  await reduced.context.close();
 } finally {
   await browser.close();
 }

@@ -1,139 +1,100 @@
 # La última vigilia
 
-Ha muerto Amparo. Alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve.
+Ha muerto Amparo. Alguien tiene que velarla hasta que amanezca, porque esta noche la Santa Compaña hace la ronda.
 
-Juego de supervivencia para navegador con ataques automáticos, hordas y recuerdos que mejoran tus armas. La noche va de medianoche a las seis: cien segundos de juego por hora. A las cinco llega la Guía; si el reloj se detiene, tendrás que resolver su amenaza para ver amanecer.
+Supervivencia por rondas para navegador: dieciocho rondas de medianoche a las seis, armas que atacan solas alrededor de quien vela, recuerdos que mejoran tus estadísticas y la tienda de Remedios entre ronda y ronda.
 
 ## Jugar
 
 - Abre `la-ultima-vigilia.html` con doble clic. Funciona sin conexión; la tipografía Alegreya se carga cuando hay conexión y tiene alternativas del sistema.
-- Para trabajar con los módulos, ejecuta `npm run dev` desde la raíz del repositorio y abre <http://localhost:8000>. También puedes ejecutar `python3 -m http.server 8000` desde esta carpeta.
+- Para trabajar con los módulos, ejecuta `npm run dev` desde la raíz del repositorio y abre <http://localhost:8000>.
 
 ## Controles
 
 | Acción | Teclado | Táctil | Mando |
 |---|---|---|---|
 | Moverse | WASD o flechas | arrastra el dedo sobre la pantalla | palanca izquierda o cruceta |
-| Esquivar | Espacio | botón «Esquivar» | A |
-| Arrullar | E o Q | botón de la nota | X o B |
-| Elegir recuerdo | 1, 2, 3 | toca la carta | — |
+| Esquivar | Espacio o Mayús | botón «Esquivar» | A |
+| Habilidad | R (también E o Q) | botón de habilidad | X o B |
+| Elegir recuerdo | 1, 2, 3, 4 · R piensa otra cosa | toca la carta | — |
+| Ofrenda | 1 quedártela · 2 dejarla | botones | — |
+| Tienda | 1-4 compra · R vuelve a tirar | botones | — |
 | Pausa | P o Esc | botón de pausa | Start |
-| Ayuda | ? | «Cómo se vela» | — |
 
-Las armas buscan solas la amenaza más cercana. La esquiva protege durante el salto; ambas acciones muestran su recarga y están disponibles también con botones.
+## Cómo se vela
 
-## Cómo afrontar la noche
+- **Rondas.** La noche son 18 rondas, tres por hora. Duran 20, 25, 30… hasta 60 segundos; la última, 90. Cada una empieza con la vida llena. Todo lo que aparece avisa antes con una marca en el suelo.
+- **La cera.** La deja la Compaña al deshacerse: es experiencia y moneda a la vez. Acércate para que vuele hacia ti. La que quede en el suelo al acabar la ronda se funde y, en la siguiente, cada gota que recojas trae una más hasta que se agote.
+- **Recordar.** Cada nivel da +1 de vida máxima. Al acabar la ronda, por cada nivel ganado eliges uno de cuatro recuerdos de Amparo; cada uno mejora una estadística. La rareza (I a IV) se ve por el color.
+- **Estadísticas.** Vida máxima, regeneración, robo de vida, daño, cuerpo a cuerpo, a distancia, elemental, velocidad de ataque, crítico, ingenio, alcance, armadura, evasión, velocidad, suerte y cosecha.
+- **El puesto de Remedios.** Cuatro ofertas. Comprar, volver a tirar (cada tirada cuesta más), guardar con candado para la próxima visita, vender armas y juntar dos armas iguales del mismo nivel en una del siguiente. Con seis armas, comprar una igual a otra que ya tienes la junta sola.
+- **Clases de armas.** Labranza (armadura y cuerpo a cuerpo), Caza (crítico), Fuego (daño), Sagrado (elemental y regeneración), Mar (alcance y cosecha), Romería (velocidad de ataque y de movimiento). Dos o más armas de la misma clase dan su premio, que crece hasta seis.
+- **Ofrendas.** A veces una criatura deja una cesta: al acabar la ronda decides si te quedas lo que trae o la dejas por cera.
+- **Difuntos con nombre.** Al final de cada hora (rondas 3, 6, 9, 12 y 15) viene uno, con su barra de vida y sus ataques propios. Si lo vences, deja una ofrenda rara. Si acaba la ronda, se marcha.
+- **Hordas.** En las rondas 5, 8, 11, 14 y 17 las ánimas te rodean de golpe.
+- **La Guía.** En la última ronda llega Carmela Souto con la cruz: golpes en círculo, coronas de velas, procesiones y cargas. Si se acaba la cuenta atrás y sigue en pie, el reloj de la torre se para hasta que la liberes.
+- **Entre noches** se guardan la partida a medias (al entrar en la tienda), el récord de ronda, los amaneceres, el álbum y los desbloqueos: Toño en la ronda 6, Sabela en la 12, don Anselmo al primer amanecer, y cada dificultad al vencer la anterior.
 
-- **Los cuatro cirios.** Arden alrededor del ataúd y son lo que protege a Amparo. La Compaña entra en procesión por la ermita, la cancela, el portillo y la escalera del mar para apagarlos: cada hermano apaga uno y se va con la llama. Para encender un cirio basta con quedarse a su lado un momento. Si se apagan los cuatro, empiezan a llevársela.
-- **Caer.** Si tu vela se apaga y queda algún cirio encendido, su luz te levanta. A cambio, ese cirio se apaga.
-- **El arrullo.** Quien vela tararea la nana de Amparo: lo que le rodea se amansa y recibe más daño, las lágrimas se deshacen y los cirios cercanos prenden. Tarda en volver.
-- **Quién la vela.** Lucía (la nieta), Julián (el sepulturero) y Matilde (la rezadora). Cada uno empieza con otra arma y vela a su manera: la luz y el arrullo de Lucía llegan más lejos, a Julián los cirios le duran el doble y Matilde los enciende en la mitad de tiempo. Hablan de Amparo cada uno a su modo. A veces se contradicen.
-- **Los recuerdos son las mejoras.** Catorce recuerdos clásicos y 500 objetos repartidos en veinte colecciones: el pan de los jueves, el rosario al que le faltaba una cuenta, el farol del faro… En una noche caben cuatro armas y cinco recuerdos. Cada recuerdo toca el siguiente trozo de su nana.
-- **Sus rincones.** Algunos recuerdos van juntos: su cocina, su alcoba, su banco en la iglesia, el faro de su padre. Al reunir los de un rincón cambia una regla: el haz del faro quema lo que barre, la campana suelta una corona de chispas, la esquiva atraviesa y hiere…
-- **Las horas.** Cada hora es distinta. A la una salen las procesiones. A las dos sube la marea: charcos que frenan y de los que salen ahogados. A las tres, la hora de las ánimas, una racha de viento apaga cirios. A las cuatro la luz alcanza menos. A las cinco aparece la Guía.
-- **Los difuntos con nombre.** Cada hora viene uno, con más aguante y su propia manía. Al irse deja su recordatorio: un recuerdo que se elige sin gastar luz.
-- **La Guía.** Va directa al ataúd y apaga los cirios uno a uno; solo a oscuras puede llevarse a Amparo. Cada golpe fuerte la aparta y da tiempo a encenderlos.
-- **La luz.** Solo se ve lo que alumbra una vela. Tu luz se encoge cuando estás herido. Junto al ataúd te recuperas, más cuantos más cirios ardan.
-- **El amanecer** se escribe con los recuerdos que más elegiste. Si la vela se apaga o se llevan a Amparo, el final dice a qué hora.
-- **Entre partidas** se guardan en el navegador las noches veladas, los recuerdos, los rincones, las criaturas y los difuntos descubiertos (*Recuerdos* y *Las noches*).
+## Las criaturas
 
-El lugar es siempre el mismo: el Camposanto del Carmen, un recinto con muro. La ermita con su espadaña al norte, la cancela y el peto de ánimas al oeste, la escalera del mar y el faro al este, el cruceiro en el paseo y cuatro cuarteles con carácter propio.
-
-Todo el arte y el sonido se generan con código: pixel art animado, iluminación, orballo, viento, mar, grillos, la campana, la música de cada hora y la nana tocada con una cuerda pulsada.
-
-**Decide cuándo encender un farol.** Hay tres: en la cancela, el cruceiro y el camino del mar. Son opcionales. Permanece quieto a su lado durante 3,6 segundos; moverte o alejarte hace decaer el progreso y recibir daño lo interrumpe. Cada farol se recompensa una sola vez: cura, entrega luz para recordar y reduce la recarga de la habilidad. Su zona iluminada frena criaturas, pero no impide que te alcancen.
-
-**Usa el mapa.** Señala tu posición, el ataúd de Amparo, los faroles y la Guía. Las flechas del borde ayudan a encontrar los objetivos que quedan fuera de la pantalla. Las señales direccionales anuncian embestidas y otros ataques antes de que lleguen.
-
-**Recoge recuerdos y protege a Amparo.** La luz que dejan las criaturas permite elegir una mejora entre tres. Junto al ataúd recuperas vida; cuando estás herido, tu luz se encoge. A las tres llegan más ánimas y a las cinco la Guía busca el ataúd. El final recoge lo que más recordaste de Amparo.
-
-Las noches, los recuerdos descubiertos, las criaturas y los ajustes se guardan en este navegador. El juego también puede ejecutarse si el almacenamiento está desactivado; en ese caso no conservará esos datos al cerrar.
-
-## Sonido y accesibilidad
-
-En Ajustes puedes regular volumen general, música, ambiente y efectos por separado. Cada canal controla también su reverberación. El sonido comienza después de un gesto del jugador, según las reglas del navegador.
-
-La nana de Amparo cambia con el peligro y la proximidad del refugio. El mar queda hacia el este, los pasos acompañan al movimiento y las armas, los faroles y las tres habilidades tienen señales distintas.
-
-Puedes desactivar temblor de pantalla y destellos, suavizar la oscuridad o mostrar números de daño. La preferencia de movimiento reducido del sistema inicializa temblor y destellos apagados. Al reducir efectos se mantienen las formas que identifican proyectiles, círculos de sal y avisos de peligro. La pausa y la selección de recuerdos mantienen el foco de teclado dentro de su panel.
-
-## Desarrollar y verificar
-
-Desde la raíz del repositorio, con Node.js 22 o posterior:
-
-```sh
-npm ci
-npx playwright install chromium
-npm run build
-npm test
-```
-
-| Comando | Comprobación |
-|---|---|
-| `story.js` | **Todo el texto**: Amparo, quién la vela, los recuerdos y sus rincones, lo que dice cada uno, las criaturas, los difuntos con nombre, los letreros y los finales. Es el archivo que hay que reescribir para que el juego cuente tu historia. |
-| `balance.js` | **Todos los números**: criaturas, lo que pasa a cada hora, procesiones, difuntos, huecos, el velatorio y el tamaño del camposanto. Es el archivo que hay que tocar para cambiar el equilibrio. |
-| `game.js` | El compás de la noche: la arranca, la hace avanzar y la termina. Cada sistema vive en su módulo y se suma aquí. |
-| `director.js` | Qué pasa a cada hora: cuánta Compaña viene, procesiones, difuntos con nombre, la racha de viento y la marea. |
-| `vigil.js` | El velatorio: los cirios, el alma de Amparo, levantarse y el arrullo. |
-| `weapons.js`, `memories.js` | Armas y daño; recuerdos, huecos y rincones. |
-| `enemies.js`, `boss.js` | Cómo se mueve y ataca cada criatura; la Guía. |
-| `input.js`, `bot.js` | Teclado, dedo y mando; el piloto automático de las pruebas. |
-| `world.js` | El camposanto: suelo pintado por trozos, piezas con altura, hitos, mar y niebla. |
-| `sprites.js`, `art.js` | El pixel art y sus fotogramas; la oscuridad y las luces. |
-| `render.js` | El dibujo de cada fotograma, ordenado de arriba abajo. |
-| `combat-fx.js`, `fx.js`, `ambient.js` | Efectos de las armas; partículas y la manera de deshacerse de cada criatura; orballo, hojas, polillas y huellas en el suelo. |
-| `audio.js`, `sfx.js`, `music.js` | El motor de sonido y el ambiente; los efectos, uno por nombre; la música, que se escribe compás a compás sobre la nana. |
-| `app.js`, `index.html`, `style.css` | Interfaz: título, HUD, cartas de recuerdo, recordatorio final, álbum y ajustes. |
-| `build.mjs` | Genera `la-ultima-vigilia.html` (`node build.mjs`). Descubre los módulos a partir de `app.js`. Hay que ejecutarlo tras cada cambio. |
-
-Los módulos solo usan `import { a, b } from './archivo.js';` y `export const|function|class`: es lo que `build.mjs` sabe empaquetar.
-
-Las pruebas de navegador usan el HTML autónomo sin conexión. Si ya tienes un Chromium compatible, puedes indicar su ruta con `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`; en caso contrario se usa el instalado por Playwright.
-
-Todas trabajan sobre `la-ultima-vigilia.html` y requieren Playwright y Chromium.
-
-| Herramienta | Qué comprueba |
-|---|---|
-| `tools/smoke.mjs` | El piloto automático vela una noche entera con cada personaje. |
-| `tools/vigil-check.mjs` | Las reglas del velatorio, una por una: recinto, cirios, procesión, alma, levantarse, arrullo, huecos, rincones, difuntos, marea y la Guía. |
-| `tools/combat-vfx.mjs` | El combate sin conexión: daño, impactos, límites de efectos en hordas y movimiento reducido. |
-| `tools/ui-check.mjs` | La interfaz con teclado y ratón de verdad: diálogos y ajustes, moverse, esquivar, arrullar, los cirios en el HUD, las cartas, la pausa y el final. |
-| `tools/audio-check.mjs` | El sonido sin altavoces: toca una noche resumida, comprueba que ninguna receta falla y que la mezcla no satura. Con una ruta, además guarda el WAV: `node tools/audio-check.mjs noche.wav`. |
-
-Parámetros de la URL:
-
-- `?debug`: expone el juego como `window.vigilia`.
-- `&autostart=1&char=julian`: empieza directamente con un personaje (`lucia`, `julian`, `matilde`).
-- `&bot=1` juega solo con buenos reflejos y cuida los cirios; `&bot=2` imita a alguien que juega por primera vez.
-- `&god=1`: no recibe daño. A Amparo se la pueden llevar igual.
-- `&speed=8`: acelera la simulación.
-- `&t=495`: salta a un momento de la noche, en segundos.
-
-Por ejemplo, `la-ultima-vigilia.html?debug&autostart=1&bot=2&speed=8&char=matilde` juega una noche entera en poco más de un minuto. Al acabar, `vigilia.debugStats()` resume cuántos cirios se apagaron y encendieron, las veces que se levantó, los rincones reunidos y cuándo cayó la Guía.
+| Criatura | Desde | Qué hace |
+|---|---|---|
+| Ánima en pena | ronda 1 | Va a por ti culebreando |
+| Hermano de la Compaña | ronda 2 | Persigue despacio; en procesión cruza el atrio en fila |
+| El Urco | ronda 4 | Se para, gruñe y embiste en línea recta |
+| La curuxa | ronda 5 | Vuela en círculos y cae en picado |
+| Plañidera | ronda 6 | Llora desde lejos: tres lágrimas en abanico |
+| Ahogado | ronda 7 | Lento y duro; deja charcos que frenan |
+| El trasno | ronda 8 | Se come la cera del suelo; si lo atrapas, la suelta toda |
+| Lavandeira | ronda 10 | Llama a las ánimas desde lejos |
+| El espantajo | ronda 11 | Enorme; barre en círculo |
+| Nubeiro | ronda 12 | Señala un círculo y ahí cae el rayo |
+| Lobishome | ronda 14 | Embiste dos veces |
 
 ## Ajustes y accesibilidad
 
-Volumen general y por grupos (música, efectos, ambiente); temblor de pantalla; destellos; orballo y hojas; penumbra suave y números de daño. Con «reducir movimiento» activado en el sistema, el temblor, los destellos y el orballo empiezan apagados.
+Volumen general y por grupos (música, efectos, ambiente); temblor de pantalla; destellos; números de daño; orballo y niebla; penumbra suave. Con «reducir movimiento» activado en el sistema, el temblor y los destellos empiezan apagados. Nada de lo que es solo adorno cambia el daño ni las reglas. Las capas aíslan el fondo y contienen el foco de teclado.
 
-Los ataques iluminan el terreno próximo: fuego ámbar para las chispas, sal fría y nácar dorado para el rosario de Matilde. La campana dibuja varios ecos y el farol marca el alcance de su calor. Al apagar «Destellos» se conservan los proyectiles y las formas de los golpes, se atenúan las estelas y se suprimen las ráfagas de luz y los flashes de pantalla. «Temblor de pantalla» también controla el retroceso visual al disparar. Nada de lo que es solo adorno cambia el daño ni las reglas.
+## Archivos
 
-## Los 500 objetos
+| Archivo | Qué contiene |
+|---|---|
+| `story.js` | **Todo el texto**: Amparo, quién la vela, las criaturas, los difuntos, Remedios, las voces, la ayuda y los finales |
+| `balance.js` | **Todos los números**: rondas, atrio, criaturas y su escalado, población, precios, rarezas, dificultad y habilidades |
+| `arsenal.js` | Las 20 armas con sus cuatro niveles y las seis clases |
+| `items.js` | Los 69 objetos y los 16 recuerdos |
+| `stats.js` | Las estadísticas y cómo se convierten en números de juego |
+| `game.js` | El compás de la partida: rondas, entre rondas, experiencia, alba y guardado |
+| `waves.js`, `enemies.js` | Quién viene y por dónde; cómo se mueve y ataca cada criatura y la Guía |
+| `weapons.js`, `abilities.js` | Armas en corro, proyectiles, daño, cera y construcciones; las seis habilidades |
+| `shop.js` | Recuerdos, ofrendas y el puesto de Remedios |
+| `arena.js`, `props.js` | El atrio y las piezas del camposanto |
+| `render.js`, `art.js`, `sprites.js`, `sprites-extra.js` | Dibujo, luz y pixel art |
+| `fx.js`, `combat-fx.js`, `ambient.js` | Partículas, números, golpes, orballo y huellas |
+| `audio.js`, `sfx.js`, `sfx-rondas.js`, `music.js` | Motor de sonido, efectos y la música |
+| `app.js`, `index.html`, `style.css`, `interface.js`, `storage.js` | Interfaz y lo que se guarda |
+| `build.mjs` | Genera `la-ultima-vigilia.html` (`node build.mjs`); descubre los módulos a partir de `app.js` |
 
-`objects.js` contiene 20 colecciones de 25 objetos con nombres e identificadores únicos.
-Cada pieza ocupa un hueco de recuerdo, admite los mismos niveles que los recuerdos clásicos
-y mejora vida, regeneración, daño, recogida de luz o probabilidad de golpe certero.
-Dos objetos **distintos** de una colección activan su sinergia una sola vez: daño, cadencia,
-regeneración, vida, recogida, protección, luz, experiencia, velocidad o recarga del arrullo.
-Cualquier pareja de una colección sirve (6.000 parejas posibles en total).
-El nivel de un objeto no cuenta como una segunda pieza. Se mantienen cuatro armas y cinco recuerdos.
+## Herramientas de prueba
 
-Las cartas siguen ofreciendo recuerdos clásicos para poder conseguir armas. Cuando falta
-una pieza para activar una sinergia, hay un 45 % de probabilidad de priorizar una compañera.
-El álbum, el HUD y el final usan los mismos objetos; sus descubrimientos se guardan como los recuerdos clásicos.
-Los iconos reutilizan los símbolos existentes de sus efectos.
+Todas trabajan sobre `la-ultima-vigilia.html` (o `VIGILIA_TEST_URL`) y, salvo la de datos, requieren Playwright y Chromium.
 
-Prueba sin dependencias: `node tools/objects-check.mjs`.
+| Herramienta | Qué comprueba |
+|---|---|
+| `tools/data-check.mjs` | Que los datos apuntan a lo que existe y crecen como deben |
+| `tools/gameplay.mjs` | Las reglas paso a paso: rondas, recuerdos, ofrendas, tienda, guardado, difuntos y la Guía |
+| `tools/combat-vfx.mjs` | Que cada arma hiere, que los golpes se notan y que los efectos respetan sus límites |
+| `tools/audio.mjs`, `tools/audio-check.mjs` | El sonido sin altavoces: recetas, mezcla y saturación. `node tools/audio-check.mjs noche.wav` guarda el resultado |
+| `tools/ui-check.mjs` | La interfaz con teclado, ratón y dedo, en escritorio y móvil |
+| `tools/smoke.mjs` | El piloto automático vela una noche entera con cada personaje |
 
-### Integración de ramas
+Parámetros de la URL:
 
-Se mantienen el arrullo con **E** (o Q), los cirios, los rincones y las reglas recientes del velatorio. Las habilidades de personaje se activan con **R** o su botón; los tres faroles son opcionales. Se incluyen 500 objetos y 20 sinergias de colección.
+- `?debug`: expone el juego como `window.vigilia` (`vigilia.debugStats()` resume la partida).
+- `&autostart=1&char=julian&weapon=pala&danger=0`: empieza directamente.
+- `&bot=1` juega solo con buenos reflejos; `&bot=2` imita a alguien que juega por primera vez.
+- `&god=1`: no recibe daño.
+- `&speed=12`: acelera la simulación.
+- `&round=9`: empieza en esa ronda.
+
+Por ejemplo, `la-ultima-vigilia.html?debug&autostart=1&bot=1&god=1&speed=12&char=matilde` vela una noche entera en poco más de un minuto.

@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#07080c">
-<meta name="description" content="Ha muerto Amparo. Alguien tiene que velarla hasta que amanezca. Un juego de supervivencia sobre una noche de Difuntos, una vela y lo que recordamos de quien se va.">
+<meta name="description" content="Ha muerto Amparo. Alguien tiene que velarla hasta que amanezca. Dieciocho rondas contra la Santa Compaña, armas que se juntan, la tienda de Remedios y lo que recordamos de quien se va.">
 <title>La última vigilia</title>
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="style.css">
@@ -19,34 +19,50 @@
 <symbol id="i-cross" viewBox="0 0 24 24"><path d="M12 3v18M7 8h10"/></symbol>
 <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 <symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 12h10m-4-5 5 5-5 5M17 6v12"/></symbol>
-<symbol id="i-lull" viewBox="0 0 24 24"><path d="M9 17V6l9-2v11M9 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm9-2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/></symbol>
+<symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3v5m0 8v5M3 12h5m8 0h5M6 6l3 3m6 6 3 3M18 6l-3 3m-6 6-3 3"/></symbol>
+<symbol id="i-lock" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 10 0v3M6 11h12v9H6z"/></symbol>
+<symbol id="i-unlock" viewBox="0 0 24 24"><path d="M7 11V8a5 5 0 0 1 9.6-2M6 11h12v9H6z"/></symbol>
+<symbol id="i-reroll" viewBox="0 0 24 24"><path d="M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5"/></symbol>
+<symbol id="i-drop" viewBox="0 0 24 24"><path d="M12 3c3 4.5 6 7.7 6 11a6 6 0 0 1-12 0c0-3.3 3-6.5 6-11Z"/></symbol>
+<symbol id="i-gift" viewBox="0 0 24 24"><path d="M4 10h16v11H4zM3 7h18v3H3zM12 7v14M12 7c-2-4-6-4-6-1s4 1 6 1Zm0 0c2-4 6-4 6-1s-4 1-6 1Z"/></symbol>
 </defs></svg>
 
-<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar y E para arrullar."></canvas>
+<canvas id="game" tabindex="0" aria-label="El atrio de la ermita. Muévete con WASD o las flechas; espacio para esquivar y R para tu habilidad."></canvas>
 
-<!-- Pantalla de título: la escena del velatorio queda detrás, en el lienzo. -->
+<!-- Pantalla de título: el velatorio queda detrás, en el lienzo. -->
 <section id="title" class="screen title-screen">
   <div class="title-panel">
-    <p class="place" id="placeLine">Noche de Difuntos · Camposanto del Carmen</p>
+    <p class="place" id="placeLine">Noche de Difuntos · Atrio de la ermita del Carmen</p>
     <h1>La última vigilia</h1>
     <p class="intro" id="introLine"></p>
-    <p class="tagline" id="taglineLine"></p>
-    <p class="night-brief"><span>00:00 — 06:00</span> Una noche · Diez minutos</p>
+    <p class="night-brief"><span>00:00 — 06:00</span> <b id="briefLine">Dieciocho rondas hasta el alba</b></p>
     <h2 class="pick-label">¿Quién la vela esta noche?</h2>
     <div class="cast" id="cast" role="radiogroup" aria-label="Quién vela a Amparo"></div>
     <p class="cast-detail" id="castDetail"></p>
     <p class="cast-perk" id="castPerk"></p>
     <p class="cast-ability" id="castAbility"></p>
+    <div class="title-row">
+      <div class="row-block">
+        <h3 class="pick-label small">Empieza con</h3>
+        <div class="start-weapons" id="startWeapons" role="radiogroup" aria-label="Arma con la que empiezas"></div>
+      </div>
+      <div class="row-block">
+        <h3 class="pick-label small">La noche</h3>
+        <div class="dangers" id="dangers" role="radiogroup" aria-label="Dificultad"></div>
+        <p class="danger-note" id="dangerNote"></p>
+      </div>
+    </div>
     <div class="title-actions">
       <button class="primary" id="startButton"><svg aria-hidden="true"><use href="#i-candle"/></svg><span>Velar a Amparo</span></button>
+      <button class="secondary hidden" id="continueButton"><span id="continueLabel">Continuar</span></button>
       <nav class="links" aria-label="Más">
-        <button data-open="albumDialog">Recuerdos</button>
+        <button data-open="albumDialog">Álbum</button>
         <button data-open="recordsDialog">Las noches</button>
         <button data-open="settingsDialog">Ajustes</button>
-        <button data-open="helpDialog">Cómo se vela</button>
+        <button data-open="helpDialog">Cómo se juega</button>
       </nav>
     </div>
-    <p class="title-controls"><span>WASD / flechas <b>Moverte</b></span><span>Espacio <b>Esquivar</b></span><span>E <b>Habilidad</b></span></p>
+    <p class="title-controls"><span>WASD / flechas <b>Moverte</b></span><span>Espacio <b>Esquivar</b></span><span>R <b>Habilidad</b></span><span>P <b>Pausa</b></span></p>
   </div>
   <p class="night-count" id="nightCount"></p>
 </section>
@@ -56,71 +72,131 @@
   <button class="icon-btn" id="fullscreenButton" aria-label="Pantalla completa" title="Pantalla completa"><svg aria-hidden="true"><use href="#i-expand"/></svg></button>
 </div>
 
-<!-- Durante la noche -->
+<!-- Durante la ronda -->
 <section id="hud" class="hud hidden" aria-live="off">
   <div class="hud-top">
     <div class="vitals">
       <div class="who"><b id="hudName">Lucía</b> <span id="hudRole">La nieta</span></div>
-      <div class="bar hp"><i id="hpBar"></i></div>
-      <span class="hp-text" id="hpText">100 / 100</span>
+      <div class="meter hp" id="hpMeter" role="meter" aria-label="Vida" aria-valuemin="0">
+        <i class="ghost" id="hpGhost"></i><i class="fill" id="hpBar"></i><span id="hpText">20 / 20</span>
+      </div>
+      <div class="meter xp" id="xpMeter" role="progressbar" aria-label="Experiencia" aria-valuemin="0" aria-valuemax="100">
+        <i class="fill" id="xpBar"></i><span><b id="levelText">Nv 1</b> <em id="xpText">0 / 13</em></span>
+      </div>
+      <div class="purse">
+        <span class="cera" id="ceraBox"><svg aria-hidden="true"><use href="#i-drop"/></svg><b id="ceraText">0</b></span>
+        <span class="melt hidden" id="meltBox" title="Cera fundida: cada gota que recojas vale más hasta que se acabe"><b id="meltText">+0</b> fundida</span>
+        <span class="badge hidden" id="pendingBox" title="Recuerdos por elegir al acabar la ronda"><svg aria-hidden="true"><use href="#i-spark"/></svg><b id="pendingText">1</b></span>
+        <span class="badge gift hidden" id="crateBox" title="Ofrendas por abrir al acabar la ronda"><svg aria-hidden="true"><use href="#i-gift"/></svg><b id="crateText">1</b></span>
+      </div>
     </div>
-    <div class="night">
-      <b id="clock">00:00</b>
-      <span id="mood">Noche de Difuntos</span>
-      <div class="night-track" aria-hidden="true"><i id="nightBar"></i><span class="moon"></span><span class="sun"></span></div>
-      <div class="wake" id="wake" role="img" aria-label="Cirios encendidos: 4 de 4"><i></i><i></i><i></i><i></i></div>
-      <div class="soul hidden" id="soulBox"><span>Se la llevan</span><div class="bar soul-bar"><i id="soulBar"></i></div></div>
+    <div class="round-box">
+      <span class="round-label" id="roundLabel">Ronda 1 <small>/ 18</small></span>
+      <b class="countdown" id="countdown">20</b>
+      <span class="clock"><span id="clock">00:00</span> · <span id="mood">Noche de Difuntos</span></span>
+      <div class="round-track" aria-hidden="true"><i id="roundBar"></i></div>
+      <div class="night-track" aria-hidden="true" title="La noche, ronda a ronda"><i id="nightBar"></i><span class="moon"></span><span class="sun"></span></div>
     </div>
     <div class="tally">
       <div><b id="kills">0</b><span>ahuyentados</span></div>
       <button class="icon-btn small" id="pauseButton" aria-label="Pausa" title="Pausa (P)"><svg aria-hidden="true"><use href="#i-pause"/></svg></button>
     </div>
   </div>
-  <aside class="ritual-panel" id="ritualPanel" aria-label="Faroles de la vigilia">
-    <div class="ritual-heading"><svg aria-hidden="true"><use href="#i-candle"/></svg><span>Faroles de la vigilia</span><b id="ritualCount">0 / 3</b></div>
-    <p id="ritualHint">Acércate a un farol y permanece junto a él.</p>
-    <div class="ritual-meter" id="ritualMeter" role="progressbar" aria-label="Encender el farol" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="ritualProgress"></i></div>
-  </aside>
   <div class="boss hidden" id="bossBox">
-    <div class="boss-name"><b>La Guía</b><span>Carmela Souto lleva la cruz desde 1963</span></div>
-    <div class="bar boss-hp"><i id="bossBar"></i></div>
+    <div class="boss-name"><b id="bossName">La Guía</b><span id="bossTitle">Carmela Souto lleva la cruz desde 1963</span></div>
+    <div class="meter boss-hp"><i class="ghost" id="bossGhost"></i><i class="fill" id="bossBar"></i></div>
   </div>
   <div class="banner" id="banner" aria-live="polite"><b id="bannerTitle"></b><span id="bannerSub"></span></div>
   <div class="subtitle" id="subtitle" aria-live="polite"><span class="speaker" id="subSpeaker"></span><span class="line" id="subLine"></span></div>
   <div class="hud-bottom">
-    <div class="memory-col">
-      <span class="level-text" id="levelText">Recuerdos · 1</span>
-      <div class="memories" id="hudMemories" aria-label="Recuerdos"></div>
-    </div>
+    <div class="loadout" id="hudWeapons" aria-label="Armas"></div>
     <div class="actions">
-      <button class="dash ability" id="abilityButton"><span id="abilityName">Alzar la luz</span><kbd id="abilityKey">R</kbd><i id="abilityFill"></i></button>
-      <button class="dash lull" id="lullButton" aria-label="Arrullar"><svg aria-hidden="true"><use href="#i-lull"/></svg><span>Arrullar</span><kbd id="lullKey">E</kbd><i id="lullFill"></i></button>
-      <button class="dash" id="dashButton" aria-label="Esquivar"><svg aria-hidden="true"><use href="#i-dash"/></svg><span>Esquivar</span><kbd id="dashKey">Espacio</kbd><i id="dashFill"></i></button>
+      <button class="dash ability" id="abilityButton"><svg aria-hidden="true"><use href="#i-spark"/></svg><span id="abilityName">Lumbre</span><kbd>R</kbd><i id="abilityFill"></i></button>
+      <button class="dash" id="dashButton" aria-label="Esquivar"><svg aria-hidden="true"><use href="#i-dash"/></svg><span>Esquivar</span><kbd>Espacio</kbd><i id="dashFill"></i></button>
     </div>
   </div>
-  <div class="memory-track" aria-hidden="true"><i id="xpBar"></i></div>
 </section>
 
-<!-- Elegir un recuerdo -->
-<section id="choice" class="screen overlay hidden" role="dialog" aria-labelledby="choiceTitle">
+<!-- Recordar: subir de nivel -->
+<section id="levelup" class="screen overlay hidden" role="dialog" aria-labelledby="levelTitle">
   <div class="choice-wrap">
-    <p class="eyebrow" id="choiceEyebrow">Con la luz, vuelve algo</p>
-    <h2 id="choiceTitle">Recuerdas…</h2>
-    <div class="cards" id="choiceCards"></div>
-    <p class="hint"><span class="keys">Pulsa 1, 2 o 3 · </span><span id="choiceSlots"></span></p>
+    <p class="eyebrow" id="levelEyebrow">Nivel 2</p>
+    <h2 id="levelTitle">Recuerdas…</h2>
+    <p class="choice-sub" id="levelSub"></p>
+    <div class="cards four" id="levelCards"></div>
+    <div class="choice-tools">
+      <button class="secondary" id="levelReroll"><svg aria-hidden="true"><use href="#i-reroll"/></svg><span id="levelRerollText">Pensar otra cosa · 2</span></button>
+      <span class="purse-inline"><svg aria-hidden="true"><use href="#i-drop"/></svg><b id="levelCera">0</b></span>
+    </div>
+    <p class="hint"><span class="keys">Pulsa 1, 2, 3 o 4 · R para pensar otra cosa</span></p>
   </div>
+</section>
+
+<!-- Una ofrenda -->
+<section id="crate" class="screen overlay hidden" role="dialog" aria-labelledby="crateTitle">
+  <div class="choice-wrap narrow">
+    <p class="eyebrow" id="crateEyebrow">Una cesta de ofrenda</p>
+    <h2 id="crateTitle">Una ofrenda</h2>
+    <div class="cards one" id="crateCard"></div>
+    <div class="choice-tools">
+      <button class="primary" id="crateTake"><span>Quedármela</span><kbd>1</kbd></button>
+      <button class="secondary" id="crateSell"><span id="crateSellText">Dejarla · +0</span><kbd>2</kbd></button>
+    </div>
+  </div>
+</section>
+
+<!-- El puesto de Remedios -->
+<section id="shop" class="screen overlay hidden" role="dialog" aria-labelledby="shopTitle">
+  <div class="shop-wrap">
+    <header class="shop-head">
+      <canvas class="keeper" id="keeperPortrait" width="72" height="80" aria-hidden="true"></canvas>
+      <div class="keeper-say">
+        <p class="eyebrow" id="shopEyebrow">Ronda 1 superada</p>
+        <h2 id="shopTitle">El puesto de Remedios</h2>
+        <p class="keeper-line" id="shopLine"></p>
+      </div>
+      <div class="shop-purse">
+        <span class="cera big"><svg aria-hidden="true"><use href="#i-drop"/></svg><b id="shopCera">0</b></span>
+        <span class="harvest" id="shopHarvest"></span>
+      </div>
+    </header>
+    <div class="shop-body">
+      <div class="shop-main">
+        <div class="offers" id="offers"></div>
+        <div class="shop-tools">
+          <button class="secondary" id="rerollButton"><svg aria-hidden="true"><use href="#i-reroll"/></svg><span id="rerollText">Otra tirada · 2</span><kbd>R</kbd></button>
+          <span class="hint">1–4 compra · el candado guarda lo que quieras para la próxima vez</span>
+        </div>
+        <h3 class="shelf-title">Tus armas <span id="weaponCount">1 / 6</span></h3>
+        <div class="slots" id="shopWeapons"></div>
+        <p class="weapon-help" id="weaponHelp">Toca un arma para venderla o juntarla con otra igual.</p>
+        <h3 class="shelf-title">Tus cosas <span id="itemCount">0</span></h3>
+        <div class="items-grid" id="shopItems"></div>
+        <div class="classes" id="shopClasses"></div>
+      </div>
+      <aside class="stats-panel" aria-labelledby="statsTitle">
+        <h3 id="statsTitle">Estadísticas <span id="shopLevel">Nv 1</span></h3>
+        <dl class="stats" id="shopStats"></dl>
+      </aside>
+    </div>
+    <footer class="shop-foot">
+      <button class="primary" id="nextRound"><svg aria-hidden="true"><use href="#i-candle"/></svg><span id="nextRoundText">Seguir velando · Ronda 2</span></button>
+    </footer>
+  </div>
+  <div class="tooltip hidden" id="tooltip" role="tooltip"></div>
 </section>
 
 <section id="pause" class="screen overlay hidden" role="dialog" aria-labelledby="pauseTitle">
   <div class="pause-card">
-    <p class="eyebrow" id="pauseClock">00:00</p>
+    <p class="eyebrow" id="pauseClock">Ronda 1 · 00:00</p>
     <h2 id="pauseTitle">La vela sigue encendida.</h2>
     <p>Amparo puede esperar un momento. La noche, también.</p>
     <div class="pause-build" id="pauseBuild"></div>
+    <dl class="stats compact" id="pauseStats"></dl>
     <button class="primary" id="resumeButton"><span>Seguir velando</span></button>
     <nav class="links">
       <button data-open="settingsDialog">Ajustes</button>
-      <button data-open="helpDialog">Cómo se vela</button>
+      <button data-open="helpDialog">Cómo se juega</button>
       <button id="quitButton">Dejar la vigilia</button>
     </nav>
   </div>
@@ -134,25 +210,26 @@
     <p class="epilogue" id="endText"></p>
     <p class="last-words" id="endWords"></p>
     <div class="end-stats" id="endStats"></div>
+    <div class="end-weapons" id="endWeapons"></div>
+    <p class="unlock" id="endUnlock"></p>
   </article>
-  <p class="loop-line" id="loopLine"></p>
   <div class="end-actions">
     <button class="primary" id="againButton"><span>Volver a velar</span></button>
     <nav class="links">
       <button id="otherButton">Que la vele otra persona</button>
-      <button data-open="albumDialog">Recuerdos</button>
+      <button data-open="albumDialog">Álbum</button>
     </nav>
   </div>
 </section>
 
 <dialog id="albumDialog" class="panel" aria-labelledby="albumTitle">
   <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
-  <h2 id="albumTitle">Recuerdos de Amparo</h2>
-  <p class="panel-intro">Lo que se recuerda de alguien depende de quién lo recuerde. Cada noche vuelve algo distinto.</p>
-  <h3>Lo que se llevó <span id="albumCount"></span></h3>
-  <div class="album" id="albumGrid"></div>
-  <h3>Sus rincones <span id="roomCount"></span></h3>
-  <div class="rooms" id="roomGrid"></div>
+  <h2 id="albumTitle">Álbum de la vigilia</h2>
+  <p class="panel-intro">Lo que has visto y lo que has tenido en las manos. Se guarda en este navegador.</p>
+  <h3>Armas <span id="albumWeaponsCount"></span></h3>
+  <div class="album" id="albumWeapons"></div>
+  <h3>Lo que vende Remedios <span id="albumItemsCount"></span></h3>
+  <div class="album" id="albumItems"></div>
   <h3>Lo que viene de noche</h3>
   <div class="bestiary" id="bestiaryGrid"></div>
   <h3>Difuntos con nombre</h3>
@@ -164,7 +241,7 @@
 <dialog id="recordsDialog" class="panel" aria-labelledby="recordsTitle">
   <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
   <h2 id="recordsTitle">Las noches</h2>
-  <p class="panel-intro">La Noche de Difuntos se repite hasta que alguien la vela entera. Se guardan en este navegador.</p>
+  <p class="panel-intro">La Noche de Difuntos se repite hasta que alguien la vela entera.</p>
   <div class="record-summary" id="recordSummary"></div>
   <ol class="record-list" id="recordList"></ol>
 </dialog>
@@ -181,15 +258,15 @@
     <label class="row sub"><span>Ambiente <small>viento, mar y orballo</small></span><input type="range" id="optAmb" min="0" max="100" step="5"></label>
     <label class="row"><span>Temblor de pantalla</span><input type="checkbox" id="optShake"></label>
     <label class="row"><span>Destellos</span><input type="checkbox" id="optFlashes"></label>
-    <label class="row"><span>Orballo y hojas <small>lluvia fina, viento y polillas</small></span><input type="checkbox" id="optWeather"></label>
-    <label class="row"><span>Penumbra suave <small>más visibilidad fuera de tu luz</small></span><input type="checkbox" id="optSoftDark"></label>
     <label class="row"><span>Números de daño</span><input type="checkbox" id="optNumbers"></label>
+    <label class="row"><span>Orballo y niebla <small>lluvia fina y viento</small></span><input type="checkbox" id="optWeather"></label>
+    <label class="row"><span>Penumbra suave <small>más visibilidad lejos de las luces</small></span><input type="checkbox" id="optSoftDark"></label>
   </div>
 </dialog>
 
 <dialog id="helpDialog" class="panel narrow" aria-labelledby="helpTitle">
   <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
-  <h2 id="helpTitle">Cómo se vela</h2>
+  <h2 id="helpTitle">Cómo se juega</h2>
   <dl class="help" id="helpList"></dl>
   <a class="download" href="la-ultima-vigilia.html" download>Descargar para jugar sin conexión</a>
 </dialog>

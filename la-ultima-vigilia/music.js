@@ -73,13 +73,14 @@ export class Score {
   update(s) {
     const a = this.a, now = a.ctx.currentTime;
     const playing = s.scene === 'run' || s.scene === 'pause';
-    // Las doce campanadas van solas; la música entra después.
-    if (!playing || (s.hour < 0.2 && !s.boss)) { this.next = 0; return; }
+    if (!playing) { this.next = 0; return; }
     if (!this.next || this.next < now - 0.4) { this.next = now + 0.12; this.bar = 0; }
     this.padFilter.frequency.setTargetAtTime(520 + (s.danger || 0) * 900 + (s.boss ? 500 : 0), now, 0.5);
     let guard = 0;
     while (this.next < now + 0.3 && guard++ < 4) {
-      const mood = s.boss ? MOODS[5] : MOODS[clamp(Math.floor(s.hour), 0, 4)];
+      const base = s.boss ? MOODS[5] : MOODS[clamp(Math.floor(s.hour), 0, 4)];
+      // En las rondas la nana se acelera: una muiñeira oscura que aprieta con la noche.
+      const mood = {...base, beat: base.beat * (1 - 0.2 * (s.intensity || 0))};
       this.write(this.next, mood, s);
       this.next += mood.beat * 3;
       this.bar++;
@@ -141,6 +142,21 @@ export class Score {
     }
     if (mood.organ) {
       for (const [note, vol] of [[bar.bass, 0.03], [bar.bass + 7, 0.02], [bar.bass + 12, 0.014]]) this.padNote(note, t, beat * 3, vol, 'sawtooth');
+    }
+
+    // El pulso de la ronda: bombo en el uno y en el cuatro, pandeireta en cada corchea y,
+    // con la noche avanzada, el roncón de la gaita debajo.
+    const drive = s.intensity || 0;
+    if (drive > 0 && s.scene === 'run') {
+      a.thump(bus, {when: t, f0: 88, f1: 42, dur: 0.18, vol: 0.075 + drive * 0.05});
+      a.thump(bus, {when: t + beat * 1.5, f0: 80, f1: 40, dur: 0.16, vol: 0.05 + drive * 0.04});
+      for (let i = 0; i < 6; i++) {
+        const accent = i === 0 || i === 3;
+        if (!accent && Math.random() < 0.25 - drive * 0.2) continue;
+        a.noiseShot(bus, {dur: accent ? 0.06 : 0.035, type: 'highpass', f0: accent ? 5200 : 6800, vol: (accent ? 0.022 : 0.012) * (0.6 + drive * 0.6), when: t + i * beat / 2 + human()});
+      }
+      if (drive > 0.45) this.padNote(bar.bass + 12, t, beat * 3, 0.012 * drive, 'sawtooth');
+      if (drive > 0.7 && this.bar % 2 === 0) a.thump(bus, {when: t + beat * 2.5, f0: 120, f1: 60, dur: 0.1, vol: 0.04});
     }
 
     // La procesión marca el paso: tambor en el uno y en el tres, y la campanilla en medio.

@@ -1,9 +1,10 @@
 /*
- * Teclado, dedo y mando: cómo se mueve, esquiva y arrulla quien vela.
+ * Teclado, dedo y mando: cómo se mueve, esquiva y usa su habilidad quien vela.
  */
 import { rand } from './util.js';
+import { PLAYER } from './balance.js';
 
-const KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Escape', 'KeyP', 'KeyE', 'KeyQ', 'KeyR'];
+const KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Escape', 'KeyP', 'KeyE', 'KeyQ', 'KeyR', 'ShiftLeft', 'ShiftRight'];
 
 export const inputMethods = {
   listen(target, type, fn, opts) { target.addEventListener(type, fn, opts); this.handlers.push(() => target.removeEventListener(type, fn, opts)); },
@@ -14,13 +15,12 @@ export const inputMethods = {
       if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
       if (/INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || e.target?.isContentEditable || document.querySelector('dialog[open]')) return;
       if (!KEYS.includes(e.code)) return;
-      if (e.target?.closest?.('button, a, [role="radio"]') && !['Escape', 'KeyP'].includes(e.code)) return;
+      if (e.target?.closest?.('button, a, [role="radio"]') && !['Escape', 'KeyP'].includes(e.code) && this.state !== 'running') return;
       if (['running', 'paused'].includes(this.state)) e.preventDefault();
-      if (e.repeat && ['Escape', 'KeyP', 'Space', 'KeyE', 'KeyQ', 'KeyR'].includes(e.code)) return;
+      if (e.repeat && ['Escape', 'KeyP', 'Space', 'KeyE', 'KeyQ', 'KeyR', 'ShiftLeft', 'ShiftRight'].includes(e.code)) return;
       if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'running') this.pause(); else if (this.state === 'paused') this.resume(); }
-      else if (e.code === 'Space') { if (this.state === 'running') this.dash(); }
-      else if (e.code === 'KeyR') { if (this.state === 'running') this.ability(); }
-      else if (e.code === 'KeyE' || e.code === 'KeyQ') { if (this.state === 'running') this.arrullo(); }
+      else if (e.code === 'Space' || e.code === 'ShiftLeft' || e.code === 'ShiftRight') { if (this.state === 'running') this.dash(); }
+      else if (e.code === 'KeyR' || e.code === 'KeyE' || e.code === 'KeyQ') { if (this.state === 'running') this.ability(); }
       else this.keys.add(e.code);
     });
     this.listen(window, 'keyup', e => this.keys.delete(e.code));
@@ -33,7 +33,8 @@ export const inputMethods = {
       e.preventDefault();
       const p = pos(e);
       this.pointer = {id: e.pointerId, start: p, current: p};
-      this.canvas.setPointerCapture?.(e.pointerId);
+      // Algunos navegadores ya no tienen el puntero activo: sin captura también se juega.
+      try { this.canvas.setPointerCapture?.(e.pointerId); } catch { /* sin captura */ }
     });
     this.listen(this.canvas, 'pointermove', e => { if (this.pointer?.id === e.pointerId) this.pointer.current = pos(e); });
     const end = e => { if (this.pointer?.id === e.pointerId) this.pointer = null; };
@@ -42,7 +43,7 @@ export const inputMethods = {
     this.listen(this.canvas, 'lostpointercapture', end);
   },
 
-  /* Mando: palanca izquierda o cruceta para moverse, A esquiva, X o B arrulla, Start pausa. */
+  /* Mando: palanca izquierda o cruceta para moverse, A esquiva, X o B habilidad, Start pausa. */
   pollGamepad() {
     const pad = this.pad;
     pad.x = 0; pad.y = 0;
@@ -54,10 +55,10 @@ export const inputMethods = {
     pad.x = dead(gp.axes[0] || 0) + (on(15) ? 1 : 0) - (on(14) ? 1 : 0);
     pad.y = dead(gp.axes[1] || 0) + (on(13) ? 1 : 0) - (on(12) ? 1 : 0);
     const pressed = i => { const now = on(i), was = pad.held.has(i); if (now) pad.held.add(i); else pad.held.delete(i); return now && !was; };
-    const dash = pressed(0), lull = pressed(2), lullB = pressed(1), start = pressed(9);
+    const dash = pressed(0), skillX = pressed(2), skillB = pressed(1), start = pressed(9);
     if (this.state === 'running') {
       if (dash) this.dash();
-      if (lull || lullB) this.arrullo();
+      if (skillX || skillB) this.ability();
       if (start) this.pause();
     } else if (this.state === 'paused' && (start || dash)) this.resume();
   },
@@ -74,17 +75,18 @@ export const inputMethods = {
     return len > 1 ? {x: x / len, y: y / len} : {x, y};
   },
 
-  dash() {
+  /* La esquiva: un salto corto y rápido durante el que nada te toca. */
+  dash(dir) {
     if (this.state !== 'running' || this.dashCd > 0) return false;
-    const mv = this.bot ? this.botMove() : this.movement();
+    const mv = dir || (this.bot ? this.lastMove : this.movement());
     const len = Math.hypot(mv.x, mv.y);
     this.dashDir = len > 0.05 ? {x: mv.x / len, y: mv.y / len} : {...this.lastMove};
-    this.dashTime = 0.24;
-    this.dashCd = this.st.dashCd;
-    this.dashHit = new Set();
-    this.player.inv = Math.max(this.player.inv, 0.5);
+    this.dashTime = PLAYER.dashTime;
+    this.dashCd = PLAYER.dashCd;
+    this.player.inv = Math.max(this.player.inv, PLAYER.dashTime + 0.12);
+    this.player.squash = 0.6;
     this.audio.sfx('esquiva');
-    for (let i = 0; i < 8; i++) this.particle({x: this.player.x, y: this.player.y + 8, vx: rand(-60, 60), vy: rand(-30, 10), life: 0.4, size: 3, color: '#3a3f46'});
+    for (let i = 0; i < 10; i++) this.particle({x: this.player.x - this.dashDir.x * 6, y: this.player.y + 8, vx: -this.dashDir.x * rand(40, 120) + rand(-30, 30), vy: -this.dashDir.y * rand(40, 120) + rand(-30, 10), life: 0.4, size: 3, color: '#3a3f46', drag: 3});
     this.emitStats();
     return true;
   }
