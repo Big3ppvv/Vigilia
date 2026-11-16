@@ -13,6 +13,7 @@ Se conserva la implementación reciente del velatorio, arrullo, rincones, élite
 - Reglas del velatorio: cirios, procesión, alma, levantarse, arrullo, rincones, difuntos, marea y Guía.
 - Combate, daño, horda, límites de efectos y movimiento reducido.
 - Sonidos de habilidades y faroles audibles, distintos, finitos y sin saturación.
+- Noche completa: Lucía, Julián y Matilde alcanzan las 06:00, muestran «Amanece.» y terminan sin errores de JavaScript.
 - Noche sonora resumida: 41 efectos, ocho escenas, sin errores ni saturación.
 
 En este entorno Chromium bloquea `file://`, por lo que las pruebas locales usan el HTML generado mediante un servidor local y `VIGILIA_TEST_URL`. La ejecución por defecto conserva las pruebas del archivo autónomo sin conexión. La fuente remota opcional se sustituye por una hoja vacía en las pruebas que comprueban errores de consola.
