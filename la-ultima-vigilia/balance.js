@@ -1,120 +1,129 @@
 /*
- * Los números de la noche: cuánto dura, qué criaturas vienen y cuánto aguantan,
- * qué pasa a cada hora y cómo se defiende el velatorio.
- * Para cambiar el equilibrio, este es el archivo.
+ * Los números de la vigilia: cuánto dura cada ronda, cuánta Compaña viene,
+ * cuánto aguanta, cuánto cuesta cada cosa en el puesto de Remedios y cómo
+ * crece todo a lo largo de la noche. Para cambiar el equilibrio, este es el archivo.
  */
 import { clamp } from './util.js';
 
-/* La noche de Difuntos va de 00:00 a 06:00: cien segundos por hora. */
-export const NIGHT = 600;
-export const HOUR = 100;
-export const BOSS_AT = 500;
-export const MAX_ENEMIES = 240;
-export const MAX_LEVEL = 5;
-export const COFFIN = {x: 0, y: 0};
+/* La noche va de 00:00 a 06:00 en dieciocho rondas de veinte minutos: tres por hora. */
+export const ROUNDS = 18;
+export const MINUTES_PER_ROUND = 20;
+export const BOSS_ROUND = 18;
+/* Segundos que dura cada ronda: 20, 25, 30… hasta 60; la última, 90. */
+export const roundTime = r => r >= ROUNDS ? 90 : Math.min(60, 15 + r * 5);
 
-/* Acciones voluntarias: alcance y tiempo en segundos, sin valores en la UI. */
-export const ABILITY_BALANCE = {
-  lucia: {cooldown: 18, radius: 210, damage: 28, knock: 330},
-  julian: {cooldown: 20, radius: 158, damage: 34, knock: 260, wardLife: 4.5, wardDamage: 6, wardTick: 0.5},
-  matilde: {cooldown: 22, radius: 190, damage: 24, knock: 360, healing: 0.14}
+/* El atrio de la ermita: el recinto en el que se vela. */
+export const ARENA = {left: -760, right: 760, top: -500, bottom: 500};
+export const COFFIN = {x: 0, y: -592};
+export const MAX_ENEMIES = 260;
+
+/* Quien vela. speed en unidades de mundo por segundo. */
+export const PLAYER = {
+  speed: 225, accel: 26, radius: 12, pickup: 78,
+  dashCd: 2.2, dashTime: 0.17, dashSpeed: 3.5, hurtInvuln: 0.45,
+  weaponRing: 30, maxWeapons: 6
 };
-export const RITUAL_RADIUS = 48;
-export const RITUAL_CHANNEL = 3.6;
-export const RITUAL_LIGHT_RADIUS = 105;
-export const RITUAL_SITES = [
-  {id: 'oeste', x: -320, y: 0},
-  {id: 'norte', x: 0, y: -320},
-  {id: 'este', x: 320, y: 0}
+
+/* Cuánta luz (experiencia) pide cada nivel. Se sube durante la ronda y se elige al acabarla. */
+export const xpFor = level => Math.round(8 + level * 5 + level * level * 0.9);
+
+/* La economía de la cera: precios, tiradas y lo que vale una ofrenda. */
+export const ECONOMY = {
+  priceGrowth: 0.12,               // cada ronda, todo cuesta un 12 % más
+  itemBase: [16, 32, 58, 96],      // objetos por rareza (I-IV)
+  weaponBase: [18, 36, 66, 112],   // armas por nivel (I-IV)
+  rerollBase: 1, rerollPerRound: 0.6, rerollStep: 1, // primera tirada y cuánto sube cada una
+  sellRate: 0.3,                   // lo que te da Remedios por un arma
+  upgradeReroll: [2, 1],           // repensar una mejora: base y subida por nivel
+  harvestGrowth: 0.05,             // la cosecha crece un 5 % cada ronda
+  meltPerPickup: 1,                // cera fundida que se suma a cada gota recogida
+  crateChance: 0.012,              // probabilidad base de que caiga una ofrenda
+  crateMax: 3,                     // como mucho, ofrendas por ronda (sin contar élites)
+  cafeChance: 0.012                // un café del termo
+};
+
+/*
+ * Rarezas (I-IV): desde qué ronda empiezan a salir, con qué probabilidad y
+ * cuánto sube cada ronda. La suerte multiplica todas menos la común.
+ */
+export const RARITY = [
+  {name: 'Común'},
+  {name: 'Poco común', from: 2, start: 0.1, step: 0.035, max: 0.55},
+  {name: 'Rara', from: 4, start: 0.035, step: 0.019, max: 0.32},
+  {name: 'Legendaria', from: 8, start: 0.008, step: 0.008, max: 0.11}
 ];
 
-export const fmtClock = t => {
-  const s = clamp(t, 0, NIGHT);
-  const h = Math.floor(s / HOUR), m = Math.min(59, Math.floor((s % HOUR) * 0.6));
-  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
-};
+/* Topes de las estadísticas. */
+export const CAPS = {dodge: 60, crit: 100, lifesteal: 60, speedMin: -60, attackSpeedMin: -60};
 
-/* unlock en segundos de noche; value es la luz que dejan al irse. */
+/*
+ * Las criaturas. hp, damage y speed son los de la primera ronda; SCALING los
+ * hace crecer. value es la cera que dejan; from, la ronda en la que empiezan a venir.
+ */
 export const ENEMIES = {
-  anima: {unlock: 0, weight: 30, hp: 12, speed: 60, r: 10, damage: 6, value: 1, scale: 2},
-  hermano: {unlock: 0, weight: 44, hp: 24, speed: 34, r: 13, damage: 9, value: 1, scale: 2},
-  urco: {unlock: 100, weight: 20, hp: 34, speed: 52, r: 14, damage: 11, value: 2, scale: 2},
-  curuxa: {unlock: 150, weight: 15, hp: 26, speed: 58, r: 12, damage: 10, value: 2, scale: 2},
-  ahogado: {unlock: 200, weight: 24, hp: 64, speed: 29, r: 15, damage: 13, value: 3, scale: 2},
-  planidera: {unlock: 250, weight: 12, hp: 38, speed: 40, r: 13, damage: 8, value: 3, scale: 2},
-  espantajo: {unlock: 400, weight: 7, hp: 200, speed: 22, r: 22, damage: 20, value: 7, scale: 2},
-  guia: {unlock: 9999, weight: 0, hp: 9000, speed: 27, r: 30, damage: 24, value: 0, scale: 3}
+  anima:     {from: 1,  weight: 30, hp: 4,   speed: 135, r: 10, damage: 1, value: 1, scale: 2, xp: 1},
+  hermano:   {from: 2,  weight: 24, hp: 9,   speed: 82,  r: 13, damage: 2, value: 1, scale: 2, xp: 1},
+  urco:      {from: 4,  weight: 12, hp: 12,  speed: 118, r: 14, damage: 3, value: 1, scale: 2, xp: 2},
+  curuxa:    {from: 5,  weight: 10, hp: 9,   speed: 128, r: 12, damage: 2, value: 1, scale: 2, xp: 1},
+  planidera: {from: 6,  weight: 9,  hp: 11,  speed: 72,  r: 13, damage: 2, value: 1, scale: 2, xp: 2},
+  ahogado:   {from: 7,  weight: 10, hp: 30,  speed: 58,  r: 15, damage: 3, value: 2, scale: 2, xp: 2},
+  trasno:    {from: 8,  weight: 9,  hp: 6,   speed: 210, r: 9,  damage: 1, value: 1, scale: 2, xp: 1},
+  lavandeira:{from: 10, weight: 5,  hp: 22,  speed: 54,  r: 13, damage: 2, value: 2, scale: 2, xp: 3},
+  espantajo: {from: 11, weight: 4,  hp: 90,  speed: 48,  r: 22, damage: 5, value: 4, scale: 2, xp: 4},
+  nubeiro:   {from: 12, weight: 5,  hp: 20,  speed: 64,  r: 13, damage: 3, value: 2, scale: 2, xp: 3},
+  lobishome: {from: 14, weight: 5,  hp: 40,  speed: 150, r: 16, damage: 4, value: 2, scale: 2, xp: 3},
+  guia:      {from: 99, weight: 0,  hp: 24000, speed: 70, r: 30, damage: 9, value: 0, scale: 3, xp: 0}
 };
 
-/* Con las horas, las criaturas aguantan más, corren un poco más y hieren más. */
+/* Ronda a ronda, las criaturas aguantan más, hieren más y corren un poco más. */
 export const SCALING = {
-  hp: t => 1 + t / 260 + (t / 420) ** 2,
-  speed: t => 1 + t / 1300,
-  damage: t => 1 + t / 600
+  hp: r => 1 + (r - 1) * 0.45 + (r - 1) ** 2 * 0.09,
+  damage: r => 1 + (r - 1) * 0.3 + (r - 1) ** 2 * 0.012,
+  speed: r => 1 + Math.min(0.28, (r - 1) * 0.016),
+  value: r => 1 + Math.floor((r - 1) / 6) * 0.25
 };
 
-/*
- * Cada hora es un acto. pop: cuántas criaturas quiere la noche al empezar y al
- * acabar la hora. processions: cada cuántos segundos sale una procesión hacia
- * el velatorio. tide, gust y dark son lo que distingue a esa hora.
- */
-export const ACTS = [
-  {pop: [10, 44]},
-  {pop: [44, 78], processions: [36, 48], roads: 1},
-  {pop: [78, 112], processions: [34, 46], roads: 1, tide: [8, 11]},
-  {pop: [112, 146], processions: [34, 46], roads: 2, gust: 2, bias: {anima: 2.2}},
-  {pop: [140, 176], processions: [32, 44], roads: 2, dark: 0.86},
-  {pop: [84, 84]}
-];
-
-/* La procesión: cuántos hermanos van en fila y cuánto más aguantan que los sueltos. */
-export const PROCESSION = {base: 3, perHour: 1, max: 8, hp: 1.5, speed: 40};
-
-/*
- * Los difuntos con nombre: uno por hora, con más aguante y su propia manía.
- * El primero no toca los cirios; el que va a por ellos llega cuando ya se sabe velar.
- */
-export const ELITE_PLAN = [
-  {at: 55, id: 'peto', type: 'anima'},
-  {at: 155, id: 'urco', type: 'urco'},
-  {at: 255, id: 'lema', type: 'ahogado'},
-  {at: 355, id: 'curuxa', type: 'curuxa'},
-  {at: 425, id: 'sobra', type: 'hermano'}
-];
-export const ELITE = {hp: 9, damage: 1.4, speed: 0.92, size: 1.5, light: 12};
-
-/* No se puede recordar todo en una noche: cuatro armas y cinco recuerdos. */
-export const SLOTS = {arma: 4, recuerdo: 5};
-
-/* El velatorio: los cirios, el alma de Amparo y el arrullo. */
-export const VIGIL = {
-  reach: 46,              // a qué distancia se enciende un cirio
-  relight: 1.0,           // segundos que hay que quedarse junto a él
-  snuff: 1.6,             // lo que tarda un hermano en apagarlo
-  bossSnuff: 2.4,         // lo que tarda la Guía; con rabia, bossSnuffRage
-  bossSnuffRage: 1.6,
-  soulRise: 34,           // segundos a oscuras hasta que se la llevan
-  soulRiseBoss: 14,
-  soulFall: 14,
-  healRadius: 130, healBase: 0.6, healPerCirio: 0.55,
-  revive: 0.35,           // vida con la que te levanta un cirio
-  lullCooldown: 38, lullFirst: 14, lullTime: 4, lullSlow: 0.35, lullBossSlow: 0.6, lullHurt: 1.25
+/* Cuántas criaturas quiere la ronda a la vez y cada cuánto llega un grupo. */
+export const SPAWN = {
+  population: r => Math.round(14 + r * 7 + (r > 10 ? (r - 10) * 5 : 0)),
+  interval: r => clamp(1.7 - r * 0.055, 0.6, 1.7),
+  group: r => [2 + Math.floor(r / 4), 4 + Math.floor(r / 2.4)],
+  telegraph: 0.9,
+  minDistance: 150
 };
 
-/*
- * El Camposanto del Carmen. El recinto es lo que queda dentro del muro; margin
- * es cuánto deja ver la cámara al otro lado (al este, el mar y el faro).
- */
-export const WORLD = {left: -1560, right: 1560, top: -1160, bottom: 1160, margin: {n: 250, s: 110, w: 230, e: 520}};
-export const LIGHTHOUSE = {x: 1905, y: 420, lampY: -174};
+/* Rondas con algo especial: el difunto con nombre de cada hora, las hordas y la Guía. */
+export const ELITE_ROUNDS = {3: 'peto', 6: 'urco', 9: 'lema', 12: 'curuxa', 15: 'sobra'};
+export const HORDE_ROUNDS = [5, 8, 11, 14, 17];
+export const ELITE = {
+  peto:   {type: 'anima',   hp: 22,  damage: 1.6, size: 2.0, speed: 0.75},
+  urco:   {type: 'urco',    hp: 22,  damage: 1.5, size: 1.6, speed: 0.95},
+  lema:   {type: 'ahogado', hp: 18,  damage: 1.5, size: 1.5, speed: 0.95},
+  curuxa: {type: 'curuxa',  hp: 24,  damage: 1.5, size: 1.7, speed: 0.9},
+  sobra:  {type: 'hermano', hp: 26,  damage: 1.6, size: 1.6, speed: 0.9}
+};
 
-/* Los cuatro cirios del velatorio, alrededor del ataúd. */
-export const CIRIOS = [{x: -58, y: -30}, {x: 58, y: -30}, {x: -58, y: 38}, {x: 58, y: 38}];
-
-/* Por dónde entra la Compaña: la ermita, la cancela, el portillo y la escalera del mar. */
-export const ROADS = [
-  {id: 'ermita', x: 0, y: -1120, dx: 0, dy: -1},
-  {id: 'cancela', x: -1500, y: 0, dx: -1, dy: 0},
-  {id: 'portillo', x: 0, y: 1120, dx: 0, dy: 1},
-  {id: 'mar', x: 1500, y: 0, dx: 1, dy: 0}
+/* La dificultad de la vigilia: se desbloquea ganando en la anterior. */
+export const DANGER = [
+  {id: 0, name: 'Primera noche', note: 'La vigilia tal y como se cuenta.', hp: 1, damage: 1, speed: 1, elites: 1},
+  {id: 1, name: 'Noche cerrada', note: 'La Compaña aguanta y hiere un 15 % más.', hp: 1.15, damage: 1.15, speed: 1, elites: 1},
+  {id: 2, name: 'Noche de ánimas', note: '+30 % de aguante y daño. Corren más.', hp: 1.3, damage: 1.3, speed: 1.06, elites: 1.2},
+  {id: 3, name: 'Noche sin fin', note: '+50 % de aguante y daño. Los difuntos con nombre no vienen solos.', hp: 1.5, damage: 1.5, speed: 1.1, elites: 1.5}
 ];
+
+/* Habilidades de cada personaje (R): recarga en segundos y lo que hacen. */
+export const ABILITY_BALANCE = {
+  lucia: {cooldown: 14, radius: 175, damage: 10, stun: 1.1},
+  julian: {cooldown: 16, radius: 135, life: 4.5, tick: 0.5, damage: 3, slow: 0.45},
+  matilde: {cooldown: 20, radius: 170, heal: 0.3, knock: 420},
+  tono: {cooldown: 18, life: 6, attackSpeed: 45, speed: 15},
+  sabela: {cooldown: 14, radius: 110, root: 2.2, range: 230},
+  anselmo: {cooldown: 22, execute: 0.22, damage: 18, radius: 420}
+};
+
+/* Una ronda equivale a veinte minutos de noche. */
+export const clockAt = (round, progress) => (round - 1 + clamp(progress, 0, 1)) * MINUTES_PER_ROUND;
+export const fmtClock = minutes => {
+  const m = clamp(Math.floor(minutes), 0, 360);
+  return `${String(Math.floor(m / 60)).padStart(2, '0')}:${String(m % 60).padStart(2, '0')}`;
+};

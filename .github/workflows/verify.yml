@@ -14,13 +14,9 @@ concurrency:
 
 jobs:
   build:
-    name: Sintaxis y archivo único al día
+    name: Sintaxis, datos y archivo único al día
     runs-on: ubuntu-24.04
     timeout-minutes: 5
-    defaults:
-      run:
-        shell: bash
-        working-directory: la-ultima-vigilia
     steps:
       - uses: actions/checkout@v4
 
@@ -29,17 +25,16 @@ jobs:
           node-version: 22
 
       - name: Comprobar sintaxis y archivo autónomo
-        working-directory: .
         run: npm run check
 
-      - name: Comprobar objetos y sinergias
-        run: node tools/objects-check.mjs
+      - name: Comprobar armas, objetos, personajes y equilibrio
+        run: npm run test:data
 
   noche:
-    name: Una noche entera con cada personaje
+    name: Reglas, interfaz, sonido y una noche entera con cada personaje
     needs: build
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -52,23 +47,17 @@ jobs:
           npm ci
           npx playwright install --with-deps chromium
 
-      - name: Comprobar habilidades y faroles
+      - name: Comprobar las reglas de las rondas y la tienda
         run: npm run test:gameplay
 
-      - name: Comprobar sonidos de habilidades y faroles
-        run: node la-ultima-vigilia/tools/audio.mjs
-
-      - name: Velar con el piloto automático
-        run: node la-ultima-vigilia/tools/smoke.mjs
-
       - name: Comprobar combate, efectos y movimiento reducido sin conexión
-        run: node la-ultima-vigilia/tools/combat-vfx.mjs
-
-      - name: Comprobar las reglas del velatorio
-        run: node la-ultima-vigilia/tools/vigil-check.mjs
+        run: npm run test:vfx
 
       - name: Comprobar que el sonido no falla ni satura
-        run: node la-ultima-vigilia/tools/audio-check.mjs
+        run: npm run test:audio
 
-      - name: Recorrer la interfaz con teclado y ratón
-        run: node la-ultima-vigilia/tools/ui-check.mjs
+      - name: Recorrer la interfaz con teclado, ratón y móvil
+        run: npm run test:ui
+
+      - name: Velar las dieciocho rondas con el piloto automático
+        run: npm run test:night

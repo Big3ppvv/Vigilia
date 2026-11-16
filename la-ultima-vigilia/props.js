@@ -1,182 +1,21 @@
 /*
- * El Camposanto del Carmen: un recinto con muro, la ermita al norte, la cancela
- * al oeste y, al este, la escalera que baja al mar y el faro. En el cruce de
- * los paseos está Amparo.
- *
- * El suelo se pinta una sola vez, por trozos. Las tumbas, los cipreses y lo
- * demás son piezas sueltas que el juego ordena de arriba abajo junto a las
- * criaturas. Todo está en píxeles de arte: cada uno ocupa dos del mundo.
+ * Piezas de pixel art del camposanto: lápidas, cruces, cipreses, la ermita, el
+ * ataúd, los cirios, faroles y muros. Cada función prepara un lienzo pequeño
+ * una sola vez; la arena las coloca y las reutiliza en cada fotograma.
  */
-import { TAU, lerp } from './util.js';
+import { TAU } from './util.js';
 import { makeCanvas, hash } from './art.js';
-import { WORLD, CIRIOS, LIGHTHOUSE } from './balance.js';
-
-const {left: L, right: R, top: T, bottom: B} = WORLD;
-const CHUNK = 256;
-const CELL = 512;
-const AVENUES_X = [-1280, -640, 0, 640, 1280];
-const AVENUES_Y = [-640, 0, 640];
-const half = v => v === 0 ? 30 : 19;
-
-export const LANDMARKS = {
-  chapel: {x: 0, y: T},
-  cruceiro: {x: 0, y: -640},
-  yew: {x: -960, y: -330},
-  peto: {x: L + 92, y: -104},
-  gate: {x: L, y: 0},
-  stairs: {x: R, y: 0},
-  postern: {x: 0, y: B}
-};
-
-/* ---------- el suelo ---------- */
-
-const GRASS = 0, GRAVEL = 1, EARTH = 2, COBBLE = 3, WOODS = 4, FIELD = 5, ROAD = 6, VERGE = 7, ROCK = 8, SEA = 9, WALL = 10, STEPS = 11;
-
-function vnoise(x, y, seed) {
-  const xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi;
-  const sx = fx * fx * (3 - 2 * fx), sy = fy * fy * (3 - 2 * fy);
-  return lerp(lerp(hash(xi, yi, seed), hash(xi + 1, yi, seed), sx), lerp(hash(xi, yi + 1, seed), hash(xi + 1, yi + 1, seed), sx), sy);
-}
-
-const wob = (along, id) => (hash(Math.floor(along / 12), id, 71) - 0.5) * 6;
-export const shoreX = wy => R + 104 + (vnoise(wy / 80, 3, 9) - 0.5) * 50;
-
-/* Qué pisa cada punto del mundo. */
-export function terrain(wx, wy) {
-  if (wx > R + 14) {
-    const islet = ((wx - LIGHTHOUSE.x) / 62) ** 2 + ((wy - LIGHTHOUSE.y - 8) / 30) ** 2;
-    if (islet < 1) return ROCK;
-    const shore = shoreX(wy);
-    if (wx > shore + 30) return SEA;
-    if (Math.abs(wy) < 32 && wx < shore + 8) return STEPS;
-    if (wx > shore) return ROCK;
-    return VERGE;
-  }
-  if (wy < T) return WOODS;
-  if (wy > B) return Math.abs(wx) < 22 + wob(wy, 3) && wy < B + 190 ? ROAD : FIELD;
-  if (wx < L - 14) return Math.abs(wy) < 32 + wob(wx, 6) ? ROAD : FIELD;
-  if (wx < L || wx > R) return Math.abs(wy) < 46 ? (wx < L ? ROAD : COBBLE) : WALL;
-  if ((wx / 178) ** 2 + (wy / 124) ** 2 < 1) return EARTH;
-  if (Math.abs(wx) < 150 && wy < T + 112) return COBBLE;
-  if (wx < L + 112 && Math.abs(wy) < 84) return COBBLE;
-  if (wx > R - 92 && Math.abs(wy) < 70) return COBBLE;
-  for (const ax of AVENUES_X) if (Math.abs(wx - ax) < half(ax) + wob(wy, ax)) return GRAVEL;
-  for (const ay of AVENUES_Y) if (Math.abs(wy - ay) < half(ay) + wob(wx, ay + 7)) return GRAVEL;
-  return GRASS;
-}
-
-/* El jugador hace ruido distinto según lo que pisa. */
-export function surfaceAt(wx, wy) {
-  const k = terrain(wx, wy);
-  return k === GRAVEL || k === ROAD ? 'grava' : k === COBBLE || k === STEPS || k === ROCK ? 'piedra' : 'hierba';
-}
-
-function groundColor(k, ax, ay, wx, wy) {
-  const n = hash(ax, ay, 39);
-  switch (k) {
-    case GRASS: case VERGE: {
-      const p = vnoise(wx / 120, wy / 120, 4) + (hash(ax, ay, 12) - 0.5) * 0.2 + (k === VERGE ? 0.2 : 0);
-      if (p < 0.4) return n < 0.14 ? [19, 29, 28] : n < 0.2 ? [11, 17, 18] : [15, 23, 23];
-      if (p < 0.66) return n < 0.14 ? [22, 34, 31] : n < 0.2 ? [13, 20, 20] : [18, 27, 26];
-      return n < 0.16 ? [27, 41, 35] : n < 0.22 ? [16, 25, 24] : [21, 32, 29];
-    }
-    case GRAVEL: {
-      const edge = terrain(wx + 4, wy) === GRASS || terrain(wx - 4, wy) === GRASS || terrain(wx, wy + 4) === GRASS || terrain(wx, wy - 4) === GRASS;
-      if (edge) return n > 0.6 ? [22, 31, 28] : [27, 28, 26];
-      return n > 0.93 ? [80, 77, 66] : n > 0.8 ? [60, 58, 50] : n < 0.22 ? [30, 30, 27] : [41, 40, 36];
-    }
-    case EARTH: {
-      const rim = (wx / 178) ** 2 + (wy / 124) ** 2;
-      if (rim > 0.9 && n > 0.45) return [20, 30, 27];
-      return n > 0.9 ? [52, 46, 36] : n > 0.78 ? [44, 39, 31] : n < 0.2 ? [27, 24, 20] : [36, 32, 26];
-    }
-    case COBBLE: {
-      const row = Math.floor(ay / 5), sx = ax + (row & 1) * 3, col = Math.floor(sx / 6);
-      if (ay % 5 === 0 || sx % 6 === 0) return hash(col, row, 61) > 0.82 ? [33, 52, 38] : [26, 30, 31];
-      const v = hash(col, row, 62);
-      const c = v > 0.7 ? [62, 69, 71] : v < 0.3 ? [45, 51, 53] : [53, 59, 61];
-      return n > 0.9 ? [c[0] + 9, c[1] + 9, c[2] + 9] : c;
-    }
-    case WOODS: return n > 0.93 ? [22, 18, 13] : n < 0.15 ? [6, 9, 9] : [9, 13, 13];
-    case FIELD: return (ay + Math.floor(ax / 46)) % 7 === 0 ? [10, 15, 14] : n > 0.95 ? [23, 34, 28] : [13, 19, 18];
-    case ROAD: return n > 0.88 ? [52, 46, 37] : n < 0.22 ? [26, 23, 19] : [37, 33, 27];
-    case ROCK: {
-      const crack = hash(Math.floor(ax / 5), Math.floor(ay / 4), 83);
-      if (crack > 0.86 && (ax % 5 === 0 || ay % 4 === 0)) return [22, 25, 28];
-      return n > 0.78 ? [58, 64, 68] : n < 0.24 ? [28, 31, 34] : [41, 45, 49];
-    }
-    case SEA: {
-      const deep = Math.min(1, (wx - shoreX(wy)) / 260);
-      const band = (ay + Math.floor(vnoise(ax / 22, ay / 9, 15) * 6)) % 7 === 0;
-      const c = [lerp(10, 5, deep), lerp(21, 12, deep), lerp(34, 22, deep)];
-      return band && n > 0.35 ? [c[0] + 5, c[1] + 9, c[2] + 13] : c;
-    }
-    case WALL: {
-      const inside = wx < L ? L - wx : wx - R;
-      if (inside < 2 || inside > 11) return [7, 8, 13];
-      if (ay % 9 === 0) return [40, 46, 48];
-      return n > 0.85 ? [84, 92, 94] : inside > 8 ? [56, 63, 66] : [70, 78, 80];
-    }
-    case STEPS: return ax % 5 === 0 ? [27, 31, 33] : ax % 5 === 1 ? [70, 77, 79] : n > 0.9 ? [62, 69, 71] : [53, 59, 61];
-    default: return [15, 23, 23];
-  }
-}
-
-function paintChunk(cx, cy) {
-  const c = makeCanvas(CHUNK, CHUNK), g = c.getContext('2d');
-  const img = g.createImageData(CHUNK, CHUNK), d = img.data;
-  const kinds = new Uint8Array(CHUNK * CHUNK);
-  for (let y = 0; y < CHUNK; y++) {
-    for (let x = 0; x < CHUNK; x++) {
-      const ax = cx * CHUNK + x, ay = cy * CHUNK + y, wx = ax * 2, wy = ay * 2;
-      const k = terrain(wx, wy), rgb = groundColor(k, ax, ay, wx, wy), i = (y * CHUNK + x) * 4;
-      kinds[y * CHUNK + x] = k;
-      d[i] = rgb[0]; d[i + 1] = rgb[1]; d[i + 2] = rgb[2]; d[i + 3] = 255;
-    }
-  }
-  g.putImageData(img, 0, 0);
-  // Matas, hojas secas de noviembre, piedras y margaritas.
-  for (let y = 0; y < CHUNK; y += 6) {
-    for (let x = 0; x < CHUNK; x += 6) {
-      const ax = cx * CHUNK + x, ay = cy * CHUNK + y, h = hash(ax, ay, 55);
-      const px = x + Math.floor(hash(ax, ay, 56) * 5), py = y + Math.floor(hash(ax, ay, 57) * 5);
-      if (px < 1 || py < 1 || px > CHUNK - 3 || py > CHUNK - 3) continue;
-      const k = kinds[py * CHUNK + px];
-      if (k === GRASS || k === VERGE) {
-        if (h > 0.78) {
-          g.fillStyle = h > 0.93 ? '#2b473a' : h > 0.86 ? '#243a30' : '#1d2f28';
-          g.fillRect(px, py, 1, 2); g.fillRect(px - 1, py + 1, 1, 1); g.fillRect(px + 1, py - 1, 1, 2);
-        } else if (h > 0.71) {
-          g.fillStyle = h > 0.745 ? '#4a3420' : '#3a2a1c';
-          g.fillRect(px, py, 2, 1); g.fillRect(px + 1, py + 1, 1, 1);
-        } else if (h < 0.014) {
-          g.fillStyle = '#0b1012'; g.fillRect(px, py + 1, 3, 1);
-          g.fillStyle = '#39424a'; g.fillRect(px, py, 2, 1);
-          g.fillStyle = '#4b555c'; g.fillRect(px, py, 1, 1);
-        } else if (h > 0.5 && h < 0.511) {
-          g.fillStyle = '#b9bfae'; g.fillRect(px, py, 1, 1); g.fillRect(px + 2, py + 1, 1, 1);
-          g.fillStyle = '#c9a94e'; g.fillRect(px + 1, py - 1, 1, 1);
-        }
-      } else if (k === GRAVEL && h > 0.9) {
-        g.fillStyle = '#3a2a1c'; g.fillRect(px, py, 2, 1);
-      } else if (k === ROAD && h > 0.82) {
-        g.fillStyle = '#211d18'; g.fillRect(px, py, 3, 1);
-      }
-    }
-  }
-  return c;
-}
 
 /* ---------- piezas ---------- */
 
-const INK = '#07080d', SHADE = 'rgba(2,3,8,.45)';
+export const INK = '#07080d', SHADE = 'rgba(2,3,8,.45)';
 const S0 = '#2a3134', S1 = '#353d40', S2 = '#3c4447', S3 = '#4a5356', S4 = '#5a6366', S5 = '#6a7274';
 const MOSS = '#2f4632', MOSS2 = '#3d5b40', LICHEN = '#7b7742';
 
 const r = (g, x, y, w, h, color) => { g.fillStyle = color; g.fillRect(x, y, w, h); };
 
 /* Lienzo pequeño con el origen en la base de la pieza (ox, oy). */
-function spr(w, h, ox, oy, paint) {
+export function spr(w, h, ox, oy, paint) {
   const c = makeCanvas(w, h), g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
   g.translate(ox, oy);
@@ -185,7 +24,7 @@ function spr(w, h, ox, oy, paint) {
 }
 
 /* Inclina una pieza un píxel cada «every» filas, sin suavizar: las cruces viejas se vencen. */
-function lean(s, every, dir) {
+export function lean(s, every, dir) {
   const shift = Math.ceil(s.h / every), c = makeCanvas(s.w + shift, s.h), g = c.getContext('2d');
   g.imageSmoothingEnabled = false;
   for (let y = 0; y < s.h; y++) {
@@ -196,7 +35,7 @@ function lean(s, every, dir) {
   return {c, ox: s.ox + (dir < 0 ? shift : 0), oy: s.oy, w: s.w + shift, h: s.h};
 }
 
-function disc(g, cx, cy, rad, color) {
+export function disc(g, cx, cy, rad, color) {
   g.fillStyle = color;
   for (let dy = -rad; dy <= rad; dy++) {
     const hw = Math.floor(Math.sqrt(rad * rad - dy * dy));
@@ -204,7 +43,7 @@ function disc(g, cx, cy, rad, color) {
   }
 }
 
-function slab(kind) {
+export function slab(kind) {
   if (kind === 1) return spr(24, 13, 12, 3, g => {       // túmulo de tierra con piedras
     r(g, -10, 7, 21, 2, SHADE);
     r(g, -9, 0, 18, 7, INK); r(g, -8, 1, 16, 5, '#2c261e'); r(g, -6, 0, 12, 1, '#2c261e'); r(g, -8, 1, 16, 1, '#3a3227');
@@ -226,7 +65,7 @@ function slab(kind) {
   });
 }
 
-function headstone(kind) {
+export function headstone(kind) {
   switch (kind) {
     case 1: return spr(16, 20, 8, 19, g => {            // cabecera con letras gastadas
       r(g, -7, -16, 14, 16, INK); r(g, -6, -15, 12, 14, S3); r(g, -5, -17, 10, 2, INK); r(g, -5, -16, 10, 2, S4); r(g, 4, -14, 2, 13, S1);
@@ -266,7 +105,7 @@ function headstone(kind) {
   }
 }
 
-function ironCross() {
+export function ironCross() {
   return spr(16, 32, 8, 30, g => {
     r(g, -6, -1, 12, 3, SHADE);
     r(g, -4, -4, 8, 4, INK); r(g, -3, -3, 6, 3, S0); r(g, -3, -3, 6, 1, S1);
@@ -277,7 +116,7 @@ function ironCross() {
   });
 }
 
-function woodCross() {
+export function woodCross() {
   return spr(16, 28, 8, 26, g => {
     r(g, -6, -1, 12, 3, SHADE);
     r(g, -2, -24, 4, 24, INK); r(g, -7, -18, 14, 4, INK);
@@ -286,7 +125,7 @@ function woodCross() {
   });
 }
 
-function cypress(seed, bend = 0) {
+export function cypress(seed, bend = 0) {
   const height = 46 + Math.floor(hash(seed, 1, 8) * 16);
   return spr(30, height + 10, 15, height + 7, g => {
     g.fillStyle = SHADE; g.fillRect(-9, -1, 20, 3); g.fillRect(-6, 2, 14, 1);
@@ -303,7 +142,7 @@ function cypress(seed, bend = 0) {
   });
 }
 
-function pine(seed) {
+export function pine(seed) {
   return spr(34, 66, 17, 64, g => {
     r(g, -1, -14, 3, 14, '#0b0d0c');
     for (let tier = 0; tier < 6; tier++) {
@@ -317,7 +156,7 @@ function pine(seed) {
   });
 }
 
-function angel() {
+export function angel() {
   return spr(22, 40, 11, 38, g => {
     r(g, -9, -1, 18, 3, SHADE);
     r(g, -7, -9, 14, 9, INK); r(g, -6, -8, 12, 7, S3); r(g, -6, -8, 12, 1, '#5d6669'); r(g, 4, -7, 2, 6, S1);
@@ -330,7 +169,7 @@ function angel() {
   });
 }
 
-function niches(seed) {
+export function niches(seed) {
   const votives = [];
   const s = spr(68, 50, 34, 46, g => {
     r(g, -33, -1, 66, 4, SHADE);
@@ -348,11 +187,11 @@ function niches(seed) {
   return {tall: s, votives};
 }
 
-function votiveSprite() {
+export function votiveSprite() {
   return spr(6, 8, 3, 6, g => { r(g, -2, 0, 4, 1, INK); r(g, -2, -4, 4, 4, '#5e1d14'); r(g, -1, -4, 2, 3, '#a8331f'); r(g, -2, -5, 4, 1, INK); });
 }
 
-function flowersSprite(seed, pot) {
+export function flowersSprite(seed, pot) {
   if (pot) return spr(12, 12, 6, 10, g => {             // maceta de crisantemos
     r(g, -3, -3, 6, 4, INK); r(g, -2, -3, 4, 3, '#8a4a2e'); r(g, -2, -3, 4, 1, '#a85d3a');
     disc(g, 0, -6, 4, '#1f3526');
@@ -370,7 +209,7 @@ function flowersSprite(seed, pot) {
   });
 }
 
-function wallNorth(seed) {
+export function wallNorth(seed) {
   return spr(64, 24, 0, 22, g => {
     r(g, 0, -21, 64, 3, INK); r(g, 0, -20, 64, 2, S5); r(g, 0, -20, 64, 1, '#7d8587');
     r(g, 0, -18, 64, 18, S2);
@@ -388,7 +227,7 @@ function wallNorth(seed) {
   });
 }
 
-function wallSouth(seed) {
+export function wallSouth(seed) {
   return spr(64, 16, 0, 15, g => {
     r(g, 0, -15, 64, 1, INK); r(g, 0, -14, 64, 4, S4); r(g, 0, -14, 64, 1, '#7d8587');
     for (let col = 0; col < 7; col++) r(g, col * 10 + Math.floor(hash(seed, col, 95) * 3), -14, 1, 4, S1);
@@ -398,7 +237,7 @@ function wallSouth(seed) {
   });
 }
 
-function pillar() {
+export function pillar() {
   return spr(14, 40, 7, 37, g => {
     r(g, -6, -1, 13, 3, SHADE);
     r(g, -6, -5, 12, 5, INK); r(g, -5, -4, 10, 4, S3); r(g, -5, -4, 10, 1, S4);
@@ -411,7 +250,7 @@ function pillar() {
   });
 }
 
-function lampPost() {
+export function lampPost() {
   return spr(10, 34, 5, 32, g => {
     r(g, -3, -1, 7, 2, SHADE);
     r(g, -2, -3, 4, 3, INK); r(g, -1, -24, 3, 22, INK); r(g, 0, -23, 1, 21, '#3a3f4a');
@@ -419,7 +258,7 @@ function lampPost() {
   });
 }
 
-function cruceiro() {
+export function cruceiro() {
   return spr(28, 66, 14, 63, g => {
     r(g, -13, -1, 27, 3, SHADE);
     for (const [w, y] of [[24, -4], [18, -8], [12, -12]]) { r(g, -w / 2, y, w, 5, INK); r(g, -w / 2 + 1, y + 1, w - 2, 3, S3); r(g, -w / 2 + 1, y + 1, w - 2, 1, S5); }
@@ -432,7 +271,7 @@ function cruceiro() {
   });
 }
 
-function peto() {
+export function peto() {
   return spr(22, 38, 11, 35, g => {
     r(g, -9, -1, 19, 3, SHADE);
     r(g, -8, -8, 16, 8, INK); r(g, -7, -7, 14, 6, S3); r(g, -7, -7, 14, 1, S5);
@@ -447,7 +286,7 @@ function peto() {
   });
 }
 
-function yew() {
+export function yew() {
   const blobs = [[-15, -44, 20], [13, -48, 22], [0, -60, 17], [-26, -33, 12], [27, -35, 13], [-4, -36, 16]];
   return spr(90, 86, 45, 82, g => {
     g.fillStyle = SHADE; g.fillRect(-30, -2, 62, 5); g.fillRect(-22, 3, 46, 2); g.fillRect(-36, -4, 74, 2);
@@ -466,7 +305,7 @@ function yew() {
   });
 }
 
-function chapel() {
+export function chapel() {
   return spr(128, 142, 64, 136, g => {
     const block = (x0, y0, w, h, seed) => {
       r(g, x0, y0, w, h, S3);
@@ -526,7 +365,7 @@ function chapel() {
   });
 }
 
-function bellSprite() {
+export function bellSprite() {
   return spr(12, 14, 6, 2, g => {
     r(g, -1, -2, 2, 3, INK);
     r(g, -3, 0, 6, 2, INK); r(g, -4, 2, 8, 6, INK); r(g, -5, 7, 10, 2, INK);
@@ -536,7 +375,7 @@ function bellSprite() {
   });
 }
 
-function lighthouse() {
+export function lighthouse() {
   return spr(44, 104, 22, 96, g => {
     for (const [x, y, w, h, c] of [[-20, -4, 40, 8, INK], [-18, -3, 36, 6, '#2c3034'], [-14, -7, 28, 4, INK], [-13, -6, 26, 3, '#3a3f44'], [-18, -3, 12, 2, '#4a5056'], [4, 0, 12, 2, '#1e2124']]) r(g, x, y, w, h, c);
     for (let i = 0; i < 70; i++) {
@@ -554,7 +393,7 @@ function lighthouse() {
   });
 }
 
-function coffin() {
+export function coffin() {
   return spr(62, 30, 26, 16, g => {
     r(g, -22, 6, 44, 6, SHADE);
     r(g, -16, 4, 2, 8, INK); r(g, 14, 4, 2, 8, INK); r(g, -15, 4, 1, 7, '#4e3420'); r(g, 15, 4, 1, 7, '#4e3420');
@@ -573,7 +412,7 @@ function coffin() {
   });
 }
 
-function chair() {
+export function chair() {
   return spr(14, 20, 7, 17, g => {
     r(g, -6, -1, 12, 2, SHADE);
     r(g, -5, -3, 10, 2, INK); r(g, -4, -9, 8, 7, INK); r(g, -3, -8, 6, 5, '#7a5434'); r(g, -3, -8, 6, 1, '#94603f');
@@ -582,7 +421,7 @@ function chair() {
   });
 }
 
-function stool() {
+export function stool() {
   return spr(14, 16, 7, 13, g => {
     r(g, -5, -1, 11, 2, SHADE);
     r(g, -4, -3, 9, 2, INK); r(g, -3, -6, 7, 4, '#4e3420'); r(g, -3, -6, 7, 1, '#6b4a2c');
@@ -591,7 +430,7 @@ function stool() {
   });
 }
 
-function cirioSprite() {
+export function cirioSprite() {
   return spr(12, 32, 6, 29, g => {
     r(g, -4, -1, 9, 2, SHADE);
     r(g, -4, -2, 8, 2, INK); r(g, -3, -3, 6, 2, '#8a6a2c'); r(g, -3, -3, 6, 1, '#c9a04c');
@@ -601,308 +440,6 @@ function cirioSprite() {
     r(g, -2, -27, 4, 9, INK); r(g, -1, -26, 2, 8, '#f1e8d2'); r(g, 0, -26, 1, 8, '#c9bb9a');
     r(g, -1, -22, 1, 2, '#fffaf0'); r(g, 0, -28, 1, 2, '#1a1410');
   });
-}
-
-/* ---------- el camposanto ---------- */
-
-export class Cemetery {
-  constructor() {
-    this.chunks = new Map();
-    this.grid = new Map();
-    this.props = [];
-    this.solids = [];
-    this.warmQueue = null;
-    this.art = {
-      slab: [slab(0), slab(1), slab(2)],
-      head: [0, 1, 2, 3, 4, 5].map(headstone),
-      iron: ironCross(), wood: woodCross(), angel: angel(), votive: votiveSprite(),
-      wallN: [wallNorth(1), wallNorth(2), wallNorth(3)], wallS: [wallSouth(1), wallSouth(2)],
-      pillar: pillar(), lamp: lampPost(), cruceiro: cruceiro(), peto: peto(), yew: yew(), chapel: chapel(), bell: bellSprite(),
-      lighthouse: lighthouse(), coffin: coffin(), chair: chair(), stool: stool(), cirio: cirioSprite(),
-      pine: [pine(1), pine(2), pine(3)]
-    };
-    this.art.ironLean = [lean(this.art.iron, 9, 1), lean(this.art.iron, 9, -1)];
-    this.art.woodLean = [lean(this.art.wood, 6, 1), lean(this.art.wood, 6, -1), lean(this.art.wood, 12, 1)];
-    this.art.headLean = [lean(this.art.head[4], 7, 1), lean(this.art.head[4], 7, -1)];
-    this.art.cypress = [];
-    for (let i = 0; i < 6; i++) this.art.cypress.push(cypress(i * 13 + 3, i >= 4 ? -1 : 0));
-    this.art.flowers = [];
-    for (let i = 0; i < 4; i++) this.art.flowers.push(flowersSprite(i * 7 + 2, false), flowersSprite(i * 5 + 1, true));
-    this.build();
-  }
-
-  add(p) {
-    this.props.push(p);
-    const key = `${Math.floor(p.x / CELL)},${Math.floor(p.y / CELL)}`;
-    let cell = this.grid.get(key);
-    if (!cell) { cell = []; this.grid.set(key, cell); }
-    cell.push(p);
-    return p;
-  }
-
-  /* Dónde va cada cosa. El azar es fijo: el camposanto es siempre el mismo. */
-  build() {
-    const A = this.art;
-    const votive = (x, y, seed) => this.add({x, y, tall: A.votive, flames: [{dx: 0, dy: -11, kind: 'votive', seed}], lights: [{dx: 0, dy: -8, r: 46, i: 0.85, c: 'red', g: 0.9, seed}]});
-    const clear = (x, y) => {
-      if ((x / 250) ** 2 + (y / 186) ** 2 < 1) return false;
-      if (Math.abs(x) < 176 && y < T + 150) return false;
-      if (x < L + 140 && Math.abs(y) < 112) return false;
-      if (x > R - 120 && Math.abs(y) < 98) return false;
-      for (const k of ['cruceiro', 'yew', 'peto']) if (Math.hypot(x - LANDMARKS[k].x, (y - LANDMARKS[k].y) * 1.3) < (k === 'yew' ? 120 : 84)) return false;
-      return true;
-    };
-
-    // Cuarteles de sepulturas, en filas, entre los paseos.
-    const xs = [L, ...AVENUES_X, R], ys = [T, ...AVENUES_Y, B];
-    for (let bi = 0; bi < xs.length - 1; bi++) for (let bj = 0; bj < ys.length - 1; bj++) {
-      const x0 = xs[bi] + (bi === 0 ? 52 : half(xs[bi]) + 34), x1 = xs[bi + 1] - (bi === xs.length - 2 ? 52 : half(xs[bi + 1]) + 34);
-      const y0 = ys[bj] + (bj === 0 ? 92 : half(ys[bj]) + 62), y1 = ys[bj + 1] - (bj === ys.length - 2 ? 34 : half(ys[bj + 1]) + 16);
-      const west = (xs[bi] + xs[bi + 1]) / 2 < 0, north = (ys[bj] + ys[bj + 1]) / 2 < 0;
-      const quarter = north ? (west ? 'viejo' : 'panteones') : (west ? 'pueblo' : 'mar');
-      const stepX = quarter === 'mar' ? 104 : 94, stepY = quarter === 'panteones' ? 140 : 128;
-      for (let y = y0, row = 0; y <= y1; y += stepY, row++) for (let x = x0 + (row % 2) * 8, col = 0; x <= x1; x += stepX, col++) {
-        const seed = (bi * 7 + bj) * 1000 + row * 37 + col, v = hash(seed, 1, 25), j = quarter === 'viejo' ? 14 : 6;
-        const px = Math.round(x + (hash(seed, 2, 26) - 0.5) * j), py = Math.round(y + (hash(seed, 3, 27) - 0.5) * j);
-        if (!clear(px, py)) continue;
-        this.plot(quarter, v, px, py, seed, votive);
-      }
-    }
-    // Cipreses a los lados de los paseos principales.
-    for (let y = -1030; y <= 1030; y += 158) {
-      if (Math.abs(y) < 240 || Math.abs(y + 640) < 90 || y < T + 170) continue;
-      for (const side of [-1, 1]) this.add({x: side * 62, y: y + side * 9, tall: A.cypress[(Math.abs(y) / 158 + side + 4) % 4 | 0]});
-    }
-    for (let x = -1440; x <= 1440; x += 204) {
-      if (Math.abs(x) < 260 || Math.abs(Math.abs(x) - 640) < 60 || Math.abs(Math.abs(x) - 1280) < 60) continue;
-      this.add({x, y: -60, tall: A.cypress[(Math.abs(x) / 204 | 0) % 4]});
-    }
-    // Nichos contra el muro norte, en la parte de los panteones.
-    for (const x of [360, 700, 1010, 1390]) {
-      const n = niches(x);
-      this.add({x, y: T + 66, tall: n.tall, flames: n.votives.map((v, i) => ({...v, kind: 'votive', seed: x + i})), lights: n.votives.map((v, i) => ({dx: v.dx, dy: v.dy + 4, r: 40, i: 0.8, c: 'red', g: 0.9, seed: x + i}))});
-      this.solids.push({x0: x - 62, y0: T + 34, x1: x + 62, y1: T + 68});
-    }
-    // El muro: al norte se le ve la cara; al sur tapa los pies de quien se arrima.
-    const run = (y, tiles, gap, back) => {
-      for (let x = L - 14, i = 0; x < R + 14; x += 128, i++) {
-        const tall = tiles[i % tiles.length];
-        if (x + 128 <= -gap || x >= gap) { this.add({x, y, tall, back}); continue; }
-        if (x < -gap) this.add({x, y, tall, back, cropW: Math.round((-gap - x) / 2)});
-        if (x + 128 > gap) this.add({x: gap, y, tall, back, cropW: Math.round((x + 128 - gap) / 2)});
-      }
-    };
-    run(T, A.wallN, 124, true);
-    run(B + 14, A.wallS, 28, false);
-    for (let i = 0; i < 44; i++) {
-      const x = L - 200 + hash(i, 1, 31) * (R - L + 400);
-      if (Math.abs(x) < 150) continue;
-      this.add({x: Math.round(x), y: Math.round(T - 46 - hash(i, 2, 32) * 150), tall: A.pine[i % 3], back: true});
-    }
-    for (let i = 0; i < 26; i++) {
-      const y = T + hash(i, 3, 33) * (B - T);
-      if (Math.abs(y) < 90) continue;
-      this.add({x: Math.round(L - 60 - hash(i, 4, 34) * 150), y: Math.round(y), tall: A.pine[i % 3]});
-    }
-    // Hitos.
-    const C = LANDMARKS;
-    this.add({x: C.chapel.x, y: C.chapel.y, tall: A.chapel, back: true, bell: {dx: 0, dy: -236},
-      flames: [{dx: 40, dy: -54, kind: 'lamp', seed: 5}, {dx: 2, dy: -110, kind: 'sanctuary', seed: 6}],
-      lights: [{dx: 40, dy: -40, r: 150, i: 0.9, c: 'warm', g: 0.7, seed: 5}, {dx: 0, dy: -108, r: 34, i: 0.7, c: 'red', g: 0.9, seed: 6}]});
-    this.add({x: C.cruceiro.x, y: C.cruceiro.y, tall: A.cruceiro});
-    this.solids.push({x0: C.cruceiro.x - 22, y0: C.cruceiro.y - 22, x1: C.cruceiro.x + 22, y1: C.cruceiro.y + 2});
-    votive(C.cruceiro.x - 30, C.cruceiro.y + 8, 71); votive(C.cruceiro.x + 28, C.cruceiro.y + 10, 72); votive(C.cruceiro.x + 6, C.cruceiro.y + 16, 73);
-    this.add({x: C.yew.x, y: C.yew.y, tall: A.yew});
-    this.solids.push({x0: C.yew.x - 12, y0: C.yew.y - 12, x1: C.yew.x + 12, y1: C.yew.y + 2});
-    this.add({x: C.peto.x, y: C.peto.y, tall: A.peto, flames: [{dx: 0, dy: -40, kind: 'sanctuary', seed: 8}], lights: [{dx: 0, dy: -36, r: 60, i: 0.85, c: 'red', g: 0.9, seed: 8}]});
-    this.solids.push({x0: C.peto.x - 14, y0: C.peto.y - 12, x1: C.peto.x + 14, y1: C.peto.y + 2});
-    votive(C.peto.x - 20, C.peto.y + 8, 81); votive(C.peto.x + 20, C.peto.y + 6, 82);
-    for (const side of [-1, 1]) {
-      this.add({x: C.gate.x - 4, y: side * 50 + 4, tall: A.pillar, flames: [{dx: 11, dy: -40, kind: 'lamp', seed: 10 + side}], lights: [{dx: 11, dy: -34, r: 124, i: 0.9, c: 'warm', g: 0.7, seed: 10 + side}]});
-      this.add({x: C.stairs.x - 30, y: side * 62, tall: A.lamp, flames: [{dx: 1, dy: -54, kind: 'lamp', seed: 14 + side}], lights: [{dx: 1, dy: -50, r: 116, i: 0.85, c: 'warm', g: 0.65, seed: 14 + side}]});
-    }
-    this.add({x: LIGHTHOUSE.x, y: LIGHTHOUSE.y, tall: A.lighthouse, flames: [{dx: 0, dy: LIGHTHOUSE.lampY, kind: 'beacon', seed: 20}], lights: [{dx: 0, dy: LIGHTHOUSE.lampY, r: 210, i: 0.95, c: 'white', g: 0.8, seed: 20}]});
-    // El velatorio.
-    this.add({x: 0, y: 0, tall: A.coffin, wake: true, sort: 18});
-    this.solids.push({x0: -44, y0: -12, x1: 44, y1: 14});
-    this.add({x: -94, y: 2, tall: A.chair});
-    this.add({x: 96, y: 6, tall: A.stool});
-    CIRIOS.forEach((c, i) => this.add({x: c.x, y: c.y, tall: A.cirio, cirio: i}));
-  }
-
-  plot(quarter, v, x, y, seed, votive) {
-    const A = this.art, h = n => hash(seed, n, 29);
-    const tomb = (slabKind, headKind, deco) => {
-      const head = headKind === 'lean' ? A.headLean[seed % 2] : A.head[headKind];
-      this.add({x, y, flat: A.slab[slabKind], tall: head, sort: -4, tallDy: slabKind === 1 ? -2 : -4});
-      if (h(11) < deco) this.add({x: x - 8, y: y + 12, flat: A.flowers[(seed % 4) * 2 + (h(12) > 0.55 ? 1 : 0)], flatDy: 0});
-      if (h(13) < deco * 0.8) votive(x + 12, y + 14, seed);
-      if (h(14) < deco * 0.35) votive(x - 2, y + 18, seed + 1);
-    };
-    if (quarter === 'viejo') {
-      if (v < 0.26) tomb(0, 'lean', 0.2);
-      else if (v < 0.36) tomb(1, 4, 0.15);
-      else if (v < 0.52) this.add({x, y, tall: v < 0.44 ? A.ironLean[seed % 2] : A.iron});
-      else if (v < 0.63) this.add({x, y, tall: A.woodLean[seed % 3]});
-      else if (v < 0.69) this.add({x, y, tall: A.cypress[seed % 4]});
-      else if (v < 0.75) tomb(0, 1, 0.3);
-    } else if (quarter === 'panteones') {
-      if (v < 0.24) tomb(2, 3, 0.7);
-      else if (v < 0.44) tomb(0, 2, 0.5);
-      else if (v < 0.54) tomb(0, h(15) > 0.5 ? 0 : 1, 0.5);
-      else if (v < 0.63) this.add({x, y, tall: A.angel});
-      else if (v < 0.69) this.add({x, y, tall: A.cypress[seed % 4]});
-    } else if (quarter === 'pueblo') {
-      if (v < 0.36) tomb(0, h(15) > 0.5 ? 0 : 1, 1);
-      else if (v < 0.48) tomb(2, 0, 0.9);
-      else if (v < 0.55) tomb(2, 5, 0.9);
-      else if (v < 0.62) this.add({x, y, tall: A.iron});
-      else if (v < 0.68) this.add({x, y, tall: A.cypress[seed % 4]});
-      else if (v < 0.72) this.add({x, y: y + 6, flat: A.flowers[(seed % 4) * 2 + 1]});
-    } else {
-      if (v < 0.24) { this.add({x, y, flat: A.slab[1]}); this.add({x, y: y - 2, tall: A.woodLean[seed % 3]}); if (h(13) < 0.3) votive(x + 12, y + 12, seed); }
-      else if (v < 0.36) this.add({x, y, tall: A.woodLean[seed % 3]});
-      else if (v < 0.46) tomb(0, 4, 0.35);
-      else if (v < 0.52) this.add({x, y, tall: A.cypress[4 + seed % 2]});
-    }
-  }
-
-  /* ---------- suelo ---------- */
-
-  chunk(cx, cy) {
-    const key = cx * 4096 + cy;
-    let c = this.chunks.get(key);
-    if (!c) { c = paintChunk(cx, cy); this.chunks.set(key, c); }
-    return c;
-  }
-
-  /* Pinta un trozo pendiente; se llama en la pantalla de título para no hacerlo durante la noche. */
-  warm() {
-    if (!this.warmQueue) {
-      this.warmQueue = [];
-      const m = WORLD.margin;
-      for (let cy = Math.floor((T - m.n) / CELL); cy <= Math.floor((B + m.s) / CELL); cy++)
-        for (let cx = Math.floor((L - m.w) / CELL); cx <= Math.floor((R + m.e) / CELL); cx++) this.warmQueue.push([cx, cy]);
-      this.warmQueue.sort((a, b) => Math.hypot(a[0] + 0.5, a[1] + 0.5) - Math.hypot(b[0] + 0.5, b[1] + 0.5));
-    }
-    while (this.warmQueue.length) {
-      const [cx, cy] = this.warmQueue.shift();
-      if (this.chunks.has(cx * 4096 + cy)) continue;
-      this.chunk(cx, cy);
-      return true;
-    }
-    return false;
-  }
-
-  ground(ctx, camX, camY, w, h) {
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    for (let cy = Math.floor(camY / CELL); cy <= Math.floor((camY + h) / CELL); cy++)
-      for (let cx = Math.floor(camX / CELL); cx <= Math.floor((camX + w) / CELL); cx++)
-        ctx.drawImage(this.chunk(cx, cy), cx * CELL - camX, cy * CELL - camY, CELL, CELL);
-    ctx.restore();
-  }
-
-  /* El mar se mueve: destellos que van y vienen y la espuma en las rocas. */
-  sea(ctx, camX, camY, w, h, time) {
-    if (camX + w < R + 90) return;
-    ctx.save();
-    const y0 = Math.floor(camY / 12) * 12;
-    for (let wy = y0; wy < camY + h; wy += 12) {
-      const shore = shoreX(wy) + 30, row = wy / 12;
-      const foam = shore + 3 + Math.sin(time * 0.9 + wy * 0.035) * 5;
-      ctx.fillStyle = `rgba(190,214,226,${0.2 + 0.12 * Math.sin(time * 0.9 + wy * 0.035 + 1)})`;
-      ctx.fillRect(Math.round(foam - camX), wy - camY, 4, 2);
-      if (hash(row, 3, 41) > 0.4) ctx.fillRect(Math.round(foam + 6 - camX), wy - camY + 6, 2, 2);
-      for (let k = 0; k < 4; k++) {
-        const seed = hash(row, k, 42);
-        if (seed < 0.35) continue;
-        const span = 520 - (shore - R - 100);
-        const x = shore + 14 + ((seed * 977 + time * (5 + seed * 7)) % span);
-        const a = 0.05 + 0.12 * (0.5 + 0.5 * Math.sin(time * (0.7 + seed) + row * 1.7 + k));
-        ctx.fillStyle = `rgba(150,186,214,${a})`;
-        ctx.fillRect(Math.round(x - camX), wy - camY + Math.round(seed * 8), 6 + Math.round(seed * 10), 2);
-      }
-    }
-    ctx.restore();
-  }
-
-  /* ---------- piezas en pantalla ---------- */
-
-  /*
-   * Dibuja lo que va a ras de suelo y devuelve en items lo que tiene altura,
-   * para ordenarlo con las criaturas. flames y lights, en coordenadas de pantalla.
-   */
-  collect(ctx, camX, camY, w, h, time, state, items, flames, lights) {
-    const cirios = state.cirios, dim = state.dim ?? 1;
-    ctx.save();
-    ctx.imageSmoothingEnabled = false;
-    for (let cy = Math.floor((camY - 260) / CELL); cy <= Math.floor((camY + h + 320) / CELL); cy++) {
-      for (let cx = Math.floor((camX - 300) / CELL); cx <= Math.floor((camX + w + 300) / CELL); cx++) {
-        const cell = this.grid.get(`${cx},${cy}`);
-        if (!cell) continue;
-        for (const p of cell) {
-          const sx = Math.round(p.x - camX), sy = Math.round(p.y - camY);
-          if (sx < -260 || sx > w + 260 || sy < -230 || sy > h + 300) continue;
-          const seen = sx > -200 && sx < w + 200 && sy > -40;
-          if (p.flat && seen) ctx.drawImage(p.flat.c, sx - p.flat.ox * 2, sy + (p.flatDy || 0) - p.flat.oy * 2, p.flat.w * 2, p.flat.h * 2);
-          if (p.tall && seen) items.push({kind: 'prop', p, x: sx, y: sy + (p.tallDy || 0), sortY: p.back ? -1e6 + sy : sy + (p.sort || 0)});
-          let lit = true;
-          if (p.cirio !== undefined) {
-            const c = cirios?.[p.cirio];
-            lit = !c || c.lit;
-            if (lit) {
-              const flick = 0.9 + Math.sin(time * 7 + p.cirio * 3) * 0.06 + Math.sin(time * 19 + p.cirio) * 0.04;
-              flames.push({x: sx, y: sy - 62, kind: 'cirio', f: flick, flare: c?.flare || 0});
-              lights.push({x: sx, y: sy - 52, r: (124 + (c?.flare || 0) * 60) * flick, i: 1, c: 'warm', g: 1});
-            }
-            continue;
-          }
-          if (p.flames) for (const f of p.flames) {
-            const flick = 0.85 + Math.sin(time * 9 + f.seed * 7) * 0.08 + Math.sin(time * 23 + f.seed) * 0.05;
-            flames.push({x: sx + f.dx, y: sy + f.dy, kind: f.kind, f: flick});
-          }
-          if (p.lights) for (const l of p.lights) {
-            const flick = 0.88 + Math.sin(time * 9 + l.seed * 7) * 0.07 + Math.sin(time * 23 + l.seed) * 0.05;
-            lights.push({x: sx + l.dx, y: sy + l.dy, r: l.r * flick, i: l.i * (l.c === 'red' ? dim : 1), c: l.c, g: l.g});
-          }
-          if (p.wake) lights.push({x: sx, y: sy - 14, r: 90 + 36 * (state.lit ?? 4), i: 0.2 + 0.09 * (state.lit ?? 4), c: 'warm', g: 0.6});
-        }
-      }
-    }
-    ctx.restore();
-  }
-
-  drawProp(ctx, it, state) {
-    const p = it.p, s = p.tall;
-    if (p.cropW) ctx.drawImage(s.c, 0, 0, p.cropW, s.h, it.x - s.ox * 2, it.y - s.oy * 2, p.cropW * 2, s.h * 2);
-    else ctx.drawImage(s.c, it.x - s.ox * 2, it.y - s.oy * 2, s.w * 2, s.h * 2);
-    if (p.bell) {
-      // La campana de la espadaña se mueve cuando da la hora.
-      const swing = Math.sin((state.bell || 0) * 7) * Math.min(1, (state.bell || 0) / 1.5) * 0.5, b = this.art.bell;
-      ctx.save();
-      ctx.translate(it.x + p.bell.dx, it.y + p.bell.dy);
-      ctx.rotate(swing);
-      ctx.drawImage(b.c, -b.ox * 2, -b.oy * 2, b.w * 2, b.h * 2);
-      ctx.restore();
-    }
-  }
-
-  /* Lo que no se atraviesa: el ataúd, el cruceiro, el tejo y los nichos. */
-  resolve(pos, radius = 9) {
-    pos.x = Math.max(L + 14, Math.min(R - 14, pos.x));
-    pos.y = Math.max(T + 26, Math.min(B - 8, pos.y));
-    for (const s of this.solids) {
-      const nx = Math.max(s.x0, Math.min(s.x1, pos.x)), ny = Math.max(s.y0, Math.min(s.y1, pos.y));
-      const dx = pos.x - nx, dy = pos.y - ny, d2 = dx * dx + dy * dy;
-      if (d2 >= radius * radius) continue;
-      if (d2 > 0.0001) { const d = Math.sqrt(d2); pos.x = nx + dx / d * radius; pos.y = ny + dy / d * radius; continue; }
-      // Dentro del todo: sale por el lado más cercano.
-      const out = [[pos.x - s.x0 + radius, -1, 0], [s.x1 - pos.x + radius, 1, 0], [pos.y - s.y0 + radius, 0, -1], [s.y1 - pos.y + radius, 0, 1]].sort((a, b) => a[0] - b[0])[0];
-      pos.x += out[1] * out[0]; pos.y += out[2] * out[0];
-    }
-    return pos;
-  }
 }
 
 /* Llamas dibujadas después de la oscuridad, para que brillen. */
@@ -938,7 +475,7 @@ export function drawFlames(c, flames, time, wind = 0) {
 /* ---------- niebla ---------- */
 
 let fogBlob;
-function fogSprite() {
+export function fogSprite() {
   if (fogBlob) return fogBlob;
   fogBlob = makeCanvas(256, 128);
   const c = fogBlob.getContext('2d');
@@ -968,3 +505,4 @@ export function drawFog(c, camX, camY, w, h, time, density) {
   }
   c.restore();
 }
+

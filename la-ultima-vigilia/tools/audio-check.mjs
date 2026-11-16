@@ -30,21 +30,22 @@ try {
     const g = window.vigilia;
     cancelAnimationFrame(g.raf);
     const rate = 44100;
-    const run = {scene: 'run', danger: 0.2, hp: 1, boss: false, soul: 0, lull: 0, rain: 0, tide: false, procession: 0, procPan: 0};
+    const run = {scene: 'run', danger: 0.2, hp: 1, boss: false, soul: 0, lull: 0, rain: 0, tide: false, procession: 0, procPan: 0, intensity: 0.4};
     // Cada tramo es un momento de la noche; fire son los efectos que suenan en él.
     const scenes = [
       {name: 'título', len: 7, state: {scene: 'title', hour: 0}, fire: ['ui-foco', 'ui-elegir', 'ui-abrir', 'ui-cerrar']},
-      {name: 'la una', len: 9, state: {...run, hour: 1.2},
-        fire: ['hora', 'chispa', 'golpe', 'luz', 'luz', 'luz', 'muerte:anima', 'muerte:hermano', 'paso:hierba', 'paso:grava', 'paso:piedra', 'esquiva', 'recuerdo', 'voz:Lucía', 'voz:Julián', 'voz:Matilde', 'voz:Amparo', 'voz:Carmela', 'cafe', 'procesion']},
-      {name: 'las dos, con procesión', len: 9, state: {...run, hour: 2.3, danger: 0.7, rain: 1, tide: true, procession: 0.85, procPan: -0.6},
-        fire: ['sal', 'golpe:salt', 'golpe:sacred', 'campana', 'muerte:urco', 'muerte:curuxa', 'muerte:ahogado', 'muerte:planidera', 'muerte:espantajo', 'gruñido', 'chillido', 'llanto', 'lagrima', 'crujido', 'guadaña', 'charco', 'salpica', 'paso:agua', 'cirioFuera', 'cerilla', 'cirioPrende', 'herida', 'risa']},
-      {name: 'las tres', len: 8, state: {...run, hour: 3.2, rain: 1}, fire: ['racha', 'difunto', 'difuntoCae', 'recordatorio', 'rincon', 'arrullo:matilde']},
-      {name: 'las cuatro, a oscuras', len: 8, state: {...run, hour: 4.5, danger: 0.5, soul: 0.7, hp: 0.2, rain: 0.5}, fire: ['levanta', 'arrullo:julian', 'cirioFuera', 'herida']},
-      {name: 'la Guía', len: 9, state: {...run, hour: 5.2, danger: 0.9, boss: true}, fire: ['guia', 'reloj', 'campana', 'sal', 'chispa', 'golpe', 'arrullo:lucia', 'liberada']},
+      {name: 'primera ronda', len: 9, state: {...run, hour: 0.3},
+        fire: ['ronda', 'hora', 'chispas', 'escopeta', 'honda', 'estocada', 'barrido', 'golpe', 'cera', 'cera', 'cera', 'muerte:anima', 'muerte:hermano', 'paso:hierba', 'paso:piedra', 'esquiva', 'nivel', 'voz:Lucía', 'voz:Julián', 'voz:Matilde', 'voz:Amparo', 'cafe', 'procesion']},
+      {name: 'las dos, con procesión', len: 10, state: {...run, hour: 2.4, danger: 0.7, rain: 1, procession: 0.85, procPan: -0.6, intensity: 0.7},
+        fire: ['arpon', 'vieiras', 'pandeireta', 'foguetes', 'gaita', 'agua', 'frasco', 'campanilla', 'cirio', 'explosion', 'paja', 'abellas', 'golpe:salt', 'golpe:sacred', 'muerte:urco', 'muerte:curuxa', 'muerte:ahogado', 'muerte:planidera', 'muerte:espantajo',
+          'gruñido', 'chillido', 'llanto', 'lagrima', 'trasno', 'lavandeira', 'trueno', 'crujido', 'salpica', 'herida', 'esquivaGolpe', 'ofrendaCae', 'ofrenda', 'horda', 'difunto', 'difuntoCae']},
+      {name: 'el puesto de Remedios', len: 8, state: {scene: 'shop', hour: 3}, fire: ['rondaFin', 'recuerdo', 'elegir', 'tirada', 'sinCera', 'ofrendaAbre', 'compra', 'venta', 'candado', 'candadoAbre', 'juntar', 'tienda', 'salir']},
+      {name: 'habilidades', len: 8, state: {...run, hour: 3.6, intensity: 0.6}, fire: ['habilidad_lucia', 'habilidad_julian', 'habilidad_matilde', 'habilidad_tono', 'habilidad_sabela', 'habilidad_anselmo', 'levanta']},
+      {name: 'la Guía', len: 9, state: {...run, hour: 5.7, danger: 0.9, boss: true, intensity: 1}, fire: ['guia', 'reloj', 'golpeCruz', 'campana', 'foguetes', 'explosion', 'golpe', 'liberada']},
       {name: 'el alba', len: 8, state: {scene: 'dawn', hour: 6}, fire: ['alba']},
-      // Lo peor que puede pasar a la vez: horda, campanas, levantarse y un difunto.
-      {name: 'todo a la vez', len: 5, state: {...run, hour: 4.9, danger: 1, soul: 0.9, procession: 1, rain: 1}, burst: true,
-        fire: ['sal', 'chispa', 'campana', 'golpe', 'golpe:sacred', 'muerte:espantajo', 'muerte:ahogado', 'herida', 'levanta', 'difunto', 'hora', 'guadaña', 'racha', 'cirioFuera', 'risa', 'arrullo:lucia']}
+      // Lo peor que puede pasar a la vez: horda, explosiones, campanas, la Guía y un difunto.
+      {name: 'todo a la vez', len: 5, state: {...run, hour: 5.8, danger: 1, procession: 1, rain: 1, boss: true, intensity: 1}, burst: true,
+        fire: ['escopeta', 'chispas', 'foguetes', 'explosion', 'campana', 'campanilla', 'golpe', 'golpe:sacred', 'muerte:espantajo', 'muerte:ahogado', 'herida', 'levanta', 'difunto', 'hora', 'trueno', 'golpeCruz', 'horda', 'habilidad_anselmo', 'gaita']}
     ];
     const total = scenes.reduce((sum, sc) => sum + sc.len, 0);
     const ctx = new OfflineAudioContext(2, rate * total, rate);
@@ -55,7 +56,7 @@ try {
     const fire = spec => {
       const [name, arg] = spec.split(':');
       const opts = name === 'muerte' ? {type: arg} : name === 'paso' ? {surface: arg} : name === 'voz' ? {speaker: arg} : name === 'golpe' ? {tone: arg || 'ember', crit: arg === 'sacred'}
-        : name === 'arrullo' ? {voice: arg} : name === 'hora' ? {count: 2} : {};
+        : name === 'hora' ? {count: 2} : name === 'cera' ? {combo: played.size % 9} : name === 'ronda' ? {round: 3} : ['elegir', 'ofrendaAbre', 'gaita', 'campanilla'].includes(name) ? {tier: 2} : {};
       try { a.sfx(name, {...opts, pan: (played.size % 5 - 2) / 3}); played.add(name); } catch (error) { thrown.push(`${spec}: ${error.message}`); }
     };
     let start = 0;

@@ -6,10 +6,10 @@
 import { TAU } from './util.js';
 import { ATTACK_PALETTE, makeCanvas } from './art.js';
 
-const MAX_EFFECTS = 96;
+const MAX_EFFECTS = 140;
 const MAX_LIGHTS = 24;
-const priority = kind => kind === 'bell' ? 3 : kind === 'cast' || kind === 'blast' ? 2 : kind === 'impact' ? 0 : 1;
-const LIFETIMES = {cast: 0.24, blast: 0.3, bell: 0.72, impact: 0.28, bead: 0.3, moth: 0.34};
+const priority = kind => kind === 'bell' ? 3 : kind === 'cast' || kind === 'blast' || kind === 'pop' ? 2 : kind === 'impact' || kind === 'trail' ? 0 : 1;
+const LIFETIMES = {cast: 0.2, blast: 0.32, bell: 0.6, impact: 0.24, bead: 0.3, moth: 0.34, pop: 0.22, trail: 0.16};
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 const palette = tone => ATTACK_PALETTE[tone] || ATTACK_PALETTE.ember;
 
@@ -67,6 +67,9 @@ export class CombatEffects {
     this.effects = this.effects.filter(fx => fx.life > 0);
   }
 
+  /* El rastro de un barrido: pequeñas medias lunas que siguen a la hoja. */
+  trail(x, y, a, tone) { this.emit('trail', x, y, {a, tone}); }
+
   addLights(lights, camX, camY, flashes = true) {
     // Destellos apagados conserva los dibujos; suprime los pulsos de iluminación.
     if (!flashes) return;
@@ -75,6 +78,7 @@ export class CombatEffects {
     let count = 0;
     for (const fx of ordered) {
       if (count >= MAX_LIGHTS) break;
+      if (fx.kind === 'trail') continue;
       const impact = fx.kind === 'impact';
       if (impact && impactPositions.some(other => (other.x - fx.x) ** 2 + (other.y - fx.y) ** 2 < 28 ** 2)) continue;
       if (impact) impactPositions.push(fx);
@@ -146,6 +150,22 @@ export class CombatEffects {
         }
         ctx.strokeStyle = p.edge; ctx.lineWidth = 1;
         ctx.beginPath(); ctx.arc(0, 0, reach * 0.75, -0.45, 0.45); ctx.stroke();
+      } else if (fx.kind === 'pop') {
+        // Al deshacerse una criatura: un aro que se abre y ocho chispas.
+        const r = 4 + t * fx.radius;
+        if (flashes) this.halo(ctx, fx.tone, 0, 0, fx.radius + 10, k * 0.6);
+        ctx.strokeStyle = '#ffffff'; ctx.globalAlpha *= 0.9; ctx.lineWidth = 1 + k * 3;
+        ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke();
+        for (let i = 0; i < 8; i++) {
+          const a = i * TAU / 8 + fx.seed;
+          ctx.fillStyle = i % 2 ? p.core : '#ffffff';
+          ctx.fillRect(Math.round(Math.cos(a) * r * 1.2) - 1, Math.round(Math.sin(a) * r * 1.2) - 1, 2 + Math.round(k * 2), 2 + Math.round(k * 2));
+        }
+      } else if (fx.kind === 'trail') {
+        ctx.rotate(fx.a);
+        ctx.globalAlpha *= 0.85;
+        ctx.fillStyle = p.core; ctx.fillRect(-2, -1, 5, 2);
+        ctx.fillStyle = p.edge; ctx.fillRect(-7, -2, 5, 4); ctx.fillRect(-11, -1, 4, 2);
       } else if (fx.kind === 'cast') {
         ctx.rotate(fx.a);
         if (flashes) this.halo(ctx, fx.tone, 3, 0, 32, k * 0.7);
@@ -211,58 +231,6 @@ export class CombatEffects {
       // Silueta de llama escalonada con una punta blanca y un pie de brasa.
       ctx.fillRect(-16, -1, 7, 2); ctx.fillRect(-11, -2, 9, 4); ctx.fillRect(-6, -3, 8, 6);
       ctx.fillStyle = p.core; ctx.fillRect(-4, -1, 8, 2); ctx.fillRect(-1, -2, 4, 4);
-    }
-    ctx.restore();
-  }
-
-  drawLanternAura(ctx, p, radius, clock, camX, camY, flashes = true) {
-    const x = p.x - camX, y = p.y - camY, ember = palette('ember');
-    if (!visible(ctx, x, y, radius + 12)) return;
-    ctx.save();
-    ctx.translate(Math.round(x), Math.round(y));
-    ctx.strokeStyle = `rgba(${ember.rgb},.13)`; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(0, 0, radius, 0, TAU); ctx.stroke();
-    // Hitos de brasa sobre el alcance exacto; se mueven despacio, sin pulsos.
-    const turn = flashes ? clock * 0.09 : 0;
-    for (let i = 0; i < 16; i++) {
-      const a = i * TAU / 16 + turn, bx = Math.cos(a) * radius, by = Math.sin(a) * radius;
-      ctx.fillStyle = i % 3 ? ember.edge : ember.core;
-      ctx.globalAlpha = i % 3 ? 0.3 : 0.5;
-      ctx.fillRect(Math.round(bx), Math.round(by), 2, 2);
-      ctx.strokeStyle = `rgba(${ember.rgb},.18)`;
-      ctx.beginPath(); ctx.arc(0, 0, radius, a + 0.04, a + 0.12); ctx.stroke();
-    }
-    ctx.restore();
-  }
-
-  drawRosary(ctx, p, level, clock, camX, camY, flashes = true) {
-    if (!level) return;
-    const x = p.x - camX, y = p.y - 4 - camY, radius = 58 + 4 * level, count = 1 + level;
-    if (!visible(ctx, x, y, radius + 20)) return;
-    const pearl = palette('sacred');
-    ctx.save();
-    ctx.translate(Math.round(x), Math.round(y));
-    ctx.strokeStyle = `rgba(${pearl.rgb},.15)`; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.arc(0, 0, radius, 0, TAU); ctx.stroke();
-    for (let i = 0; i < count; i++) {
-      const a = clock * 2.3 + i * TAU / count, bx = Math.cos(a) * radius, by = Math.sin(a) * radius;
-      // El recorrido breve da peso al giro sin convertirlo en un escudo opaco.
-      for (let trail = 2; trail >= 0; trail--) {
-        ctx.strokeStyle = `rgba(${pearl.rgb},${(3 - trail) * (flashes ? 0.12 : 0.065)})`;
-        ctx.lineWidth = trail === 0 ? 2 : 1;
-        ctx.beginPath(); ctx.arc(0, 0, radius, a - 0.37 + trail * 0.09, a - 0.035); ctx.stroke();
-      }
-      if (flashes) this.halo(ctx, 'sacred', bx, by, 17, 0.35);
-      diamond(ctx, bx, by, 4, '#25202e');
-      diamond(ctx, bx, by, 3, pearl.edge);
-      ctx.fillStyle = pearl.core; ctx.fillRect(Math.round(bx - 2), Math.round(by - 2), 3, 3);
-      ctx.fillStyle = '#ffffff'; ctx.fillRect(Math.round(bx - 1), Math.round(by - 2), 1, 1);
-      if (i === 0) {
-        // La cuenta distinta termina en la pequeña cruz del rosario.
-        ctx.fillStyle = pearl.edge;
-        ctx.fillRect(Math.round(bx), Math.round(by + 5), 1, 7);
-        ctx.fillRect(Math.round(bx - 2), Math.round(by + 7), 5, 1);
-      }
     }
     ctx.restore();
   }

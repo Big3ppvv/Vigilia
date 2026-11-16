@@ -1,6 +1,6 @@
 # Arquitectura de La última vigilia
 
-El juego usa módulos JavaScript, Canvas 2D y Web Audio. No necesita un framework ni un servidor para jugar. `build.mjs` recorre las importaciones de `app.js` y empaqueta los módulos, los estilos y el icono en `la-ultima-vigilia.html`.
+El juego usa módulos JavaScript, Canvas 2D y Web Audio. No necesita un framework ni un servidor para jugar. `build.mjs` recorre las importaciones de `app.js` y empaqueta los módulos, los estilos y el icono en `la-ultima-vigilia.html` (unos 500 KB).
 
 Las rutas siguientes son relativas a `la-ultima-vigilia/`, salvo que se indique lo contrario.
 
@@ -9,86 +9,78 @@ Las rutas siguientes son relativas a `la-ultima-vigilia/`, salvo que se indique 
 ```text
 index.html + style.css
         ↓
-app.js ──→ interface.js (ajustes y persistencia en app.js)
+app.js ──→ interface.js · storage.js
         ↓ acciones y hooks
-VigilGame (game.js)
+VigilGame (game.js)  — estados: ready → running ⇄ paused → roundEnd → levelup → crate → shop → running … → dawn | dying → ended
         ├── entrada: input.js / bot.js
-        ├── simulación: director / vigil / enemies / boss / weapons / memories / objects / ritual
-        ├── dibujo: render / world / art / sprites / combat-fx / scene-fx
-        └── sonido: audio / sfx / music / audio-cues
+        ├── rondas: waves.js (marcas, procesiones, hordas, difuntos, la Guía)
+        ├── combate: weapons.js (armas en corro, proyectiles, daño, cera, construcciones) · enemies.js · abilities.js
+        ├── entre rondas: shop.js (recuerdos, ofrendas, el puesto de Remedios)
+        ├── dibujo: render.js · arena.js · props.js · art.js · sprites.js · sprites-extra.js · combat-fx.js · fx.js · ambient.js
+        └── sonido: audio.js · sfx.js · sfx-rondas.js · music.js · audio-cues.js · audio-synth.js
 ```
 
-`VigilGame` posee el estado de la partida, el reloj y el ciclo de vida. Los sistemas de reglas aportan métodos a su prototipo; la composición ocurre al final de `game.js`. El bucle avanza la simulación, dibuja y entrega un estado resumido al motor de audio.
+`VigilGame` posee el estado de la partida (`run`), el reloj de la ronda y el ciclo de vida. Los sistemas aportan métodos a su prototipo; la composición ocurre al final de `game.js`. El bucle avanza la simulación, dibuja y entrega un estado resumido al motor de audio.
 
-La interfaz recibe `getSnapshot()` mediante `onStats` y eventos como `onState`, `onLevelUp`, `onEnd`, `onSubtitle` y `onBanner`. Los botones llaman a acciones públicas —`start`, `pause`, `resume`, `dash`, `ability`, `chooseUpgrade`— en vez de reproducir reglas en el DOM.
+La interfaz recibe snapshots por hooks: `onStats` (HUD), `onLevelUp`, `onCrate`, `onShop`, `onEnd`, `onState`, `onBanner`, `onSubtitle`, `onDiscover`, `onSave`. Los botones llaman a acciones públicas —`start`, `continueRun`, `dash`, `ability`, `chooseUpgrade`, `rerollUpgrades`, `takeCrate`, `sellCrate`, `buy`, `rerollShop`, `toggleLock`, `sellWeapon`, `combineWeapon`, `nextRound`, `pause`, `resume`— en vez de reproducir reglas en el DOM.
 
 ## Responsabilidades
 
 | Sistema | Archivos | Responsabilidad |
 |---|---|---|
-| Contenido | `story.js` | Historia, personajes, recuerdos, criaturas, habilidades, faroles, ayuda y finales |
-| Equilibrio | `balance.js` | Duración, población, estadísticas, recargas, alcances y posición de los faroles |
-| Ciclo de vida | `game.js` | Inicio, reinicio, actualización, transiciones, amanecer, derrota y snapshots |
-| Entrada | `input.js`, `bot.js` | Teclado, gesto táctil, esquiva y piloto de pruebas |
-| Noche | `director.js` | Horas, población, procesiones y enjambres |
-| Amenazas | `enemies.js`, `boss.js` | Movimiento, daño, colisiones, ataques especiales y la Guía |
-| Combate y progreso | `weapons.js`, `memories.js` | Armas automáticas, proyectiles, recogida de luz, estadísticas y mejoras |
-| Decisiones activas | `ritual.js` | Habilidades, círculos de sal, canalización, interrupción y recompensas de los faroles |
-| Mundo y dibujo | `world.js`, `art.js`, `sprites.js`, `render.js` | Terreno, obstáculos, sprites, luz, cámara y orden de dibujo |
-| Efectos | `fx.js`, `combat-fx.js`, `scene-fx.js` | Caducidad de partículas, señales de combate, faroles, huellas, reflejos y minimapa |
-| Sonido | `audio.js` | Ciclo de vida, mezcla, ambiente y respuesta al estado del juego |
-| Síntesis | `audio.js` | Fuentes, envolventes, cuerda pulsada y reverberación |
-| Música | `audio-score.js` | Nana, motivos de recuerdo y frases que responden al peligro |
-| Señales sonoras | `audio-cues.js` | Armas, habilidades, pasos, campanas y eventos |
-| Interfaz | `app.js`, `index.html`, `style.css` | Arranque, selección, HUD, cartas, álbum y recordatorio final |
-| Preferencias y capas | `storage.js`, `settings.js`, `interface.js` | Guardado seguro, adaptación de ajustes, aislamiento de capas y foco de teclado |
+| Contenido | `story.js` | Personajes, habilidades, criaturas, difuntos, la Guía, Amparo, Remedios, voces, ayuda y finales |
+| Equilibrio | `balance.js` | Rondas, atrio, criaturas y su escalado, población, economía, rarezas, dificultad y habilidades |
+| Estadísticas | `stats.js` | Las 16 estadísticas, sus topes, la armadura y lo que usa la simulación (`derived`) |
+| Armas | `arsenal.js` | 20 armas con cuatro niveles, formas de atacar, escalados y las seis clases con sus premios |
+| Objetos y recuerdos | `items.js` | 69 objetos con contrapartidas y reglas especiales; los 16 recuerdos de subir de nivel |
+| Ciclo de vida | `game.js` | Partida, rondas, final de ronda, cosecha e intereses, experiencia, muerte, alba, guardado y snapshots |
+| Rondas | `waves.js` | Qué viene, por dónde y cuándo: marcas de aparición, procesiones, hordas, difuntos con nombre y la Guía |
+| Combate | `weapons.js` | Armas en corro, estocadas y barridos, proyectiles, zonas, daño con críticos, quemaduras, cera, construcciones |
+| Amenazas | `enemies.js` | Movimiento y ataques de cada criatura, avisos, proyectiles enemigos, peligros y la Guía |
+| Entre rondas | `shop.js` | Rarezas, precios, recuerdos y su tirada, ofrendas, ofertas, comprar, candado, vender y juntar |
+| Habilidades | `abilities.js` | Lumbre, Cerco de sal, Responso, Alborada, Rede y Exorcismo |
+| Entrada | `input.js`, `bot.js` | Teclado, dedo y mando; el piloto automático de las pruebas |
+| Mundo y dibujo | `arena.js`, `props.js`, `art.js`, `sprites*.js`, `render.js` | Atrio pintado una vez, piezas del camposanto, sprites, luz y orden de dibujo |
+| Efectos | `fx.js`, `combat-fx.js`, `ambient.js` | Partículas, números, fogonazos, estelas, golpes, orballo y huellas |
+| Sonido | `audio.js`, `sfx.js`, `sfx-rondas.js`, `music.js` | Mezcla, ambiente, efectos por nombre y la nana convertida en muiñeira durante las rondas |
+| Interfaz | `app.js`, `index.html`, `style.css`, `interface.js`, `storage.js` | Título, HUD, recuerdos, ofrendas, tienda, pausa, final, álbum, ajustes y progreso guardado |
 
 ## Contratos que conviene conservar
 
-- **Reglas y dibujo:** el renderizador lee el estado; no concede recompensas ni decide impactos. Un farol cambia en `ritual.js` y se representa en `scene-fx.js`.
-- **Reloj y pausa:** las recargas, la canalización y los efectos de reglas avanzan con la simulación. La pausa no permite completar un farol ni recargar una habilidad.
-- **Reinicio:** `reset()` limpia entidades, proyectiles, efectos de combate, índice espacial, estado del bot, habilidades y faroles. Los efectos de escena reconocen el nuevo jugador y descartan sus huellas anteriores.
-- **Interfaz:** `getSnapshot()` publica `ability` y `ritual`. Los estados de disponibilidad y progreso proceden de ese snapshot; los textos de las habilidades pertenecen a `story.js`.
-- **Sonido:** `setVolume()` controla el nivel general; `setMix({music, amb, sfx})` usa valores entre 0 y 1. La integración conserva el mezclador reciente de main y su limitador de salida.
-- **Persistencia:** se conserva el prefijo `vigilia2.` para mantener las noches anteriores. `app.js` tolera almacenamiento inaccesible y conserva los ajustes y registros existentes.
-- **Accesibilidad:** los controles son botones nativos; las capas de partida aíslan el fondo y contienen el foco. Las opciones de destellos y temblor reducen efectos sin cambiar daño ni colisiones.
+- **Reglas y dibujo:** `render.js` lee el estado; no concede recompensas ni decide impactos. El daño solo pasa por `hurt()` y `damagePlayer()`.
+- **Una ronda limpia:** `startRound()` vacía criaturas, proyectiles, zonas y marcas, llena la vida, coloca las construcciones y conserva las ofrendas del suelo. `endRound()` funde la cera que queda y recoge las ofrendas.
+- **Entre rondas, en orden:** `nextScreen()` decide: recuerdos pendientes → ofrendas → tienda (o alba tras la última ronda). Cada pantalla vuelve a llamarla al cerrarse.
+- **Estadísticas en un solo sitio:** `computeStats()` suma base, personaje, recuerdos, objetos y premios de clase, y deja `st` (valores), `d` (derivados) y `sp` (reglas especiales). Subir la vida máxima cura lo que sube.
+- **Pausa:** cooldowns, rondas y efectos de reglas solo avanzan en `running` (y en las transiciones `roundEnd`, `dying`, `dawn`).
+- **Guardado:** la partida se guarda solo en la tienda (`saveData()`, versión 3) y se borra al terminar. El progreso entre noches y los ajustes usan el prefijo `vigilia3.`; los ajustes de la versión anterior se leen si no hay nuevos.
+- **Accesibilidad:** controles nativos, capas con foco contenido (`interface.js`), atajos de teclado en todas las pantallas, movimiento reducido apaga temblor y destellos sin cambiar el daño.
 
-La paleta de interfaz reside en `style.css`, la de ataques en `ATTACK_PALETTE` de `art.js` y la ambiental en `SCENE_PALETTE` de `scene-fx.js`. [DESIGN.md](DESIGN.md) documenta esa identidad y su correspondencia con el código.
+## Límites
 
-## Límites de efectos
-
-Los límites controlan acumulación y limpieza; no son una promesa de rendimiento para cualquier dispositivo.
-
-| Recurso | Límite actual | Propietario |
+| Recurso | Límite | Propietario |
 |---|---|---|
-| Criaturas | 240 | `MAX_ENEMIES`, `balance.js` |
-| Efectos de combate | 96 | `combat-fx.js` |
-| Luces añadidas por combate | 24 | `combat-fx.js` |
-| Partículas | 420 | `fx.js` |
-| Huellas | 48, con caducidad | `scene-fx.js` |
-| Hojas dibujadas | 36 por fotograma | `scene-fx.js` |
-| Reflejos de charcos | 28 por fotograma | `scene-fx.js` |
-
-Los gradientes de combate se reutilizan. El escenario obtiene hojas y charcos a partir de coordenadas y semillas, y omite elementos fuera de vista. Las fuentes sonoras terminadas se desconectan.
+| Criaturas | 260 | `MAX_ENEMIES`, `balance.js` |
+| Partículas | 520 | `fx.js` |
+| Números y rótulos | 90 | `fx.js` |
+| Fogonazos de luz | 48 | `fx.js` |
+| Efectos de combate | 140, 24 con luz | `combat-fx.js` |
+| Proyectiles propios | 220 | `weapons.js` |
+| Proyectiles enemigos | 220 | `enemies.js` |
+| Gotas de cera en el suelo | 320 (después se suman a las que hay) | `weapons.js` |
+| Luces de criaturas por fotograma | 70, las más cercanas al centro | `render.js` |
 
 ## Ampliar sin concentrar todo en un archivo
 
-**Otra criatura:** añade sus números a `ENEMIES` en `balance.js`, su texto a `CREATURES` en `story.js` y su silueta en `sprites.js`. Implementa su comportamiento en `enemies.js`; cualquier ataque nuevo debe tener un aviso visible previo y respetar los límites de población. Si necesita sonido, añade su receta a `sfx.js`.
+**Otra arma:** añádela a `WEAPONS` en `arsenal.js` con sus cuatro niveles y una forma de atacar existente (`act`); dibújala en `WEAPON_SPRITES` de `sprites-extra.js` mirando a la derecha y, si tiene sonido propio, añade una receta con su `id` en `sfx-rondas.js`. `tools/data-check.mjs` comprueba que todo cuadra.
 
-**Una habilidad o un farol:** separa texto (`story.js`), números y posiciones (`balance.js`), reglas (`ritual.js`) y dibujo (`scene-fx.js`). La interfaz consume el snapshot existente. Comprueba estados inválidos, recarga, reinicio y que una recompensa no pueda concederse dos veces.
+**Otro objeto:** añádelo a `ITEMS` en `items.js` con `stats` y, si cambia una regla, un `special` que ya exista (lo suma `computeStats()`); para una regla nueva, añade su lectura donde ocurra (`weapons.js`, `shop.js`…) y su nombre a la lista de `data-check.mjs`. Su icono va en `EXTRA_ICONS`.
 
-**Un efecto:** usa `combat-fx.js` para salida, recorrido o contacto de armas; usa `scene-fx.js` para elementos del escenario y señales de objetivos. Dale una caducidad o un límite explícito. Suprimir destellos debe conservar la información necesaria para jugar.
+**Otra criatura:** números en `ENEMIES` (`balance.js`), texto en `CREATURES` (`story.js`), dibujo en `EXTRA_SPRITES`, comportamiento en `behave()` de `enemies.js`. Todo ataque necesita un aviso visible antes de herir.
 
-**Un sonido:** añade la señal en `sfx.js` y reutiliza las primitivas de `audio.js`. Las recetas de habilidades y faroles se resuelven en `audio-cues.js`. Elige el bus por su función: música, ambiente o efectos. Evita crear nodos continuos por fotograma y comprueba mezcla, amplitud y limpieza con `tools/audio.mjs`.
+**Otro personaje:** ficha en `CHARACTERS` y `ABILITIES`, voces en `BARKS`, números en `ABILITY_BALANCE`, la habilidad en `abilities.js` y su dibujo con fotogramas de andar.
 
-El empaquetador admite importaciones nombradas locales en una línea y exportaciones de `const`, `let`, `function` o `class`; no resuelve importaciones circulares, paquetes externos ni alias. Conserva ese formato al añadir módulos o amplía el empaquetador con una comprobación equivalente.
+El empaquetador admite importaciones nombradas locales y exportaciones de `const`, `let`, `function` o `class`; no resuelve importaciones circulares, paquetes externos ni alias.
 
 ## Verificación y distribución
 
-`npm run build` actualiza el HTML autónomo. `npm run check` valida sintaxis y compara el resultado esperado con el archivo distribuido, sin modificarlo. `npm test` añade pruebas de habilidades y faroles, mezcla sonora, efectos de combate y noches completas con los tres personajes.
-
-Las pruebas de gameplay, audio y efectos usan el HTML distribuido en Chromium sin conexión. La prueba de noche completa omite la fuente web opcional para que no dependa de Google Fonts. El piloto automático comprueba continuidad y final de partida; para ajustar dificultad y legibilidad también hace falta jugar a velocidad normal. El servidor modular facilita investigar errores mediante `?debug` y `window.vigilia`.
-
-## Prioridad al integrar
-
-Se conserva el motor de audio reciente de `main` (`audio.js`, `sfx.js`, `music.js`) y se añaden las recetas exclusivas de habilidades y faroles desde `audio-cues.js`. `audio-synth.js` aporta las funciones auxiliares de esas recetas. Las versiones alternativas de ajustes y almacenamiento permanecen en el historial; `app.js` mantiene la persistencia reciente, incluidos rincones, élites y tiempo atmosférico. Arrullar usa E/Q y la habilidad adicional usa R.
+`npm run build` actualiza el HTML autónomo. `npm run check` valida sintaxis y que el archivo distribuido esté al día. `npm test` añade los datos, las reglas, el combate y sus efectos, el sonido, la interfaz con teclado, ratón y móvil, y una noche entera con cada personaje. Ver [VERIFICATION.md](VERIFICATION.md).

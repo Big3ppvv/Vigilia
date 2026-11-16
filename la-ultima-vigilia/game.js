@@ -1,27 +1,33 @@
 /*
- * La noche de Difuntos, de 00:00 a 06:00 (cien segundos por hora).
- * Este archivo lleva el compás: arranca la noche, la hace avanzar y la termina.
- * Cada sistema vive en su módulo y se suma aquí al juego.
+ * La vigilia por rondas. Este archivo lleva el compás: empieza una partida,
+ * abre y cierra cada ronda, encadena recuerdos, ofrendas y el puesto de
+ * Remedios, y termina la noche. Cada sistema vive en su módulo y se suma aquí.
+ *
+ * Estados: ready (título) → running (ronda) ⇄ paused → roundEnd → levelup →
+ * crate → shop → running… → dawn | dying → ended.
  */
-import { TAU, clamp, rand, pick } from './util.js';
-import { NIGHT, HOUR, BOSS_AT, ELITE_PLAN, fmtClock } from './balance.js';
+import { clamp, rand, pick } from './util.js';
+import { ROUNDS, BOSS_ROUND, PLAYER, DANGER, roundTime, clockAt, fmtClock, xpFor, ECONOMY } from './balance.js';
 import { Lighting } from './art.js';
-import { Cemetery, surfaceAt } from './world.js';
+import { Arena } from './arena.js';
 import { AudioEngine } from './audio.js';
 import { CombatEffects } from './combat-fx.js';
 import { Ambient } from './ambient.js';
-import { CHARACTERS, MEMORIES, BARKS, AMPARO, HOURS, VIGIL_TEXT } from './story.js';
+import { CHARACTERS, BARKS, AMPARO, HOURS, VIGIL_TEXT, BOSS } from './story.js';
+import { blankStats, derived } from './stats.js';
+import { WEAPON, CLASSES } from './arsenal.js';
+import { ITEM } from './items.js';
 import { inputMethods } from './input.js';
-import { directorMethods } from './director.js';
+import { waveMethods } from './waves.js';
 import { weaponMethods } from './weapons.js';
-import { memoryMethods } from './memories.js';
 import { enemyMethods } from './enemies.js';
-import { bossMethods } from './boss.js';
+import { shopMethods } from './shop.js';
 import { fxMethods } from './fx.js';
 import { botMethods } from './bot.js';
-import { vigilMethods } from './vigil.js';
 import { renderMethods } from './render.js';
-import { ritualMethods } from './ritual.js';
+import { abilityMethods } from './abilities.js';
+
+const SAVE_VERSION = 3;
 
 export class VigilGame {
   constructor(canvas, hooks = {}) {
@@ -30,10 +36,10 @@ export class VigilGame {
     this.hooks = hooks;
     this.audio = new AudioEngine();
     this.lighting = new Lighting();
-    this.cemetery = new Cemetery();
+    this.arena = new Arena();
     this.combatFx = new CombatEffects();
     this.ambient = new Ambient();
-    this.options = {shake: true, flashes: true, numbers: false, softDark: false, weather: true};
+    this.options = {shake: true, flashes: true, numbers: true, softDark: false, weather: true};
     this.muted = false;
     this.state = 'ready';
     this.character = 'lucia';
@@ -46,10 +52,9 @@ export class VigilGame {
     this.bot = false;
     this.god = false;
     this.handlers = [];
-    this.cam = {x: 0, y: 24};
-    this.titleFocus = {x: 0, y: 30};
+    this.cam = {x: 0, y: 0, zoom: 1};
+    this.titleFocus = {x: 0, y: -200};
     this.grid = new Map();
-    this.beamA = 0;
     this.reset();
     this.resize();
     this.bindInput();
@@ -61,71 +66,82 @@ export class VigilGame {
 
   /* ---------- ciclo de vida ---------- */
 
+  /* Todo lo de una partida; nada de lo que se guarda entre noches. */
   reset() {
-    const ch = CHARACTERS[this.character] || CHARACTERS.lucia;
-    this.time = 0; this.kills = 0; this.level = 1; this.xp = 0; this.xpNext = this.xpFor(1);
-    this.mem = Object.fromEntries(MEMORIES.map(m => [m.id, 0]));
-    this.order = [];
-    for (const [k, v] of Object.entries(ch.start)) { this.mem[k] = v; this.order.push(k); }
-    this.player = {x: 0, y: 96, hp: ch.hp, face: 1, inv: 0, dip: 0, walk: 0, moving: false};
-    this.rooms = new Set();
-    this.computeStats();
-    this.player.hp = this.st.maxHp;
-    this.enemies = []; this.shots = []; this.enemyShots = []; this.hazards = [];
-    this.gems = []; this.particles = []; this.rings = []; this.numbers = [];
-    this.corpses = []; this.marks = []; this.moths = []; this.ghosts = [];
+    this.run = {
+      character: this.character, danger: 0, round: 1, cera: 0, melt: 0, xp: 0, level: 1, pending: 0,
+      bonus: blankStats(), weapons: [], items: {}, crates: [], harvest: 0, revived: 0,
+      kills: 0, ceraTotal: 0, damageBy: {}, lockedOffers: [], shopVisits: 0, uid: 0, elitesDown: 0, freed: false
+    };
+    this.player = {x: 0, y: 40, vx: 0, vy: 0, hp: 20, face: 1, inv: 0, walk: 0, moving: false, lean: 0, squash: 0, hurtT: 0};
+    this.enemies = []; this.shots = []; this.enemyShots = []; this.hazards = []; this.areas = [];
+    this.drops = []; this.marks = []; this.structures = [];
+    this.particles = []; this.rings = []; this.numbers = []; this.flashes = []; this.ghosts = []; this.corpses = [];
     this.combatFx.clear();
     this.ambient.clear();
-    this.t = {chispas: 0.35, sal: 0.4, campana: 2.5, farol: 0.4, spawn: 0.6, procession: 40, swarm: 26, tide: 5, ghost: 0,
-      bossSummon: 5, bossWater: 3, bossSpiral: 4, regenFx: 0, stats: 0, danger: 0, step: 0};
-    this.resetVigil();
-    this.resetDirector();
-    this.checkRooms(false);
+    this.timeLeft = roundTime(1); this.roundLength = roundTime(1); this.roundClock = 0;
     this.dashCd = 0; this.dashTime = 0; this.dashDir = {x: 1, y: 0}; this.lastMove = {x: 1, y: 0};
-    this.phase = 'night'; this.hourShown = 0; this.boss = null; this.soul = 0; this.stoppedFor = 0;
-    this.rushFrom = 0; this.dawnT = 0; this.dyingT = 0; this.cause = null; this.bossReached = false; this.bossRaged = false;
-    this.dawnBreaks = false; this.deathClock = null; this.lastVictory = false;
-    this.damageTaken = 0; this.minHp = Infinity;
-    this.shake = 0; this.flash = 0; this.flashColor = '255,255,255'; this.freeze = 0;
+    this.shake = 0; this.flash = 0; this.flashColor = '255,255,255'; this.freeze = 0; this.slowmo = 0; this.zoomPunch = 0;
+    this.boss = null; this.stopped = false; this.stoppedFor = 0; this.dawnBreaks = false; this.lastVictory = false;
+    this.endT = 0; this.dyingT = 0; this.dawnT = 0; this.cause = null;
+    this.choices = []; this.upgradeRerolls = 0; this.crate = null; this.offers = []; this.rerolls = 0; this.freeRerolls = 0;
     this.seen = new Set(); this.said = new Set(); this.subQueue = []; this.sub = null; this.subT = 0;
-    this.lowHpCd = 0; this.amparoSaid = new Set(); this.danger = 0;
-    this.choices = []; this.choiceFree = false; this.enemyId = 0;
-    this.cards = 0; this.cardPending = false; this.elitesDown = 0; this.lightGot = 0; this.flare = 0;
-    this.ellaCd = 0; this.dashHit = new Set(); this.soulMax = 0; this.freedAt = null;
-    this.grid.clear(); this.botMemo = null; this.resetRituals();
+    this.danger = 0; this.enemyId = 0; this.lowHpCd = 0; this.hourShown = -1;
+    this.t = {stats: 0, ghost: 0, step: 0, bell: 0};
+    this.grid.clear(); this.botMemo = null;
+    this.resetWaves(); this.resetAbility();
     this.keys.clear(); this.pointer = null;
+    this.computeStats();
+    this.player.hp = this.d.maxHp;
+    this.lifestealBudget = 10;
   }
 
-  start(character) {
+  /* Empieza una partida nueva con un personaje, un arma inicial y una dificultad. */
+  start(character, weapon, danger = 0) {
     this.character = CHARACTERS[character] ? character : 'lucia';
     this.reset();
+    const ch = CHARACTERS[this.character];
+    this.run.danger = clamp(danger | 0, 0, DANGER.length - 1);
+    const first = WEAPON[weapon] && ch.weapons.includes(weapon) ? weapon : ch.weapons[0];
+    this.addWeapon(first, 0);
+    for (const id of ch.items || []) this.addItem(id, false);
     this.audio.init();
     this.audio.setMuted(this.muted);
-    this.cam.x = this.player.x; this.cam.y = this.player.y;
-    this.setState('running');
-    this.banner(HOURS[0].name, HOURS[0].mood);
-    this.audio.sfx('hora', {count: 12, gap: 1.5});
-    this.bellT = 12 * 1.5 + 1.5;
-    for (const id of this.order) this.hooks.onDiscover?.({kind: 'memory', id});
-    this.bark('start', {line: pick(BARKS[this.character].start), delay: 2.2});
-    for (let i = 0; i < 7; i++) {
-      const e = this.spawn('anima');
-      if (e) { const a = i / 7 * TAU + 0.4, r = Math.max(this.width, this.height) * 0.62; e.x = this.player.x + Math.cos(a) * r; e.y = this.player.y + Math.sin(a) * r; }
-    }
-    this.emitStats();
+    this.computeStats();
+    this.player.hp = this.d.maxHp;
+    this.bark('start', {line: pick(BARKS[this.character].start), delay: 1.4});
+    this.hooks.onDiscover?.({kind: 'weapon', id: first});
+    this.startRound(1);
     this.canvas.focus?.({preventScroll: true});
   }
 
-  /* Para pruebas: salta a un momento de la noche. */
-  skipTo(seconds) {
-    if (this.state !== 'running') return;
-    this.time = clamp(seconds, 0, NIGHT - 2);
-    this.hourShown = Math.min(5, Math.floor(this.time / HOUR));
-    this.elitesDone = ELITE_PLAN.filter(plan => plan.at < this.time).length;
+  /* Reanuda una partida guardada en el puesto de Remedios. */
+  continueRun(save) {
+    if (!save || save.v !== SAVE_VERSION || !CHARACTERS[save.run?.character]) return false;
+    this.character = save.run.character;
+    this.reset();
+    Object.assign(this.run, save.run, {bonus: Object.assign(blankStats(), save.run.bonus)});
+    this.run.weapons = save.run.weapons.filter(w => WEAPON[w.id]).map(w => this.makeWeapon(w.id, w.tier));
+    this.run.items = Object.fromEntries(Object.entries(save.run.items || {}).filter(([id]) => ITEM[id]));
+    this.audio.init();
+    this.audio.setMuted(this.muted);
+    this.computeStats();
+    this.player.hp = this.d.maxHp;
+    this.offers = (save.offers || []).filter(o => (o.kind === 'weapon' ? WEAPON[o.id] : ITEM[o.id]));
+    this.rerolls = save.rerolls || 0;
+    this.openShop(true);
+    return true;
+  }
+
+  saveData() {
+    if (!['shop'].includes(this.state)) return null;
+    const r = this.run;
+    return {v: SAVE_VERSION, at: Date.now(), offers: this.offers, rerolls: this.rerolls,
+      run: {...r, weapons: r.weapons.map(w => ({id: w.id, tier: w.tier})), crates: [], damageBy: {...r.damageBy}}};
   }
 
   setState(state) { this.state = state; this.hooks.onState?.(state); }
-  pause() { if (this.state !== 'running') return; this.keys.clear(); this.pointer = null; this.setState('paused'); }
+  pause() { if (this.state !== 'running') return; this.keys.clear(); this.pointer = null; this.setState('paused'); this.emitStats(); }
   resume() { if (this.state !== 'paused') return; this.keys.clear(); this.pointer = null; this.lastFrame = performance.now(); this.setState('running'); this.canvas.focus?.({preventScroll: true}); }
   setMuted(v) { this.muted = !!v; this.audio.setMuted(this.muted); if (!this.muted) this.audio.init(); }
   setVolume(v) { this.audio.setVolume(v); }
@@ -136,14 +152,14 @@ export class VigilGame {
   resize() {
     const rect = this.canvas.getBoundingClientRect();
     const cssW = Math.max(1, rect.width || 900), cssH = Math.max(1, rect.height || 560);
-    // En pantallas pequeñas se aleja un poco la cámara para ver venir a la Compaña.
-    // En las grandes se acerca, a saltos de medio punto para que el píxel quede limpio.
-    this.zoom = Math.min(cssW, cssH) < 520 ? 0.75 : clamp(Math.floor(Math.min(cssW / 1100, cssH / 640) * 2) / 2, 1, 3);
+    // La cámara enseña siempre una porción parecida del atrio: más cerca en pantallas grandes.
+    this.zoom = Math.min(cssW, cssH) < 520 ? 0.62 : clamp(Math.floor(Math.min(cssW / 1180, cssH / 700) * 4) / 4, 0.75, 3);
     this.width = cssW / this.zoom;
     this.height = cssH / this.zoom;
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
     this.canvas.width = Math.round(cssW * dpr);
     this.canvas.height = Math.round(cssH * dpr);
+    this.dpr = dpr;
     this.ctx.setTransform(dpr * this.zoom, 0, 0, dpr * this.zoom, 0, 0);
     this.ctx.imageSmoothingEnabled = false;
     this.lighting.resize(this.width, this.height);
@@ -152,113 +168,368 @@ export class VigilGame {
   /* ---------- bucle ---------- */
 
   frame(ts) {
-    const dt = Math.min(0.05, Math.max(0, (ts - this.lastFrame) / 1000));
+    const raw = Math.min(0.05, Math.max(0, (ts - this.lastFrame) / 1000));
     this.lastFrame = ts;
-    this.clock += dt;
-    // El faro gira siempre; con el rincón del faro reunido, el doble de deprisa.
-    this.beamA = (this.beamA + dt * 0.42 * (this.rooms.has('faro') && this.state === 'running' ? 2 : 1)) % TAU;
+    this.clock += raw;
     this.pollGamepad();
-    const steps = this.state === 'running' ? Math.max(1, Math.floor(this.timeScale)) : 1;
-    // Un fallo en un fotograma no puede dejar la noche congelada: se anota y se sigue.
-    try { for (let i = 0; i < steps; i++) this.step(dt); } catch (err) { console.error(err); }
-    try { this.render(dt); } catch (err) { console.error(err); }
-    try { this.audio.update(dt, this.audioState()); } catch (err) { console.error(err); }
+    const steps = ['running', 'roundEnd', 'dying', 'dawn'].includes(this.state) ? Math.max(1, Math.floor(this.timeScale)) : 1;
+    try { for (let i = 0; i < steps; i++) this.step(raw); } catch (err) { console.error(err); }
+    try { this.render(raw); } catch (err) { console.error(err); }
+    try { this.audio.update(raw, this.audioState()); } catch (err) { console.error(err); }
     this.raf = requestAnimationFrame(this.frame);
   }
 
-  step(dt) {
+  step(raw) {
+    // La cámara lenta del final de ronda y la pausa de impacto solo afectan a la simulación.
+    let dt = raw;
+    if (this.slowmo > 0) { this.slowmo = Math.max(0, this.slowmo - raw); dt *= 0.35; }
     if (this.state === 'running') {
-      if (this.freeze > 0) this.freeze -= dt;
+      if (this.freeze > 0) { this.freeze -= raw; this.updateFx(raw * 0.25); }
       else this.update(dt);
-      this.updateSubtitles(dt);
-    } else if (this.state === 'dying') { this.updateDying(dt); this.updateSubtitles(dt); }
-    else if (this.state === 'dawn') { this.updateDawn(dt); this.updateSubtitles(dt); }
-    else if (this.state === 'ready') { this.updateFx(dt); this.cemetery.warm(); }
+      this.updateSubtitles(raw);
+    } else if (this.state === 'roundEnd') { this.updateRoundEnd(dt); this.updateSubtitles(raw); }
+    else if (this.state === 'dying') { this.updateDying(dt); this.updateSubtitles(raw); }
+    else if (this.state === 'dawn') { this.updateDawn(dt); this.updateSubtitles(raw); }
+    else if (['ready', 'shop', 'levelup', 'crate', 'ended'].includes(this.state)) { this.updateFx(raw); this.updatePlayerIdle(raw); }
   }
 
   audioState() {
-    const scene = {ready: 'title', running: 'run', paused: 'pause', upgrade: 'pause', dying: 'end', dawn: 'dawn', ended: this.lastVictory ? 'dawn' : 'end'}[this.state] || 'title';
-    const running = this.state === 'running' || this.state === 'paused' || this.state === 'upgrade';
-    const head = running && !this.boss ? this.processionHead() : null;
-    return {scene, hour: this.time / HOUR, danger: this.danger, hp: this.player.hp / this.st.maxHp, boss: !!(this.boss && this.boss.hp > 0),
-      soul: running ? this.soul : 0, lull: this.lull, rain: this.weatherLook().rain, tide: running && !!this.act().tide && this.phase === 'night',
-      procession: head ? clamp(1 - Math.hypot(head.x, head.y) / 1200, 0.05, 1) : 0, procPan: head ? clamp((head.x - this.player.x) / 700, -1, 1) : 0};
+    const scene = {ready: 'title', running: 'run', paused: 'pause', roundEnd: 'run', levelup: 'shop', crate: 'shop', shop: 'shop', dying: 'end', dawn: 'dawn', ended: this.lastVictory ? 'dawn' : 'end'}[this.state] || 'title';
+    const minutes = clockAt(this.run.round, 1 - this.timeLeft / this.roundLength);
+    return {scene, hour: minutes / 60, danger: this.danger, hp: this.player.hp / this.d.maxHp, boss: !!(this.boss && this.boss.hp > 0),
+      soul: 0, lull: 0, rain: this.weatherLook().rain, tide: false, procession: this.processionNear || 0, procPan: this.processionPan || 0,
+      round: this.run.round, intensity: this.state === 'running' ? clamp(0.35 + this.run.round / ROUNDS * 0.65, 0, 1) : 0};
   }
 
   update(dt) {
-    const p = this.player, st = this.st;
-    // El reloj de la noche
-    if (this.phase === 'rush') this.time = Math.min(NIGHT, this.time + dt * Math.max(10, (NIGHT - this.rushFrom) / 5.5));
-    else if (this.phase === 'stopped') this.stoppedFor += dt;
-    else this.time += dt;
-    if (this.phase === 'night' && this.boss && this.boss.hp > 0 && this.time >= NIGHT - 1) this.stopClock();
-    if (this.time >= NIGHT && this.phase !== 'stopped') { this.beginDawn(); return; }
-    const hour = Math.floor(this.time / HOUR);
-    if (hour > this.hourShown && hour <= 5 && this.phase === 'night') { this.hourShown = hour; this.onHour(hour); }
-    if (!this.boss && this.time >= BOSS_AT) this.spawnBoss();
-    if (this.phase === 'stopped' && this.stoppedFor > 75 && !this.dawnBreaks) {
+    const p = this.player;
+    this.roundClock += dt;
+    // La cuenta atrás. En la última ronda, sin liberar a la Guía, el reloj se para.
+    if (!this.stopped) this.timeLeft = Math.max(0, this.timeLeft - dt);
+    else this.stoppedFor += dt;
+    const minutes = clockAt(this.run.round, 1 - this.timeLeft / this.roundLength);
+    const hour = Math.floor(minutes / 60);
+    if (hour > this.hourShown && hour <= 5) { this.hourShown = hour; if (hour > 0) this.onHour(hour); }
+    if (this.timeLeft <= 0 && !this.stopped) {
+      if (this.boss && this.boss.hp > 0) this.stopClock();
+      else { this.endRound(); return; }
+    }
+    if (this.stopped && this.stoppedFor > 60 && !this.dawnBreaks) {
       this.dawnBreaks = true;
-      this.banner(VIGIL_TEXT.dawnBreaks[0], VIGIL_TEXT.dawnBreaks[1]);
+      this.banner(VIGIL_TEXT.dawnBreaks[0], VIGIL_TEXT.dawnBreaks[1], 'dawn');
     }
 
-    // Quien vela
-    this.updateTimers(dt);
     p.inv = Math.max(0, p.inv - dt);
-    p.dip = Math.max(0, p.dip - dt * 1.8);
+    p.hurtT = Math.max(0, p.hurtT - dt);
+    p.squash *= Math.exp(-dt * 12);
     this.dashCd = Math.max(0, this.dashCd - dt);
     this.lowHpCd = Math.max(0, this.lowHpCd - dt);
-    this.ellaCd = Math.max(0, this.ellaCd - dt);
-    this.flare = Math.max(0, this.flare - dt * 2.4);
-    this.bellT = Math.max(0, this.bellT - dt);
-    this.gustT = Math.max(0, this.gustT - dt);
-    const mv = this.bot ? this.botMove() : this.movement();
-    p.moving = Math.hypot(mv.x, mv.y) > 0.05;
-    if (p.moving) { this.lastMove = {x: mv.x, y: mv.y}; if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1; p.walk += dt * 11; }
-    if (this.dashTime > 0) {
-      this.dashTime -= dt;
-      p.x += this.dashDir.x * st.speed * 4.2 * dt; p.y += this.dashDir.y * st.speed * 4.2 * dt;
-      this.t.ghost -= dt;
-      if (this.t.ghost <= 0) { this.t.ghost = 0.035; this.ghosts.push({x: p.x, y: p.y, face: p.face, life: 0.28}); }
-      if (this.rooms.has('alcoba')) this.dashThrough();
-    } else {
-      // En los charcos de la marea se anda despacio.
-      const wade = this.inPool ? 0.6 : 1;
-      p.x += mv.x * st.speed * wade * dt; p.y += mv.y * st.speed * wade * dt;
-      if (p.moving) { this.t.step -= dt; if (this.t.step <= 0) { this.t.step = 0.31; this.footstep(); } }
-    }
-    this.cemetery.resolve(p);
-    if (st.regen) this.heal(st.regen * dt);
+    this.lifestealBudget = Math.min(10, this.lifestealBudget + dt * 10);
+    this.movePlayer(dt);
+    if (this.d.hps > 0 && p.hp < this.d.maxHp) this.heal(this.d.hps * dt, true);
 
-    this.updateVigil(dt);
-    if (this.state !== 'running') return;
-    this.soulMax = Math.max(this.soulMax, this.soul);
     this.buildGrid();
-    this.weapons(dt);
-    this.spawning(dt);
-    this.updatePools(dt);
+    this.updateSpawns(dt);
     this.updateEnemies(dt);
     if (this.state !== 'running') return;
+    this.updateWeapons(dt);
+    this.updateStructures(dt);
+    this.updateAbility(dt);
     this.updateShots(dt);
     this.updateHazards(dt);
     if (this.state !== 'running') return;
-    this.updateRituals(dt);
-    this.updatePickups(dt);
+    this.updateDrops(dt);
     this.updateFx(dt);
-    if (this.cardPending) { this.cardPending = false; this.levelUp(true); return; }
-    if (this.xp >= this.xpNext) this.levelUp();
     this.t.stats -= dt;
     if (this.t.stats <= 0) { this.t.stats = 0.1; this.emitStats(); }
   }
 
+  /* Moverse tiene inercia corta: arranca y frena enseguida, pero no de golpe. */
+  movePlayer(dt) {
+    const p = this.player;
+    const mv = this.bot ? this.botMove() : this.movement();
+    if (this.dashSoon) { this.dashSoon = false; this.dash(mv); }
+    const len = Math.hypot(mv.x, mv.y);
+    p.moving = len > 0.05;
+    if (p.moving) { this.lastMove = {x: mv.x / len, y: mv.y / len}; if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1; }
+    const speed = this.d.speed * (this.abilityBuff?.speed ? 1 + this.abilityBuff.speed / 100 : 1) * (this.dashTime > 0 ? 1 : this.wading ?? 1);
+    if (this.dashTime > 0) {
+      this.dashTime -= dt;
+      p.vx = this.dashDir.x * speed * PLAYER.dashSpeed; p.vy = this.dashDir.y * speed * PLAYER.dashSpeed;
+      this.t.ghost -= dt;
+      if (this.t.ghost <= 0) { this.t.ghost = 0.03; this.ghosts.push({x: p.x, y: p.y, face: p.face, life: 0.26, total: 0.26}); }
+    } else {
+      const k = 1 - Math.exp(-dt * PLAYER.accel);
+      p.vx += (mv.x * speed - p.vx) * k; p.vy += (mv.y * speed - p.vy) * k;
+    }
+    p.x += p.vx * dt; p.y += p.vy * dt;
+    p.lean += ((p.vx / Math.max(1, speed)) * 0.12 - p.lean) * (1 - Math.exp(-dt * 10));
+    const sp = Math.hypot(p.vx, p.vy);
+    if (sp > 20) {
+      p.walk += dt * (6 + sp / 26);
+      this.t.step -= dt;
+      if (this.t.step <= 0) { this.t.step = 0.28; this.footstep(); }
+    }
+    this.arena.resolve(p, PLAYER.radius);
+  }
+
+  updatePlayerIdle(dt) {
+    const p = this.player;
+    p.squash *= Math.exp(-dt * 10);
+    p.vx *= Math.exp(-dt * 12); p.vy *= Math.exp(-dt * 12);
+  }
+
+  heal(amount, quiet = false) {
+    const p = this.player, before = p.hp;
+    p.hp = Math.min(this.d.maxHp, p.hp + amount);
+    const got = p.hp - before;
+    if (!quiet && got >= 1) this.floatText(p.x, p.y - 34, `+${Math.round(got)}`, '#8fe39a', 1);
+    return got;
+  }
+
+  /* ---------- estadísticas ---------- */
+
+  computeStats() {
+    const r = this.run, ch = CHARACTERS[r.character] || CHARACTERS.lucia;
+    const st = blankStats();
+    st.maxHp = 20;
+    const add = (stats, n = 1) => { for (const [k, v] of Object.entries(stats || {})) if (k in st) st[k] += v * n; };
+    add(ch.stats);
+    add(r.bonus);
+    const sp = {cafe: 0, pickup: 0, elite: 0, interest: 0, double: 0, thorns: 0, explode: 0, burn: 0, xp: 0, discount: 0,
+      freeReroll: 0, structures: [], revive: 0, slowAura: 0, cera: 0, bell: 0, beam: 0, structure: 0};
+    const addSpecial = (special, n = 1) => {
+      for (const [k, v] of Object.entries(special || {})) {
+        if (k === 'structure' && typeof v === 'string') { for (let i = 0; i < n; i++) sp.structures.push(v); continue; }
+        if (k in sp && typeof v === 'number') sp[k] += v * n;
+      }
+    };
+    addSpecial(ch.special);
+    for (const [id, n] of Object.entries(r.items)) {
+      const it = ITEM[id];
+      if (!it) continue;
+      add(it.stats, n);
+      addSpecial(it.special, n);
+    }
+    // Premios por clase de arma: cuenta cada clase una vez por arma distinta en hueco.
+    const counts = {};
+    for (const w of r.weapons) for (const c of WEAPON[w.id].classes) counts[c] = (counts[c] || 0) + 1;
+    this.classCounts = counts;
+    for (const [c, n] of Object.entries(counts)) {
+      const bonus = CLASSES[c]?.bonus[Math.min(6, n)];
+      if (bonus) add(bonus);
+    }
+    sp.slowAura = Math.min(0.6, sp.slowAura);
+    sp.discount = Math.min(0.5, sp.discount);
+    sp.interest = Math.min(0.3, sp.interest);
+    const prevMax = this.d?.maxHp;
+    this.st = st;
+    this.sp = sp;
+    this.d = derived(st);
+    if (prevMax && this.player && this.d.maxHp > prevMax) this.player.hp = Math.min(this.d.maxHp, this.player.hp + this.d.maxHp - prevMax);
+    if (this.player) this.player.hp = Math.min(this.player.hp, this.d.maxHp);
+  }
+
+  makeWeapon(id, tier = 0) {
+    return {uid: ++this.run.uid, id, tier: clamp(tier, 0, 3), cd: rand(0.1, 0.4), anim: null, a: 0, hits: new Set(), x: 0, y: 0, aim: 0, recoil: 0, beads: 0};
+  }
+
+  addWeapon(id, tier = 0) {
+    if (!WEAPON[id] || this.run.weapons.length >= PLAYER.maxWeapons) return null;
+    const w = this.makeWeapon(id, tier);
+    this.run.weapons.push(w);
+    this.computeStats();
+    return w;
+  }
+
+  addItem(id, announce = true) {
+    const it = ITEM[id];
+    if (!it) return false;
+    this.run.items[id] = (this.run.items[id] || 0) + 1;
+    this.computeStats();
+    this.hooks.onDiscover?.({kind: 'item', id});
+    if (announce) this.audio.sfx('compra');
+    return true;
+  }
+
+  /* ---------- rondas ---------- */
+
+  startRound(r) {
+    const run = this.run;
+    run.round = r;
+    run.cratesThisRound = 0;
+    this.wading = 1;
+    this.roundLength = roundTime(r);
+    this.timeLeft = this.roundLength;
+    this.roundClock = 0;
+    this.stopped = false; this.stoppedFor = 0;
+    this.enemies = []; this.shots = []; this.enemyShots = []; this.hazards = []; this.areas = []; this.marks = [];
+    this.drops = this.drops.filter(d => d.kind === 'crate');
+    this.corpses = [];
+    const p = this.player;
+    p.x = 0; p.y = 40; p.vx = 0; p.vy = 0; p.inv = 1.0;
+    this.computeStats();
+    p.hp = this.d.maxHp;            // Cada ronda empieza con la vela entera.
+    this.dashCd = 0;
+    this.resetWaveRound(r);
+    this.placeStructures();
+    for (const w of run.weapons) { w.cd = rand(0.15, 0.5); w.anim = null; }
+    this.cam.x = p.x; this.cam.y = p.y;
+    this.setState('running');
+    const minutes = clockAt(r, 0), hour = Math.floor(minutes / 60);
+    if (this.hourShown < 0) this.hourShown = hour;
+    const boss = r === BOSS_ROUND;
+    this.banner(`${VIGIL_TEXT.roundStart} ${r}`, boss ? BOSS.arrive : HOURS[Math.min(5, hour)].mood, boss ? 'boss' : 'round');
+    this.audio.sfx('ronda', {round: r});
+    if (r === 1) this.audio.sfx('hora', {count: 12, gap: 0.55});
+    this.emitStats();
+  }
+
+  onHour(h) {
+    this.audio.sfx('hora', {count: h, gap: 1.1});
+    this.bark('hour' + h, {delay: 0.8, priority: 2});
+  }
+
+  stopClock() {
+    this.stopped = true; this.stoppedFor = 0;
+    this.audio.sfx('reloj');
+    this.banner(VIGIL_TEXT.stopped[0], VIGIL_TEXT.stopped[1], 'boss');
+    this.bark('stopped', {priority: 3, delay: 0.6});
+  }
+
+  /* Se acaba la cuenta atrás: todo lo que hay en el atrio se deshace. */
+  endRound() {
+    if (this.state !== 'running') return;
+    this.setState('roundEnd');
+    this.endT = 0;
+    this.slowmo = 0.5;
+    this.keys.clear(); this.pointer = null;
+    for (const e of this.enemies) if (e.hp > 0 && !e.dissolve) { e.dissolve = true; e.dissolveT = rand(0.15, 0.9); }
+    if (this.eliteAlive && this.eliteAlive.hp > 0) this.banner(VIGIL_TEXT.eliteGone[0], VIGIL_TEXT.eliteGone[1], 'elite');
+    else this.banner(VIGIL_TEXT.roundClear[0], VIGIL_TEXT.roundClear[1], 'clear');
+    this.enemyShots = []; this.hazards = []; this.marks = [];
+    // Lo que queda en el suelo se funde: en la ronda siguiente, cada gota trae un poco más.
+    for (const d of this.drops) {
+      if (d.kind === 'cera') { this.run.melt += d.v; d.melt = true; }
+      else if (d.kind === 'crate') { this.run.crates.push({rarity: d.rarity || 0}); d.got = true; }
+      else if (d.kind === 'cafe') d.got = true;
+    }
+    if (this.options.flashes) { this.flash = 0.35; this.flashColor = '255,236,190'; }
+    this.audio.sfx('rondaFin');
+    this.emitStats();
+  }
+
+  updateRoundEnd(dt) {
+    this.endT += dt;
+    for (const e of this.enemies) {
+      if (e.hp <= 0) continue;
+      e.dissolveT -= dt;
+      if (e.dissolveT <= 0) { e.hp = 0; this.deathFx(e, true); }
+    }
+    this.enemies = this.enemies.filter(e => e.hp > 0);
+    // La cera fundida sube hacia quien vela.
+    const p = this.player;
+    for (const d of this.drops) {
+      if (!d.melt) continue;
+      const dx = p.x - d.x, dy = p.y - 20 - d.y, dist = Math.hypot(dx, dy) || 1;
+      d.x += dx / dist * Math.min(dist, 520 * dt); d.y += dy / dist * Math.min(dist, 520 * dt);
+      if (dist < 16) d.got = true;
+    }
+    this.drops = this.drops.filter(d => !d.got);
+    this.movePlayer(dt * 0.5);
+    this.updateShots(dt);
+    this.updateFx(dt);
+    if (this.endT > 1.7) this.afterRound();
+  }
+
+  /* Cosecha, intereses y la fila de pantallas: recuerdos, ofrendas, Remedios. */
+  afterRound() {
+    const run = this.run;
+    this.drops = this.drops.filter(d => d.kind === 'crate' && !d.got);
+    const harvest = Math.round(this.d.harvest);
+    if (harvest > 0) { run.cera += harvest; run.xp += harvest * 0.5; run.ceraTotal += harvest; }
+    run.bonus.harvest += Math.max(0, this.st.harvest) * ECONOMY.harvestGrowth;
+    if (this.sp.interest > 0) {
+      const gain = Math.min(25 * Math.ceil(this.sp.interest / 0.1), Math.floor(run.cera * this.sp.interest));
+      if (gain > 0) { run.cera += gain; run.ceraTotal += gain; }
+    }
+    this.lastHarvest = harvest;
+    this.checkLevel();
+    this.computeStats();
+    this.nextScreen();
+  }
+
+  /* Decide qué viene después: otro recuerdo, una ofrenda, la tienda o el alba. */
+  nextScreen() {
+    if (this.run.pending > 0) { this.openLevelUp(); return; }
+    if (this.run.crates.length) { this.openCrate(); return; }
+    if (this.run.round >= ROUNDS) { this.beginDawn(); return; }
+    this.openShop();
+  }
+
+  nextRound() {
+    if (this.state !== 'shop') return false;
+    this.run.lockedOffers = this.offers.filter(o => o.locked && !o.sold);
+    this.audio.sfx('salir');
+    this.startRound(this.run.round + 1);
+    return true;
+  }
+
+  /* ---------- experiencia ---------- */
+
+  gainXp(v) {
+    this.run.xp += v;
+    this.checkLevel(true);
+  }
+
+  checkLevel(live = false) {
+    const run = this.run;
+    let ups = 0;
+    while (run.xp >= xpFor(run.level)) {
+      run.xp -= xpFor(run.level);
+      run.level++;
+      run.pending++;
+      run.bonus.maxHp += 1;
+      ups++;
+    }
+    if (!ups) return;
+    this.computeStats();
+    if (!live) return;
+    const p = this.player;
+    this.heal(ups);
+    this.rings.push({x: p.x, y: p.y - 10, r: 10, max: 130, life: 0.6, total: 0.6, color: '#ffe08a', width: 3, light: 220});
+    this.burst(p.x, p.y - 14, 22, '#ffe08a', 160);
+    this.floatText(p.x, p.y - 48, VIGIL_TEXT.levelUp, '#ffe08a', 1.4, true);
+    this.audio.sfx('nivel');
+    this.hooks.onLevel?.({level: run.level, pending: run.pending});
+  }
+
   /* ---------- final ---------- */
+
+  die() {
+    const p = this.player;
+    if (this.sp.revive > this.run.revived) {
+      this.run.revived++;
+      p.hp = Math.ceil(this.d.maxHp * 0.5);
+      p.inv = 2.2;
+      this.rings.push({x: p.x, y: p.y, r: 10, max: 220, life: 0.8, total: 0.8, color: '#fff1bd', width: 4, light: 300});
+      this.knockAll(p.x, p.y, 220, 520);
+      this.banner(VIGIL_TEXT.revive[0], VIGIL_TEXT.revive[1], 'clear');
+      this.say(AMPARO.revive, AMPARO.name, {italic: true, priority: 4});
+      this.audio.sfx('levanta');
+      return;
+    }
+    this.beginDying('out');
+  }
 
   beginDying(cause) {
     if (this.state !== 'running') return;
     this.cause = cause;
     this.dyingT = 0;
-    this.deathClock = fmtClock(this.time);
+    this.deathClock = fmtClock(clockAt(this.run.round, 1 - this.timeLeft / this.roundLength));
     this.audio.sfx('apagon');
-    this.flash = 0;
+    this.slowmo = 1.2;
+    this.marks = []; this.hazards = []; this.enemyShots = [];
     this.setState('dying');
     this.hooks.onSubtitle?.(null);
     this.sub = null; this.subQueue = [];
@@ -270,29 +541,23 @@ export class VigilGame {
     for (const e of this.enemies) {
       if (e.hp <= 0) continue;
       const dx = this.player.x - e.x, dy = this.player.y - e.y, d = Math.hypot(dx, dy) || 1;
-      if (d > 40) { e.x += dx / d * e.speed * 0.4 * dt; e.y += dy / d * e.speed * 0.4 * dt; }
+      if (d > 46) { e.x += dx / d * e.speed * 0.3 * dt; e.y += dy / d * e.speed * 0.3 * dt; }
     }
-    if (this.dyingT > 2.4) this.end(false);
+    if (this.dyingT > 2.2) this.end(false);
   }
 
   beginDawn() {
-    this.time = NIGHT;
-    this.phase = 'dawn';
     this.dawnT = 0;
     for (const e of this.enemies) if (e.hp > 0 && !e.dissolve) { e.dissolve = true; e.dissolveT = rand(0.3, 1.8); }
-    this.enemyShots = []; this.hazards = []; this.marks = []; this.pools = [];
-    // Amanece con los cuatro cirios ardiendo.
-    for (const c of this.cirios) this.lightCirio(c, true, false);
-    this.soul = 0; this.wards = []; this.abilityTime = 0;
-    this.audio.sfx('hora', {count: 6, gap: 1.6});
+    this.enemyShots = []; this.hazards = []; this.marks = []; this.areas = [];
+    this.audio.sfx('hora', {count: 6, gap: 1.2});
     this.audio.sfx('alba');
     this.banner(HOURS[6].name, HOURS[6].mood, 'dawn');
-    this.subQueue = this.subQueue.filter(q => q.priority >= 4 && q.speaker !== 'Carmela');
-    this.bark('dawn', {priority: 4, delay: 1});
+    this.bark('dawn', {priority: 4, delay: 1, once: false});
     this.say(AMPARO.dawn, AMPARO.name, {italic: true, priority: 4, delay: 0.6});
     this.player.inv = 99;
-    this.emitStats();
     this.setState('dawn');
+    this.emitStats();
   }
 
   updateDawn(dt) {
@@ -305,25 +570,18 @@ export class VigilGame {
       if (e.dissolveT <= 0) e.hp = 0;
     }
     this.enemies = this.enemies.filter(e => e.hp > 0);
-    const p = this.player, mv = this.bot ? {x: 0, y: 0} : this.movement();
-    p.x += mv.x * this.st.speed * 0.5 * dt; p.y += mv.y * this.st.speed * 0.5 * dt;
-    this.cemetery.resolve(p);
-    if (Math.abs(mv.x) > 0.05) p.face = mv.x < 0 ? -1 : 1;
-    p.moving = Math.hypot(mv.x, mv.y) > 0.05;
-    if (p.moving) p.walk += dt * 6;
-    for (const g of this.gems) { if (!g.cafe) { g.y -= (18 + (g.bob % 3) * 6) * dt; g.x += Math.sin(this.clock * 2 + g.bob) * 6 * dt; } }
-    // Que la última frase sea la de Amparo, aunque haya que esperar un poco.
-    if ((this.dawnT > 11 && !this.sub && !this.subQueue.length) || this.dawnT > 24) this.end(true);
+    this.movePlayer(dt * 0.4);
+    if ((this.dawnT > 9 && !this.sub && !this.subQueue.length) || this.dawnT > 20) this.end(true);
   }
 
   end(victory) {
     if (this.state === 'ended') return;
     this.lastVictory = victory;
-    const result = {victory, cause: victory ? 'dawn' : this.cause, time: this.time, clock: victory ? '06:00' : this.deathClock || fmtClock(this.time),
-      kills: this.kills, level: this.level, character: this.character, memories: {...this.mem}, order: [...this.order],
-      ritualsLit: this.litRituals(), abilitiesUsed: this.abilitiesUsed,
-      rooms: [...this.rooms], relit: this.relit, revives: this.revives, elites: this.elitesDown,
-      freed: !!(this.boss && this.boss.hp <= 0)};
+    const r = this.run;
+    const result = {victory, cause: victory ? 'dawn' : this.cause, round: r.round, clock: victory ? '06:00' : this.deathClock,
+      kills: r.kills, level: r.level, character: r.character, danger: r.danger, cera: r.ceraTotal, freed: r.freed,
+      weapons: r.weapons.map(w => ({id: w.id, tier: w.tier, damage: Math.round(r.damageBy[w.uid] || 0)})), items: {...r.items},
+      elites: r.elitesDown, revived: r.revived};
     this.setState('ended');
     this.keys.clear(); this.pointer = null;
     this.hooks.onSubtitle?.(null);
@@ -340,13 +598,13 @@ export class VigilGame {
   }
 
   bark(key, {once = true, line, priority = 1, delay = 0} = {}) {
-    const set = BARKS[this.character];
+    const set = BARKS[this.run.character];
     let text = line || set?.[key];
     if (!text) return false;
     if (Array.isArray(text)) text = pick(text);
     if (once && this.said.has(key)) return false;
     this.said.add(key);
-    this.say(text, CHARACTERS[this.character].name, {priority, delay});
+    this.say(text, CHARACTERS[this.run.character].name, {priority, delay});
     return true;
   }
 
@@ -361,34 +619,34 @@ export class VigilGame {
       if (next.delay > 0) return;
       this.subQueue.shift();
       this.sub = next;
-      const quick = this.state === 'dawn' || this.phase === 'rush';
-      this.subT = (quick ? 1.8 : 2.4) + next.text.length * (quick ? 0.04 : 0.052);
+      this.subT = 2 + next.text.length * 0.048;
       this.hooks.onSubtitle?.(next);
     }
   }
 
-  banner(title, sub, tone = 'hour') { this.hooks.onBanner?.({title, sub, tone}); }
+  banner(title, sub, tone = 'round') { this.hooks.onBanner?.({title, sub, tone}); }
 
   /* ---------- estado para la interfaz ---------- */
 
   getSnapshot() {
-    const b = this.boss;
-    const hourIdx = Math.min(6, Math.floor(this.time / HOUR));
+    const r = this.run, b = this.boss, e = this.eliteAlive;
+    const minutes = clockAt(r.round, 1 - this.timeLeft / Math.max(1, this.roundLength));
+    const hour = Math.min(6, Math.floor(minutes / 60));
     return {
-      state: this.state, phase: this.phase, time: this.time, clock: fmtClock(this.time), hour: hourIdx,
-      mood: this.phase === 'stopped' ? VIGIL_TEXT.stoppedMood : this.phase === 'rush' ? VIGIL_TEXT.rushMood : HOURS[hourIdx].mood,
-      kills: this.kills, level: this.level, xp: this.xp, xpNext: this.xpNext,
-      hp: this.player.hp, maxHp: this.st.maxHp, dashCd: this.dashCd, dashMax: this.st.dashCd,
-      character: this.character, mem: {...this.mem}, order: [...this.order],
-      ability: this.abilitySnapshot(), ritual: this.ritualSnapshot(),
-      cirios: this.cirios.map(c => c.lit ? 1 : c.relight > 0 ? 0.5 : 0), soul: this.soul,
-      lullCd: this.lullCd, lullMax: this.st.lullCd, lull: this.lull, rooms: [...this.rooms],
-      elite: this.eliteAlive && this.eliteAlive.hp > 0 ? {id: this.eliteAlive.elite, hp: this.eliteAlive.hp, maxHp: this.eliteAlive.maxHp} : null,
-      boss: b ? {alive: b.hp > 0, hp: Math.max(0, b.hp), maxHp: b.maxHp, soul: this.soul} : null
+      state: this.state, round: r.round, rounds: ROUNDS, timeLeft: this.timeLeft, roundLength: this.roundLength, stopped: this.stopped,
+      clock: this.state === 'dawn' || (this.state === 'ended' && this.lastVictory) ? '06:00' : fmtClock(minutes), hour, mood: HOURS[hour].mood,
+      hp: this.player.hp, maxHp: this.d.maxHp, xp: r.xp, xpNext: xpFor(r.level), level: r.level, pending: r.pending,
+      cera: r.cera, melt: r.melt, crates: r.crates.length + this.drops.filter(d => d.kind === 'crate').length,
+      kills: r.kills, character: r.character, danger: r.danger,
+      dashCd: this.dashCd, dashMax: PLAYER.dashCd, ability: this.abilitySnapshot(),
+      weapons: r.weapons.map(w => ({uid: w.uid, id: w.id, tier: w.tier})), items: {...r.items},
+      stats: {...this.st}, classes: {...this.classCounts},
+      elite: e && e.hp > 0 ? {id: e.elite, hp: e.hp, maxHp: e.maxHp} : null,
+      boss: b ? {alive: b.hp > 0, hp: Math.max(0, b.hp), maxHp: b.maxHp, rage: !!b.rage} : null
     };
   }
 
   emitStats() { this.hooks.onStats?.(this.getSnapshot()); }
 }
 
-Object.assign(VigilGame.prototype, inputMethods, directorMethods, vigilMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods, ritualMethods);
+Object.assign(VigilGame.prototype, inputMethods, waveMethods, weaponMethods, enemyMethods, shopMethods, fxMethods, botMethods, renderMethods, abilityMethods);

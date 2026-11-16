@@ -1,10 +1,16 @@
-import { OBJECTS } from './objects.js';
 /*
  * Sprites y luz: el pixel art se construye desde sprites.js y la oscuridad
  * solo se abre donde hay una vela. El camposanto está en world.js.
  */
 import { TAU } from './util.js';
 import { PALETTE, EMISSIVE, SPRITES, ICONS, FRAMES } from './sprites.js';
+import { EXTRA_PALETTE, EXTRA_EMISSIVE, EXTRA_SPRITES, EXTRA_ICONS, EXTRA_FRAMES, WEAPON_SPRITES } from './sprites-extra.js';
+
+Object.assign(PALETTE, EXTRA_PALETTE);
+for (const ch of EXTRA_EMISSIVE) EMISSIVE.add(ch);
+Object.assign(SPRITES, EXTRA_SPRITES);
+Object.assign(ICONS, EXTRA_ICONS);
+Object.assign(FRAMES, EXTRA_FRAMES);
 
 // Una misma paleta para el trazo del arma y la luz que deja en el camposanto.
 export const ATTACK_PALETTE = Object.freeze({
@@ -46,14 +52,11 @@ function build(rows, mode) {
   return any ? c : null;
 }
 
-/* frame: nombre de un fotograma de FRAMES; sin él, el sprite base. */
-const OBJECT_ICONS = Object.fromEntries(OBJECTS.map(item => [item.id, item.icon]));
-
+/* frame: nombre de un fotograma de FRAMES; sin él, el sprite base. «w:hoz» es el arma. */
 export function sprite(key, frame) {
-  key = OBJECT_ICONS[key] || key;
   const id = frame ? `${key}@${frame}` : key;
   if (cache.has(id)) return cache.get(id);
-  let rows = SPRITES[key] || ICONS[key] || SPRITES.hermano;
+  let rows = key.startsWith('w:') ? WEAPON_SPRITES[key.slice(2)] || WEAPON_SPRITES.hoz : SPRITES[key] || ICONS[key] || SPRITES.hermano;
   const patch = frame && FRAMES[key]?.[frame];
   if (patch) { rows = [...rows]; for (const [at, row] of patch) rows[at] = row; }
   else if (frame) { const base = sprite(key); cache.set(id, base); return base; }
@@ -226,7 +229,7 @@ export function drawPortrait(c, key, width, height) {
   c.save();
   c.clearRect(0, 0, width, height);
   const bg = c.createRadialGradient(width * 0.5, height * 0.62, 2, width * 0.5, height * 0.62, width * 0.75);
-  bg.addColorStop(0, key === 'julian' ? '#3a3226' : key === 'matilde' ? '#2f2a36' : '#3a2a26');
+  bg.addColorStop(0, {julian: '#3a3226', matilde: '#2f2a36', tono: '#24362e', sabela: '#22303e', anselmo: '#36301f', remedios: '#26301f'}[key] || '#3a2a26');
   bg.addColorStop(1, '#0b0d12');
   c.fillStyle = bg; c.fillRect(0, 0, width, height);
   const glow = c.createRadialGradient(width * 0.72, height * 0.5, 1, width * 0.72, height * 0.5, width * 0.45);

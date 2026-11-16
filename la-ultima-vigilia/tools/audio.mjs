@@ -39,22 +39,23 @@ try {
       return output;
     };
     const active = {};
-    for (const character of ['lucia', 'julian', 'matilde']) {
-      active[character] = await render({sfx: 1, music: 0, amb: 0}, audio => audio.sfx('pulse', {character}));
+    for (const character of ['lucia', 'julian', 'matilde', 'tono', 'sabela', 'anselmo']) {
+      active[character] = await render({sfx: 1, music: 0, amb: 0}, audio => audio.sfx('habilidad_' + character));
     }
-    const ritual = await render({sfx: 1, music: 0, amb: 0}, audio => {
-      audio.sfx('ritual'); audio.sfx('ritualReady');
-    });
-    return {active, ritual};
+    const shop = await render({sfx: 1, music: 0, amb: 0}, audio => { audio.sfx('tienda'); audio.sfx('compra'); audio.sfx('juntar'); });
+    const music = await render({sfx: 0, music: 1, amb: 0}, audio => { for (let i = 0; i < 30; i++) audio.update(0.1, {scene: 'run', hour: 2, danger: 0.6, intensity: 0.9, hp: 1}); }, 4);
+    return {active, shop, music};
   });
-  for (const [name, sound] of Object.entries({...result.active, ritual: result.ritual})) {
+  for (const [name, sound] of Object.entries({...result.active, tienda: result.shop, musica: result.music})) {
     assert(sound.finite, `${name}: audio contiene valores no finitos`);
     assert(sound.peak < 1, `${name}: el sonido satura la salida`);
     assert(sound.rms > 0.0001, `${name}: el sonido no se oye`);
   }
-  assert(result.active.lucia.roughness > result.active.matilde.roughness * 2, 'Se perdió la diferencia entre fuego y responso');
+  const textures = new Set(Object.values(result.active).map(s => Math.round(Math.log10(s.roughness + 1e-9) * 4)));
+  assert(textures.size >= 4, 'las seis habilidades suenan casi igual');
+  assert(result.active.lucia.roughness > result.active.matilde.roughness * 2, 'se perdió la diferencia entre fogonazo y responso');
   assert.deepEqual(errors, [], 'Errores de JavaScript');
-  console.log('✓ habilidades diferenciadas y faroles: PCM finito, audible y sin saturación');
+  console.log(`✓ seis habilidades con ${textures.size} texturas distintas, la tienda y la muiñeira de las rondas: PCM finito, audible y sin saturación`);
   await context.close();
 } finally {
   await browser.close();

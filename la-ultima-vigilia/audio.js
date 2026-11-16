@@ -6,11 +6,14 @@
  */
 import { cueMethods } from './audio-cues.js';
 import { SFX } from './sfx.js';
+import { ROUND_SFX } from './sfx-rondas.js';
 import { Score, NANA, NANA_BASS } from './music.js';
 
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
 const rand = (a, b) => a + Math.random() * (b - a);
 const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+Object.assign(SFX, ROUND_SFX);
 
 /* Nivel base de cada grupo; los ajustes del jugador lo multiplican. */
 const BUS = {sfx: 0.85, amb: 0.7, music: 1.15};
@@ -384,8 +387,8 @@ export class AudioEngine {
       T.soul -= dt;
       if (T.soul <= 0) { T.soul = 1.35 - s.soul * 0.85; this.sfx('alma', {level: s.soul}); }
     } else T.soul = 0.3;
-    // En la pantalla de título suena la nana, sin prisa.
-    if (scene === 'title') {
+    // En la pantalla de título y en el puesto de Remedios suena la nana, sin prisa.
+    if (scene === 'title' || scene === 'shop') {
       T.nana -= dt;
       if (T.nana <= 0) { T.nana = 34; this.nana({vol: 0.16, tempo: 0.86}); }
     } else T.nana = Math.min(T.nana, 6);

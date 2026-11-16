@@ -1,100 +1,145 @@
 /*
- * La interfaz, con teclado y ratón de verdad: título, diálogos y ajustes,
- * empezar, moverse, esquivar, arrullar, los cirios en el HUD, las cartas con
- * su rincón, la pausa, el recordatorio de un difunto y el final.
+ * La interfaz con teclado y ratón de verdad: elegir persona y arma, empezar,
+ * moverse, esquivar, la habilidad, recordar con 1-4, la ofrenda, comprar en
+ * el puesto de Remedios, pausa y ajustes; y el móvil a 390 × 844.
  *
  *   node build.mjs && node tools/ui-check.mjs
- * Requiere Playwright y Chromium, igual que tools/smoke.mjs.
  */
-import { createRequire } from 'node:module';
+import assert from 'node:assert/strict';
+import { launchBrowser } from './browser.mjs';
 
-const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
-const launchOptions = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {};
-const html = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
-const browser = await chromium.launch({...launchOptions, args: ['--autoplay-policy=no-user-gesture-required']});
-const page = await browser.newPage({viewport: {width: 1280, height: 800}});
-const errors = [];
-page.on('pageerror', e => errors.push('pageerror: ' + String(e)));
-page.on('console', m => { if (m.type() === 'error' && !/Failed to load resource/.test(m.text())) errors.push('console: ' + m.text()); });
-const ok = (cond, msg) => { console.log(`${cond ? '✓' : '✗'} ${msg}`); if (!cond) process.exitCode = 1; };
-await page.goto(`${html}?debug`);
-await page.waitForFunction(() => window.vigilia);
-// título: elegir a Julián con el teclado y abrir cada diálogo
-await page.keyboard.press('Digit2');
-ok(await page.evaluate(() => window.vigilia.character) === 'julian', 'se elige personaje con el teclado');
-for (const id of ['albumDialog', 'recordsDialog', 'settingsDialog', 'helpDialog']) {
-  await page.click(`[data-open="${id}"]`);
-  ok(await page.evaluate(id => document.getElementById(id).open, id), `se abre ${id}`);
-  if (id === 'settingsDialog') {
-    for (const s of ['optMusic', 'optSfx', 'optAmb', 'optVolume']) await page.fill(`#${s}`, '40');
-    await page.click('#optWeather');
-    const st = await page.evaluate(() => ({mix: window.vigilia.audio.mix, weather: window.vigilia.options.weather, saved: JSON.parse(localStorage.getItem('vigilia2.settings') || '{}')}));
-    ok(Math.abs(st.mix.music - 0.4) < 0.01 && Math.abs(st.mix.sfx - 0.4) < 0.01 && Math.abs(st.mix.amb - 0.4) < 0.01, 'los tres volúmenes por grupo llegan al motor');
-    ok(st.weather === false && st.saved.weather === false && Math.abs(st.saved.music - 0.4) < 0.01, 'los ajustes nuevos se guardan');
-  }
-  if (id === 'helpDialog') ok((await page.textContent('#helpList')).includes('Arrullar'), 'la ayuda explica el arrullo y los cirios');
-  await page.keyboard.press('Escape');
+const file = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
+const browser = await launchBrowser();
+const ok = [];
+
+async function open(viewport, query = '') {
+  const context = await browser.newContext({viewport, offline: !process.env.VIGILIA_TEST_URL, hasTouch: viewport.width < 500});
+  const page = await context.newPage();
+  await page.route('https://fonts.googleapis.com/**', route => route.fulfill({contentType: 'text/css', body: ''}));
+  const errors = [];
+  page.on('pageerror', e => errors.push(String(e)));
+  page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
+  await page.goto(`${file}?debug${query}`);
+  await page.waitForFunction(() => window.vigilia);
+  return {context, page, errors};
 }
-await page.click('#startButton');
-await page.waitForFunction(() => window.vigilia.state === 'running');
-const audio = await page.evaluate(() => ({ready: window.vigilia.audio.ready, state: window.vigilia.audio.ctx?.state}));
-ok(audio.ready, `el sonido arranca con el primer gesto (contexto ${audio.state})`);
-ok(await page.locator('#wake i.on').count() === 4, 'el HUD muestra los cuatro cirios encendidos');
-// moverse y esquivar
-const x0 = await page.evaluate(() => window.vigilia.player.x);
-await page.keyboard.down('KeyD'); await page.waitForTimeout(500); await page.keyboard.up('KeyD');
-ok(await page.evaluate(() => window.vigilia.player.x) > x0 + 20, 'WASD mueve a quien vela');
-await page.keyboard.press('Space');
-ok(await page.evaluate(() => window.vigilia.dashCd > 0), 'Espacio esquiva');
-// arrullo: primero no está listo; luego sí, con E y con el botón
-await page.keyboard.press('KeyE');
-ok(await page.evaluate(() => window.vigilia.lull === 0), 'el arrullo no sale antes de tiempo');
-await page.evaluate(() => { window.vigilia.lullCd = 0; });
-await page.keyboard.press('KeyE');
-ok(await page.evaluate(() => window.vigilia.lull > 0), 'E arrulla cuando está listo');
-await page.waitForTimeout(300);
-ok(await page.locator('#lullButton.singing').count() === 1, 'el botón del arrullo lo refleja');
-await page.evaluate(() => { const g = window.vigilia; g.lull = 0; g.lullCd = 0; });
-await page.click('#lullButton');
-ok(await page.evaluate(() => window.vigilia.lull > 0), 'el botón también arrulla');
-// un cirio apagado se ve en el HUD y se enciende quedándose al lado
-await page.evaluate(() => { const g = window.vigilia; g.enemies = []; g.spawning = () => {}; g.snuffCirio(g.cirios[3]); g.player.x = g.cirios[3].x - 14; g.player.y = g.cirios[3].y + 14; g.cam.x = 0; g.cam.y = 0; });
-await page.waitForTimeout(250);
-ok(await page.locator('#wake i.on').count() === 3, 'el HUD marca el cirio apagado');
-await page.waitForFunction(() => window.vigilia.cirios[3].lit, null, {timeout: 5000});
-await page.waitForTimeout(250);
-ok(await page.locator('#wake i.on').count() === 4, 'quedarse al lado lo enciende y el HUD lo recoge');
-// a oscuras: aparece la barra del alma
-await page.evaluate(() => { const g = window.vigilia; g.player.x = 600; g.player.y = 500; for (const c of g.cirios) g.snuffCirio(c); });
-await page.waitForTimeout(1200);
-ok(await page.locator('#soulBox:not(.hidden)').count() === 1 && await page.locator('#wake.dark').count() === 1, 'a oscuras aparece «Se la llevan»');
-await page.evaluate(() => { const g = window.vigilia; for (const c of g.cirios) g.lightCirio(c, true, false); g.soul = 0; });
-// subir de nivel: tres cartas con su rincón, elegir con 1
-await page.evaluate(() => { const g = window.vigilia; g.xp = g.xpNext; });
-await page.waitForFunction(() => window.vigilia.state === 'upgrade');
-ok(await page.locator('#choiceCards .card').count() === 3, 'salen tres cartas');
-ok((await page.textContent('#choiceSlots')).includes('Armas'), 'las cartas dicen cuántos huecos quedan');
-ok(await page.locator('#choiceCards .card .room').count() >= 1, 'las cartas dicen a qué rincón pertenecen');
-await page.keyboard.press('Digit1');
-ok(await page.evaluate(() => window.vigilia.state === 'running'), 'se elige carta con 1');
-// pausa y vuelta
-await page.keyboard.press('KeyP');
-ok(await page.evaluate(() => window.vigilia.state === 'paused') && await page.locator('#pause:not(.hidden)').count() === 1, 'P pausa');
-await page.keyboard.press('KeyP');
-ok(await page.evaluate(() => window.vigilia.state === 'running'), 'P reanuda');
-// recordatorio de difunto: elección sin gastar luz
-await page.evaluate(() => { const g = window.vigilia; g.cardPending = true; });
-await page.waitForFunction(() => window.vigilia.state === 'upgrade');
-ok((await page.textContent('#choiceEyebrow')).includes('recordatorio'), 'el recordatorio de un difunto abre su propia elección');
-await page.click('#choiceCards .card >> nth=0');
-// final: se llevan a Amparo y el recordatorio final lo cuenta
-await page.evaluate(() => { const g = window.vigilia; for (const c of g.cirios) g.snuffCirio(c); g.soul = 0.999; g.player.x = 700; g.player.y = 600; });
-await page.waitForFunction(() => window.vigilia.state === 'ended', null, {timeout: 15000});
-const end = await page.evaluate(() => ({title: document.getElementById('endTitle').textContent, stats: document.getElementById('endStats').textContent, shown: !document.getElementById('end').classList.contains('hidden')}));
-ok(end.shown && /Se la llevaron a las/.test(end.title) && /cirio/.test(end.stats), `final de «se la llevaron»: ${end.title}`);
-await page.click('#againButton');
-await page.waitForFunction(() => window.vigilia.state === 'running');
-ok(await page.evaluate(() => window.vigilia.cirios.every(c => c.lit) && window.vigilia.soul === 0 && window.vigilia.rooms.size === 0), 'volver a velar empieza una noche limpia');
-ok(errors.length === 0, errors.length ? 'errores: ' + [...new Set(errors)].slice(0, 4).join(' | ') : 'sin errores de JavaScript en todo el recorrido');
-await browser.close();
+const state = page => page.evaluate(() => window.vigilia.state);
+const visible = (page, id) => page.evaluate(id => !document.getElementById(id).classList.contains('hidden'), id);
+
+try {
+  /* ---------- escritorio ---------- */
+  const {context, page, errors} = await open({width: 1280, height: 800});
+  assert(await visible(page, 'title'), 'no se ve el título');
+  // Elegir con teclado en el grupo de personas: flechas y una sola parada de Tab.
+  await page.focus('#cast [aria-checked="true"]');
+  await page.keyboard.press('ArrowRight');
+  assert.equal(await page.evaluate(() => document.activeElement.dataset.character), 'julian', 'las flechas no cambian de persona');
+  const tabStops = await page.evaluate(() => [...document.querySelectorAll('#cast .cast-card')].filter(b => b.tabIndex === 0).length);
+  assert.equal(tabStops, 1, 'el grupo de personas debe tener una sola parada de Tab');
+  const locked = await page.evaluate(() => document.querySelector('[data-character="anselmo"]').classList.contains('locked'));
+  assert(locked, 'don Anselmo debe empezar bloqueado');
+  await page.click('#startWeapons button:nth-child(2)');
+  assert.match(await page.textContent('#startWeapons [aria-checked="true"]'), /Escopeta/, 'no se elige el arma inicial');
+  ok.push('título: personas con flechas, bloqueos y arma inicial');
+
+  await page.click('#startButton');
+  await page.waitForFunction(() => window.vigilia.state === 'running');
+  assert(await visible(page, 'hud') && !(await visible(page, 'title')), 'no aparece el HUD');
+  assert.equal(await page.evaluate(() => window.vigilia.run.weapons[0].id), 'escopeta', 'no empieza con el arma elegida');
+  const x0 = await page.evaluate(() => window.vigilia.player.x);
+  await page.keyboard.down('KeyD'); await page.waitForTimeout(450); await page.keyboard.up('KeyD');
+  assert(await page.evaluate(x0 => window.vigilia.player.x > x0 + 40, x0), 'D no mueve a la derecha');
+  await page.keyboard.press('Space');
+  assert(await page.evaluate(() => window.vigilia.dashCd > 0), 'Espacio no esquiva');
+  await page.keyboard.press('KeyR');
+  assert(await page.evaluate(() => window.vigilia.abilityCd > 0), 'R no usa la habilidad');
+  assert(await page.evaluate(() => window.vigilia.areas.some(z => z.kind === 'sal')), 'el cerco de sal no aparece');
+  ok.push('ronda: moverse, esquivar y habilidad con teclado');
+
+  // La barra de experiencia avanza y destella al subir.
+  await page.evaluate(() => window.vigilia.gainXp(6));
+  await page.waitForTimeout(400);
+  const xpWidth = await page.evaluate(() => parseFloat(document.getElementById('xpBar').style.width));
+  assert(xpWidth > 20 && xpWidth < 80, `la barra de experiencia no avanza (${xpWidth} %)`);
+  await page.evaluate(() => { const g = window.vigilia; g.gainXp(20); g.run.crates.push({rarity: 0}); g.run.cera = 300; g.timeLeft = 0.01; });
+  await page.waitForFunction(() => window.vigilia.state === 'levelup', null, {timeout: 6000});
+  assert(await visible(page, 'levelup'), 'no se ve la elección de recuerdos');
+  assert.equal(await page.locator('#levelCards .card').count(), 4, 'no hay cuatro recuerdos');
+  assert(await page.evaluate(() => !document.getElementById('pendingBox').classList.contains('hidden')), 'el HUD no avisa de recuerdos pendientes');
+  await page.keyboard.press('2');
+  await page.waitForFunction(() => window.vigilia.state !== 'levelup' || window.vigilia.run.pending === 0);
+  for (let i = 0; i < 5 && await state(page) === 'levelup'; i++) { await page.keyboard.press('1'); await page.waitForTimeout(120); }
+  assert.equal(await state(page), 'crate', 'después de recordar no llega la ofrenda');
+  await page.click('#crateTake');
+  await page.waitForFunction(() => window.vigilia.state === 'shop');
+  ok.push('entre rondas: recuerdos con 1-4 y la ofrenda con el ratón');
+
+  assert(await visible(page, 'shop'), 'no se ve el puesto');
+  assert.equal(await page.locator('#offers .offer').count(), 4, 'no hay cuatro ofertas');
+  const cera = await page.evaluate(() => window.vigilia.run.cera);
+  const buy = page.locator('#offers .buy:not(:disabled)').first();
+  if (await buy.count()) {
+    await buy.click();
+    assert(await page.evaluate(c => window.vigilia.run.cera < c, cera), 'comprar con el ratón no cobra');
+  }
+  await page.click('#offers .lock');
+  assert(await page.evaluate(() => window.vigilia.offers.some(o => o.locked)), 'el candado no responde al ratón');
+  const rerolls = await page.evaluate(() => window.vigilia.rerolls);
+  await page.keyboard.press('KeyR');
+  assert(await page.evaluate(r => window.vigilia.rerolls === r + 1, rerolls), 'R no vuelve a tirar en el puesto');
+  await page.click('#shopWeapons .slot');
+  assert(await page.locator('.weapon-detail').count(), 'tocar un arma no muestra sus detalles');
+  assert.equal(await page.locator('#shopStats dt').count(), 16, 'faltan estadísticas en el panel');
+  await page.click('#nextRound');
+  await page.waitForFunction(() => window.vigilia.state === 'running' && window.vigilia.run.round === 2);
+  ok.push('puesto: comprar, candado, tirada con R, detalle de arma y seguir');
+
+  await page.keyboard.press('KeyP');
+  assert.equal(await state(page), 'paused', 'P no pausa');
+  assert.equal(await page.locator('#pauseStats dt').count(), 16, 'la pausa no muestra estadísticas');
+  assert(await page.evaluate(() => document.activeElement.id === 'resumeButton'), 'la pausa no lleva el foco a «Seguir velando»');
+  await page.click('#pause [data-open="settingsDialog"]');
+  assert(await page.evaluate(() => document.getElementById('settingsDialog').open), 'no se abren los ajustes');
+  await page.click('#optNumbers');
+  assert.equal(await page.evaluate(() => window.vigilia.options.numbers), false, 'los ajustes no llegan al juego');
+  await page.keyboard.press('Escape');
+  await page.click('#resumeButton');
+  assert.equal(await state(page), 'running', 'no se reanuda');
+  ok.push('pausa, ajustes persistentes y reanudar');
+  assert.deepEqual(errors, [], 'errores de JavaScript en escritorio');
+  await context.close();
+
+  /* ---------- móvil ---------- */
+  const mobile = await open({width: 390, height: 844}, '&autostart=1&char=lucia');
+  const m = mobile.page;
+  await m.waitForFunction(() => window.vigilia.state === 'running');
+  const box = await m.locator('#game').boundingBox();
+  const mx0 = await m.evaluate(() => window.vigilia.player.x);
+  await m.dispatchEvent('#game', 'pointerdown', {pointerId: 3, clientX: box.width / 2, clientY: box.height / 2, button: 0, isPrimary: true});
+  await m.dispatchEvent('#game', 'pointermove', {pointerId: 3, clientX: box.width / 2 + 80, clientY: box.height / 2, isPrimary: true});
+  await m.waitForTimeout(400);
+  await m.dispatchEvent('#game', 'pointerup', {pointerId: 3, clientX: box.width / 2 + 80, clientY: box.height / 2, isPrimary: true});
+  assert(await m.evaluate(x => window.vigilia.player.x > x + 20, mx0), 'arrastrar el dedo no mueve');
+  await m.click('#dashButton');
+  assert(await m.evaluate(() => window.vigilia.dashCd > 0), 'el botón de esquivar no responde');
+  const overflow = await m.evaluate(() => document.documentElement.scrollWidth > innerWidth + 1);
+  assert(!overflow, 'la página se sale de lado en el móvil');
+  await m.evaluate(() => { const g = window.vigilia; g.run.cera = 200; g.timeLeft = 0.01; });
+  await m.waitForFunction(() => ['shop', 'levelup', 'crate'].includes(window.vigilia.state), null, {timeout: 6000});
+  for (let i = 0; i < 6; i++) {
+    const s = await state(m);
+    if (s === 'levelup') await m.click('#levelCards .card');
+    else if (s === 'crate') await m.click('#crateTake');
+    else break;
+  }
+  assert.equal(await state(m), 'shop', 'en el móvil no llega a la tienda');
+  const foot = await m.locator('#nextRound').boundingBox();
+  assert(foot && foot.y + foot.height <= 844, 'el botón de seguir queda fuera de la pantalla del móvil');
+  ok.push('móvil: dedo, botón de esquiva, sin desbordes y tienda alcanzable');
+  assert.deepEqual(mobile.errors, [], 'errores de JavaScript en el móvil');
+  await mobile.context.close();
+
+  console.log(ok.map(s => `✓ ${s}`).join('\n'));
+} finally {
+  await browser.close();
+}

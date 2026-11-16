@@ -1,17 +1,19 @@
 {
   "name": "la-ultima-vigilia",
-  "version": "2.1.0",
+  "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "Supervivencia en la Noche de Difuntos. Arte y sonido procedurales, sin dependencias en ejecución.",
+  "description": "Supervivencia por rondas en la Noche de Difuntos: armas que se juntan, la tienda de Remedios y la Santa Compaña. Arte y sonido procedurales, sin dependencias en ejecución.",
   "scripts": {
     "dev": "python3 -m http.server 8000 --directory la-ultima-vigilia",
     "build": "node la-ultima-vigilia/build.mjs",
     "check": "node la-ultima-vigilia/tools/check.mjs && node la-ultima-vigilia/build.mjs --check",
-    "test": "npm run check && node la-ultima-vigilia/tools/objects-check.mjs && npm run test:gameplay && npm run test:audio && npm run test:vfx && node la-ultima-vigilia/tools/vigil-check.mjs && node la-ultima-vigilia/tools/ui-check.mjs && npm run test:night",
+    "test": "npm run check && npm run test:data && npm run test:gameplay && npm run test:audio && npm run test:vfx && npm run test:ui && npm run test:night",
+    "test:data": "node la-ultima-vigilia/tools/data-check.mjs",
     "test:gameplay": "node la-ultima-vigilia/tools/gameplay.mjs",
     "test:audio": "node la-ultima-vigilia/tools/audio.mjs && node la-ultima-vigilia/tools/audio-check.mjs",
     "test:vfx": "node la-ultima-vigilia/tools/combat-vfx.mjs",
+    "test:ui": "node la-ultima-vigilia/tools/ui-check.mjs",
     "test:night": "node la-ultima-vigilia/tools/smoke.mjs"
   },
   "engines": {
