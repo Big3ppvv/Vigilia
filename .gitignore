@@ -1,0 +1,5 @@
+node_modules/
+premium-audit.json
+test-results/
+playwright-report/
+

@@ -6,12 +6,10 @@
  * Requiere Playwright y Chromium, igual que tools/smoke.mjs.
  */
 import assert from 'node:assert/strict';
-import { createRequire } from 'node:module';
+import { launchBrowser } from './browser.mjs';
 
-const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
 const file = new URL('../la-ultima-vigilia.html', import.meta.url).href;
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 
 try {
   for (const character of ['lucia', 'julian', 'matilde']) {

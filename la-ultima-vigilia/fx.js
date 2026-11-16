@@ -1,7 +1,7 @@
 /*
  * Partículas, anillos y números: lo que se ve un instante y se va.
  */
-
+import { SceneEffects } from './scene-fx.js';
 
 export const fxMethods = {
   particle(o) {
@@ -11,6 +11,8 @@ export const fxMethods = {
   },
 
   updateFx(dt) {
+    if (!this.sceneFx) this.sceneFx = new SceneEffects();
+    this.sceneFx.update(dt, this);
     this.combatFx.update(dt);
     if (this.player.attack) this.player.attack.life = Math.max(0, this.player.attack.life - dt);
     this.shake = Math.max(0, this.shake - dt * 22);

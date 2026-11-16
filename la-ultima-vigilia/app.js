@@ -1,6 +1,9 @@
 import { VigilGame } from './game.js';
 import { drawPortrait, drawSprite, sprite } from './art.js';
-import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP } from './story.js';
+import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP, ABILITIES } from './story.js';
+import { store, loadSettings, loadFound } from './storage.js';
+import { bindSettings } from './settings.js';
+import { syncScreens, bindOverlayKeyboard } from './interface.js';
 
 const $ = id => document.getElementById(id);
 const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
@@ -9,14 +12,10 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- lo que se guarda en este navegador ---------- */
 
-const store = {
-  get(key, fallback) { try { const v = JSON.parse(localStorage.getItem('vigilia2.' + key)); return v ?? fallback; } catch { return fallback; } },
-  set(key, value) { try { localStorage.setItem('vigilia2.' + key, JSON.stringify(value)); } catch { /* sin almacenamiento */ } }
-};
-const settings = Object.assign({muted: false, volume: 0.8, shake: !reducedMotion, flashes: !reducedMotion, numbers: false, softDark: false}, store.get('settings', {}));
+const settings = loadSettings(reducedMotion);
 let nights = store.get('nights', []);
 if (!Array.isArray(nights)) nights = [];
-const found = Object.assign({memories: [], creatures: [], dawns: {}, freed: 0}, store.get('found', {}));
+const found = loadFound();
 let selected = store.get('selected', 'lucia');
 if (!CHARACTERS[selected]) selected = 'lucia';
 
@@ -90,6 +89,8 @@ function selectCharacter(id) {
   const ch = CHARACTERS[id];
   $('castDetail').textContent = `${ch.age}. ${ch.blurb}`;
   $('castPerk').textContent = ch.perk;
+  $('castAbility').textContent = `${ABILITIES[id].name} · ${ABILITIES[id].description}`;
+  for (const el of castEl.children) el.tabIndex = el.dataset.character === id ? 0 : -1;
 }
 
 function updateNightCount() {
@@ -127,7 +128,8 @@ $('otherButton').addEventListener('click', () => { game.backToTitle(); selectCha
 $('quitButton').addEventListener('click', () => { game.backToTitle(); selectCharacter(selected); });
 $('resumeButton').addEventListener('click', () => game.resume());
 $('pauseButton').addEventListener('click', () => game.state === 'paused' ? game.resume() : game.pause());
-$('dashButton').addEventListener('click', () => game.dash());
+$('dashButton').addEventListener('click', () => { game.dash(); $('game').focus({preventScroll: true}); });
+$('abilityButton').addEventListener('click', () => { game.ability(); $('game').focus({preventScroll: true}); });
 
 /* ---------- durante la noche ---------- */
 
@@ -153,6 +155,7 @@ function onStats(s) {
     $('soulBar').style.width = `${s.boss.soul * 100}%`;
     $('bossBox').classList.toggle('danger', s.boss.soul > 0.5);
   }
+  updateRitualHud(s);
   $('pauseClock').textContent = `${s.clock} · ${s.mood}`;
   const sig = s.order.map(id => id + s.mem[id]).join('|');
   if (sig !== memSignature) {
@@ -160,6 +163,28 @@ function onStats(s) {
     memSignature = sig;
     renderHudMemories(s, before);
   }
+}
+
+function updateRitualHud(s) {
+  const ability = s.ability;
+  if (ability) {
+    $('abilityName').textContent = ability.name;
+    $('abilityKey').textContent = ability.ready ? 'E' : `${Math.ceil(ability.cd)} s`;
+    $('abilityFill').style.width = `${ability.ready ? 100 : Math.max(0, 1 - ability.cd / ability.max) * 100}%`;
+    $('abilityButton').disabled = !ability.ready || s.state !== 'running';
+    $('abilityButton').title = `${ability.description} (E)`;
+    $('abilityButton').setAttribute('aria-label', `${ability.name}${ability.ready ? ', disponible' : `, ${Math.ceil(ability.cd)} segundos`}`);
+  }
+  const ritual = s.ritual;
+  if (!ritual) return;
+  $('ritualCount').textContent = `${ritual.lit} / ${ritual.total}`;
+  const active = ritual.active;
+  const hint = active ? `Encendiendo ${active.label}…` : ritual.lit === ritual.total ? 'Los tres faroles protegen la vigilia.' : 'Acércate a un farol y permanece junto a él.';
+  $('ritualHint').textContent = hint;
+  $('ritualPanel').classList.toggle('channeling', !!active);
+  $('ritualProgress').style.width = `${(active?.progress || 0) * 100}%`;
+  $('ritualMeter').setAttribute('aria-valuenow', String(Math.round((active?.progress || 0) * 100)));
+  $('dashButton').disabled = s.dashCd > 0 || s.state !== 'running';
 }
 
 function renderHudMemories(s, before) {
@@ -189,8 +214,10 @@ function onState(state) {
   $('choice').classList.toggle('hidden', state !== 'upgrade');
   $('pause').classList.toggle('hidden', state !== 'paused');
   $('end').classList.toggle('hidden', state !== 'ended');
+  syncScreens(state);
+  document.title = state === 'ready' ? 'La última vigilia' : state === 'ended' ? 'La noche ha terminado · La última vigilia' : 'Velando a Amparo · La última vigilia';
   if (state === 'paused') requestAnimationFrame(() => $('resumeButton').focus({preventScroll: true}));
-  if (state === 'ready') { updateNightCount(); onSubtitle(null); }
+  if (state === 'ready') { updateNightCount(); onSubtitle(null); requestAnimationFrame(() => $('startButton').focus({preventScroll: true})); }
   if (state === 'running') $('game').focus({preventScroll: true});
 }
 
@@ -202,8 +229,13 @@ function onLevelUp({choices: list}) {
     const b = document.createElement('button');
     b.className = 'card';
     const kindLabel = c.kind === 'arma' ? 'Arma' : c.kind === 'consuelo' ? 'Consuelo' : 'Recuerdo';
-    const level = c.kind === 'consuelo' ? '' : c.isNew ? '<span class="new">· nuevo</span>' : `· nivel ${c.level}`;
-    b.innerHTML = `<kbd>${i + 1}</kbd><span class="kind">${kindLabel} ${level}</span><h3></h3><p class="memory"></p><p class="effect"></p>`;
+    const key = document.createElement('kbd'); key.textContent = i + 1;
+    const kind = document.createElement('span'); kind.className = 'kind';
+    kind.textContent = kindLabel + (c.kind === 'consuelo' ? '' : c.isNew ? ' · nuevo' : ` · nivel ${c.level}`);
+    const title = document.createElement('h3');
+    const memory = document.createElement('p'); memory.className = 'memory';
+    const effect = document.createElement('p'); effect.className = 'effect';
+    b.append(key, kind, title, memory, effect);
     b.prepend(iconCanvas(c.id, 48, 4));
     b.querySelector('h3').textContent = c.name;
     b.querySelector('.memory').textContent = c.line;
@@ -285,15 +317,15 @@ function onEnd(result) {
     $('endWords').textContent = frags.length ? `Esa noche recordó ${list(frags)}.` : '';
     $('loopLine').textContent = WORLD.loop;
   }
-  $('endStats').innerHTML = '';
-  for (const [value, label] of [[result.clock, 'la hora'], [result.kills.toLocaleString('es-ES'), 'ahuyentados'], [total, 'recuerdos']]) {
+  $('endStats').replaceChildren();
+  for (const [value, label] of [[result.clock, 'la hora'], [result.kills.toLocaleString('es-ES'), 'ahuyentados'], [total, 'recuerdos'], [`${result.ritualsLit || 0}/3`, 'faroles']]) {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = value;
     const s = document.createElement('span'); s.textContent = label;
     d.append(b, s);
     $('endStats').append(d);
   }
-  nights.push({n, character: result.character, victory: result.victory, cause: result.cause, clock: result.clock, kills: result.kills, memories: total, date: new Date().toISOString()});
+  nights.push({n, character: result.character, victory: result.victory, cause: result.cause, clock: result.clock, kills: result.kills, memories: total, ritualsLit: result.ritualsLit || 0, date: new Date().toISOString()});
   if (nights.length > 60) nights = nights.slice(-60);
   store.set('nights', nights);
   store.set('found', found);
@@ -362,7 +394,7 @@ function renderRecords() {
   const dawns = nights.filter(r => r.victory).length;
   const latest = nights.filter(r => !r.victory).reduce((best, r) => (r.clock > best ? r.clock : best), '00:00');
   const sum = $('recordSummary');
-  sum.innerHTML = '';
+  sum.replaceChildren();
   for (const [v, l] of [[nights.length, 'noches veladas'], [dawns, dawns === 1 ? 'amanecer' : 'amaneceres'], [dawns ? '06:00' : latest, 'la hora más tardía']]) {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = v;
@@ -388,35 +420,8 @@ function renderRecords() {
 
 /* ---------- ajustes y ayuda ---------- */
 
-function saveSettings() {
-  store.set('settings', settings);
-  game.setOptions({shake: settings.shake, flashes: settings.flashes, numbers: settings.numbers, softDark: settings.softDark});
-}
-
-function syncSoundButton() {
-  const btn = $('soundButton');
-  btn.querySelector('use').setAttribute('href', settings.muted ? '#i-mute' : '#i-sound');
-  btn.setAttribute('aria-label', settings.muted ? 'Activar sonido' : 'Silenciar');
-  $('optSound').checked = !settings.muted;
-}
-
-function setMuted(m) {
-  settings.muted = m;
-  game.audio.init();
-  game.setMuted(m);
-  syncSoundButton();
-  saveSettings();
-}
-
-$('soundButton').addEventListener('click', () => { setMuted(!settings.muted); toast(settings.muted ? 'Sonido apagado' : 'Sonido encendido'); });
-$('optSound').addEventListener('change', e => setMuted(!e.target.checked));
-$('optVolume').value = Math.round(settings.volume * 100);
-$('optVolume').addEventListener('input', e => { settings.volume = Number(e.target.value) / 100; game.setVolume(settings.volume); saveSettings(); });
-for (const [id, key] of [['optShake', 'shake'], ['optFlashes', 'flashes'], ['optNumbers', 'numbers'], ['optSoftDark', 'softDark']]) {
-  $(id).checked = !!settings[key];
-  $(id).addEventListener('change', e => { settings[key] = e.target.checked; saveSettings(); });
-}
-syncSoundButton();
+bindSettings(game, settings, store, toast);
+bindOverlayKeyboard();
 
 const help = $('helpList');
 for (const [term, text] of HELP) {
@@ -441,6 +446,9 @@ function openDialog(id) {
   if (id === 'albumDialog') renderAlbum();
   if (id === 'recordsDialog') renderRecords();
   d.showModal();
+  d.addEventListener('close', () => {
+    if (game.state === 'paused') $('resumeButton').focus({preventScroll: true});
+  }, {once: true});
 }
 document.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => openDialog(el.dataset.open)));
 document.querySelectorAll('dialog').forEach(d => {
@@ -456,7 +464,7 @@ document.querySelectorAll('dialog').forEach(d => {
 
 const order = Object.keys(CHARACTERS);
 addEventListener('keydown', e => {
-  if (document.querySelector('dialog[open]')) return;
+  if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || document.querySelector('dialog[open]')) return;
   if (e.key === '?') { e.preventDefault(); openDialog('helpDialog'); return; }
   if (game.state === 'upgrade' && ['Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3'].includes(e.code)) {
     e.preventDefault();
@@ -466,8 +474,10 @@ addEventListener('keydown', e => {
   }
   if (game.state === 'ready') {
     if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) { selectCharacter(order[Number(e.code.at(-1)) - 1]); return; }
-    if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
-      const i = order.indexOf(selected), next = order[(i + (e.code === 'ArrowRight' ? 1 : order.length - 1)) % order.length];
+    if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.code) && castEl.contains(document.activeElement)) {
+      e.preventDefault();
+      const i = order.indexOf(selected), forward = ['ArrowRight', 'ArrowDown'].includes(e.code);
+      const next = e.code === 'Home' ? order[0] : e.code === 'End' ? order.at(-1) : order[(i + (forward ? 1 : order.length - 1)) % order.length];
       selectCharacter(next);
       castEl.querySelector(`[data-character="${next}"]`)?.focus({preventScroll: true});
       return;

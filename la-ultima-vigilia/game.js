@@ -6,7 +6,7 @@
 import { TAU, clamp, rand, pick } from './util.js';
 import { NIGHT, HOUR, BOSS_AT, COFFIN, fmtClock } from './balance.js';
 import { Lighting } from './art.js';
-import { Cemetery } from './world.js';
+import { Cemetery, surfaceAt } from './world.js';
 import { AudioEngine } from './audio.js';
 import { CombatEffects } from './combat-fx.js';
 import { CHARACTERS, MEMORIES, BARKS, AMPARO, HOURS } from './story.js';
@@ -19,6 +19,7 @@ import { bossMethods } from './boss.js';
 import { fxMethods } from './fx.js';
 import { botMethods } from './bot.js';
 import { renderMethods } from './render.js';
+import { ritualMethods } from './ritual.js';
 
 export class VigilGame {
   constructor(canvas, hooks = {}) {
@@ -80,6 +81,9 @@ export class VigilGame {
     this.seen = new Set(); this.said = new Set(); this.subQueue = []; this.sub = null; this.subT = 0;
     this.lowHpCd = 0; this.amparoSaid = new Set(); this.danger = 0;
     this.choices = []; this.enemyId = 0; this.cafeDrops = 0;
+    this.grid.clear();
+    this.botMemo = null;
+    this.resetRituals();
     this.keys.clear(); this.pointer = null;
   }
 
@@ -116,7 +120,7 @@ export class VigilGame {
   setVolume(v) { this.audio.setVolume(v); }
   setOptions(o) { Object.assign(this.options, o); }
   backToTitle() { this.reset(); this.setState('ready'); this.hooks.onSubtitle?.(null); this.emitStats(); }
-  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); }
+  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); this.audio.destroy?.(); }
 
   resize() {
     const rect = this.canvas.getBoundingClientRect();
@@ -159,7 +163,11 @@ export class VigilGame {
 
   audioState() {
     const scene = {ready: 'title', running: 'run', paused: 'pause', upgrade: 'pause', dying: 'end', dawn: 'dawn', ended: this.lastVictory ? 'dawn' : 'end'}[this.state] || 'title';
-    return {scene, hour: this.time / HOUR, danger: this.danger, hp: this.player.hp / this.st.maxHp, boss: !!(this.boss && this.boss.hp > 0)};
+    const active = this.rituals.find(site => site.id === this.ritualActiveId);
+    return {scene, character: this.character, hour: this.time / HOUR, danger: this.danger, hp: this.player.hp / this.st.maxHp, boss: !!(this.boss && this.boss.hp > 0),
+      moving: this.player.moving, speed: this.st.speed, dash: this.dashTime > 0,
+      nearCoffin: Math.hypot(this.player.x - COFFIN.x, this.player.y - COFFIN.y) < 125,
+      ritualProgress: active?.progress || 0, surface: surfaceAt(this.player.x, this.player.y)};
   }
 
   update(dt) {
@@ -201,6 +209,8 @@ export class VigilGame {
       if (this.t.regenFx <= 0) { this.t.regenFx = 0.25; this.particle({x: p.x + rand(-10, 10), y: p.y + rand(-6, 10), vx: 0, vy: -24, life: 0.9, size: 2, color: '#ffd59a', glow: true}); }
     }
 
+    // Las armas orbitales también necesitan posiciones actuales tras reiniciar o saltar.
+    this.buildGrid();
     this.weapons(dt);
     this.spawning(dt);
     this.updateEnemies(dt);
@@ -208,6 +218,7 @@ export class VigilGame {
     this.updateShots(dt);
     this.updateHazards(dt);
     if (this.state !== 'running') return;
+    this.updateRituals(dt);
     this.updatePickups(dt);
     this.updateFx(dt);
     if (this.boss && this.boss.hp > 0) this.updateSoul(dt);
@@ -248,6 +259,7 @@ export class VigilGame {
     this.dawnT = 0;
     for (const e of this.enemies) if (e.hp > 0 && !e.dissolve) { e.dissolve = true; e.dissolveT = rand(0.3, 1.8); }
     this.enemyShots = []; this.hazards = []; this.marks = [];
+    this.wards = []; this.abilityTime = 0;
     this.audio.sfx('hora', {count: 6, gap: 1.6});
     this.audio.sfx('alba');
     this.banner(HOURS[6].name, HOURS[6].mood, 'dawn');
@@ -285,7 +297,7 @@ export class VigilGame {
     this.lastVictory = victory;
     const result = {victory, cause: victory ? 'dawn' : this.cause, time: this.time, clock: victory ? '06:00' : this.deathClock || fmtClock(this.time),
       kills: this.kills, level: this.level, character: this.character, memories: {...this.mem}, order: [...this.order],
-      freed: !!(this.boss && this.boss.hp <= 0)};
+      freed: !!(this.boss && this.boss.hp <= 0), ritualsLit: this.litRituals(), abilitiesUsed: this.abilitiesUsed};
     this.setState('ended');
     this.keys.clear(); this.pointer = null;
     this.hooks.onSubtitle?.(null);
@@ -342,6 +354,7 @@ export class VigilGame {
       kills: this.kills, level: this.level, xp: this.xp, xpNext: this.xpNext,
       hp: this.player.hp, maxHp: this.st.maxHp, dashCd: this.dashCd, dashMax: this.st.dashCd,
       character: this.character, mem: {...this.mem}, order: [...this.order],
+      ability: this.abilitySnapshot(), ritual: this.ritualSnapshot(),
       boss: b ? {alive: b.hp > 0, hp: Math.max(0, b.hp), maxHp: b.maxHp, soul: this.soul} : null
     };
   }
@@ -349,4 +362,4 @@ export class VigilGame {
   emitStats() { this.hooks.onStats?.(this.getSnapshot()); }
 }
 
-Object.assign(VigilGame.prototype, inputMethods, directorMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods);
+Object.assign(VigilGame.prototype, inputMethods, directorMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods, ritualMethods);

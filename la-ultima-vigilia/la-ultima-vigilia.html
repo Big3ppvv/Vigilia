@@ -26,10 +26,19 @@
   --serif: 'Alegreya', Georgia, 'Times New Roman', serif;
   --sans: 'Alegreya Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --sc: 'Alegreya Sans SC', 'Alegreya Sans', system-ui, sans-serif;
+  --scroll-thumb: #68645f;
+  --scroll-track: #0e0f14;
+  --scroll-hover: #c7bdab;
+  --scroll-active: #ffd59a;
   color-scheme: dark;
 }
 
-* { box-sizing: border-box; }
+* { box-sizing: border-box; scrollbar-color: var(--scroll-thumb) var(--scroll-track); scrollbar-width: thin; }
+*::-webkit-scrollbar { width: 9px; height: 9px; }
+*::-webkit-scrollbar-track { background: var(--scroll-track); }
+*::-webkit-scrollbar-thumb { background: var(--scroll-thumb); border: 2px solid var(--scroll-track); border-radius: 8px; }
+*::-webkit-scrollbar-thumb:hover { background: var(--scroll-hover); }
+*::-webkit-scrollbar-thumb:active { background: var(--scroll-active); }
 html, body { margin: 0; height: 100%; }
 body {
   background: var(--ink);
@@ -42,6 +51,7 @@ body {
 }
 button { font: inherit; color: inherit; cursor: pointer; -webkit-tap-highlight-color: transparent; }
 button:disabled { cursor: default; }
+button:active:not(:disabled) { filter: brightness(1.12); }
 :focus-visible { outline: 2px solid var(--flame); outline-offset: 3px; }
 svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex-shrink: 0; }
 .svg-library { position: absolute; width: 0; height: 0; overflow: hidden; }
@@ -131,6 +141,12 @@ h1 {
 .cast-card[aria-checked="true"] .role { color: var(--flame-soft); }
 .cast-detail { margin: 12px 0 0; font-family: var(--serif); font-size: 17px; line-height: 1.5; color: var(--paper); min-height: 3em; }
 .cast-perk { margin: 4px 0 0; font-size: 14px; color: var(--muted); }
+.cast-ability { margin: 8px 0 0; min-height: 2.9em; font-size: 14px; line-height: 1.4; color: var(--flame-soft); }
+.night-brief { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 20px 0 0; font-family: var(--sc); color: var(--paper-dim); font-size: 13px; letter-spacing: .06em; }
+.night-brief span { color: var(--flame-soft); font-variant-numeric: tabular-nums; }
+.title-controls { display: flex; flex-wrap: wrap; gap: 6px 18px; margin: 22px 0 0; font-size: 12px; color: var(--paper-dim); }
+.title-controls span { display: flex; flex-direction: column; }
+.title-controls b { font-weight: 400; color: var(--muted); }
 .title-actions { margin-top: 22px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px; }
 .title-actions .primary { min-width: 260px; }
 .night-count { position: fixed; right: 22px; bottom: 16px; margin: 0; font-family: var(--serif); font-style: italic; font-size: 15px; color: var(--muted); text-align: right; }
@@ -161,6 +177,14 @@ h1 {
 .tally b { display: block; text-align: right; font-family: var(--serif); font-weight: 500; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
 .tally span { font-family: var(--sc); font-size: 13px; letter-spacing: .06em; color: var(--muted); }
 .tally .icon-btn { pointer-events: auto; }
+.ritual-panel { position: absolute; left: 20px; top: 114px; width: 235px; padding: 12px 14px; background: rgba(7,8,12,.72); border: 1px solid var(--line); border-radius: 4px; }
+.ritual-heading { display: flex; align-items: center; gap: 7px; font-family: var(--sc); font-size: 13px; letter-spacing: .04em; color: var(--paper-dim); }
+.ritual-heading svg { width: 16px; height: 16px; color: var(--flame-soft); }
+.ritual-heading b { margin-left: auto; color: var(--flame-soft); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.ritual-panel p { margin: 6px 0 0; min-height: 2.8em; color: var(--paper-dim); font-size: 13px; line-height: 1.4; }
+.ritual-meter { height: 3px; margin-top: 9px; background: var(--line); overflow: hidden; }
+.ritual-meter i { display: block; height: 100%; background: var(--flame-soft); transition: width .1s linear; }
+.ritual-panel.channeling { border-color: var(--flame); }
 
 .boss { position: absolute; top: 112px; left: 50%; transform: translateX(-50%); width: min(520px, 88vw); text-align: center; }
 .boss-name b { display: block; font-family: var(--serif); font-weight: 500; font-size: 22px; color: #ffcfb0; }
@@ -218,6 +242,12 @@ h1 {
 }
 .dash i { position: absolute; left: 0; bottom: 0; height: 3px; width: 100%; background: var(--flame); transition: width .1s linear; }
 .dash.cooling { opacity: .6; }
+.dash:hover:not(:disabled) { border-color: var(--flame-soft); background: rgba(48,36,23,.86); }
+.dash:disabled { opacity: .55; }
+.action-controls { display: flex; gap: 8px; pointer-events: auto; }
+.ability { border-color: rgba(188,220,255,.5); }
+.ability i { background: var(--soul); }
+.ability kbd { min-width: 25px; text-align: center; }
 .memory-track { position: absolute; left: 0; right: 0; bottom: 0; height: 5px; background: rgba(239, 230, 212, .08); }
 .memory-track i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, #8a5a2a, var(--flame-soft)); transition: width .15s; }
 
@@ -338,6 +368,8 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
 .settings .row small { display: block; font-size: 13px; color: var(--muted); }
 .settings input[type="checkbox"] { width: 22px; height: 22px; accent-color: var(--flame); }
 .settings input[type="range"] { width: 180px; accent-color: var(--flame); }
+.range-control { display: flex; align-items: center; gap: 8px; }
+.range-control output { width: 42px; text-align: right; color: var(--paper-dim); font-size: 13px; font-variant-numeric: tabular-nums; }
 
 .help { display: grid; grid-template-columns: max-content 1fr; gap: 12px 18px; margin: 20px 0 0; }
 .help dt { font-family: var(--sc); font-size: 15px; letter-spacing: .06em; color: var(--flame-soft); }
@@ -377,6 +409,9 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   .cast-card .role { font-size: 12px; }
   .cast-detail { font-size: 15px; min-height: 0; }
   .cast-perk { font-size: 13px; }
+  .cast-ability { font-size: 13px; min-height: 2.8em; }
+  .night-brief { margin-top: 12px; }
+  .title-controls { display: none; }
   .title-actions { margin-top: 14px; align-items: stretch; }
   .title-actions .primary { min-width: 0; width: 100%; }
   .title-actions .links { justify-content: center; }
@@ -397,15 +432,23 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   .boss { top: 92px; }
   .boss-name b { font-size: 18px; }
   .boss-name span { font-size: 13px; }
+  .ritual-panel { top: 98px; left: 12px; width: min(200px, 52vw); padding: 8px 10px; }
+  .ritual-heading { font-size: 11px; gap: 4px; }
+  .ritual-panel p { font-size: 11px; min-height: 2.8em; }
+  .ritual-panel:has(~ .boss:not(.hidden)) { top: 204px; }
   .subtitle { bottom: 112px; }
   .subtitle .line { font-size: 17px; }
   .banner span { font-size: 17px; }
   .hud-bottom { padding: 0 12px; bottom: 14px; }
   .mem { width: 30px; height: 34px; }
   .mem canvas { width: 20px; height: 20px; }
-  .memories { max-width: 58vw; gap: 4px; }
-  .dash { padding: 16px 16px; font-size: 15px; }
+  .memories { max-width: 46vw; gap: 4px; }
+  .dash { min-height: 48px; padding: 11px 12px; font-size: 13px; }
   .dash kbd { display: none; }
+  .action-controls { flex-direction: column; gap: 6px; align-items: stretch; max-width: 48vw; }
+  .action-controls .dash { justify-content: center; }
+  .hud-bottom { bottom: calc(14px + env(safe-area-inset-bottom)); }
+  .subtitle { bottom: calc(142px + env(safe-area-inset-bottom)); }
 
   .cards { grid-template-columns: 1fr; gap: 10px; }
   .card { display: grid; grid-template-columns: 48px 1fr; column-gap: 14px; text-align: left; align-items: start; padding: 16px 18px; outline-offset: -6px; }
@@ -427,6 +470,25 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   .record-list li { grid-template-columns: 1fr auto; }
   .help { grid-template-columns: 1fr; gap: 4px; }
   .help dd { margin-bottom: 10px; }
+  .settings input[type="range"] { width: min(125px, 31vw); }
+  .settings .row { font-size: 15px; gap: 8px; }
+  .range-control { gap: 4px; }
+  .end-stats { gap: 14px; flex-wrap: wrap; }
+}
+
+@media (max-height: 520px) and (min-width: 600px) {
+  .title-panel { padding-top: 18px; padding-bottom: 18px; }
+  .ritual-panel { top: 92px; }
+  .action-controls { flex-direction: row; }
+  .title-controls { display: none; }
+  .overlay { justify-content: flex-start; }
+  .choice-wrap, .pause-card { margin-block: auto; }
+}
+
+@media (forced-colors: active) {
+  * { scrollbar-color: auto; }
+  *::-webkit-scrollbar-thumb { background: ButtonText; }
+  .bar, .ritual-meter, .dash { border: 1px solid ButtonText; }
 }
 
 @media (max-height: 700px) and (min-width: 861px) {
@@ -456,7 +518,7 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
 <symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 12h10m-4-5 5 5-5 5M17 6v12"/></symbol>
 </defs></svg>
 
-<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar."></canvas>
+<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar y E para tu habilidad."></canvas>
 
 <!-- Pantalla de título: la escena del velatorio queda detrás, en el lienzo. -->
 <section id="title" class="screen title-screen">
@@ -465,10 +527,12 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
     <h1>La última vigilia</h1>
     <p class="intro" id="introLine"></p>
     <p class="tagline" id="taglineLine"></p>
+    <p class="night-brief"><span>00:00 — 06:00</span> Una noche · Diez minutos</p>
     <h2 class="pick-label">¿Quién la vela esta noche?</h2>
     <div class="cast" id="cast" role="radiogroup" aria-label="Quién vela a Amparo"></div>
     <p class="cast-detail" id="castDetail"></p>
     <p class="cast-perk" id="castPerk"></p>
+    <p class="cast-ability" id="castAbility"></p>
     <div class="title-actions">
       <button class="primary" id="startButton"><svg aria-hidden="true"><use href="#i-candle"/></svg><span>Velar a Amparo</span></button>
       <nav class="links" aria-label="Más">
@@ -478,6 +542,7 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
         <button data-open="helpDialog">Cómo se vela</button>
       </nav>
     </div>
+    <p class="title-controls"><span>WASD / flechas <b>Moverte</b></span><span>Espacio <b>Esquivar</b></span><span>E <b>Habilidad</b></span></p>
   </div>
   <p class="night-count" id="nightCount"></p>
 </section>
@@ -505,6 +570,11 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
       <button class="icon-btn small" id="pauseButton" aria-label="Pausa" title="Pausa (P)"><svg aria-hidden="true"><use href="#i-pause"/></svg></button>
     </div>
   </div>
+  <aside class="ritual-panel" id="ritualPanel" aria-label="Faroles de la vigilia">
+    <div class="ritual-heading"><svg aria-hidden="true"><use href="#i-candle"/></svg><span>Faroles de la vigilia</span><b id="ritualCount">0 / 3</b></div>
+    <p id="ritualHint">Acércate a un farol y permanece junto a él.</p>
+    <div class="ritual-meter" id="ritualMeter" role="progressbar" aria-label="Encender el farol" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="ritualProgress"></i></div>
+  </aside>
   <div class="boss hidden" id="bossBox">
     <div class="boss-name"><b>La Guía</b><span>Carmela Souto lleva la cruz desde 1963</span></div>
     <div class="bar boss-hp"><i id="bossBar"></i></div>
@@ -517,13 +587,16 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
       <span class="level-text" id="levelText">Recuerdos · 1</span>
       <div class="memories" id="hudMemories" aria-label="Recuerdos"></div>
     </div>
+    <div class="action-controls">
+    <button class="dash ability" id="abilityButton"><svg aria-hidden="true"><use href="#i-candle"/></svg><span id="abilityName">Lumbre</span><kbd id="abilityKey">E</kbd><i id="abilityFill"></i></button>
     <button class="dash" id="dashButton" aria-label="Esquivar"><svg aria-hidden="true"><use href="#i-dash"/></svg><span>Esquivar</span><kbd id="dashKey">Espacio</kbd><i id="dashFill"></i></button>
+    </div>
   </div>
   <div class="memory-track" aria-hidden="true"><i id="xpBar"></i></div>
 </section>
 
 <!-- Elegir un recuerdo -->
-<section id="choice" class="screen overlay hidden" aria-labelledby="choiceTitle">
+<section id="choice" class="screen overlay hidden" role="dialog" aria-labelledby="choiceTitle">
   <div class="choice-wrap">
     <p class="eyebrow">Con la luz, vuelve algo</p>
     <h2 id="choiceTitle">Recuerdas…</h2>
@@ -532,7 +605,7 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   </div>
 </section>
 
-<section id="pause" class="screen overlay hidden" aria-labelledby="pauseTitle">
+<section id="pause" class="screen overlay hidden" role="dialog" aria-labelledby="pauseTitle">
   <div class="pause-card">
     <p class="eyebrow" id="pauseClock">00:00</p>
     <h2 id="pauseTitle">La vela sigue encendida.</h2>
@@ -546,7 +619,7 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   </div>
 </section>
 
-<section id="end" class="screen overlay hidden" aria-labelledby="endTitle">
+<section id="end" class="screen overlay hidden" role="dialog" aria-labelledby="endTitle">
   <article class="memorial" id="memorial">
     <svg class="memorial-mark" aria-hidden="true"><use href="#i-cross"/></svg>
     <p class="eyebrow" id="endEyebrow"></p>
@@ -588,9 +661,13 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
 <dialog id="settingsDialog" class="panel narrow" aria-labelledby="settingsTitle">
   <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
   <h2 id="settingsTitle">Ajustes</h2>
+  <p class="panel-intro">La mezcla y los efectos se guardan en este navegador.</p>
   <div class="settings">
     <label class="row"><span>Sonido</span><input type="checkbox" id="optSound"></label>
-    <label class="row"><span>Volumen</span><input type="range" id="optVolume" min="0" max="100" step="5"></label>
+    <label class="row"><span>Volumen general</span><span class="range-control"><input type="range" id="optVolume" min="0" max="100" step="5"><output id="optVolumeValue" for="optVolume"></output></span></label>
+    <label class="row"><span>Música</span><span class="range-control"><input type="range" id="optMusic" min="0" max="100" step="5"><output id="optMusicValue" for="optMusic"></output></span></label>
+    <label class="row"><span>Ambiente <small>Mar, viento y camposanto</small></span><span class="range-control"><input type="range" id="optAmbience" min="0" max="100" step="5"><output id="optAmbienceValue" for="optAmbience"></output></span></label>
+    <label class="row"><span>Efectos <small>Armas y avisos de peligro</small></span><span class="range-control"><input type="range" id="optEffects" min="0" max="100" step="5"><output id="optEffectsValue" for="optEffects"></output></span></label>
     <label class="row"><span>Temblor de pantalla</span><input type="checkbox" id="optShake"></label>
     <label class="row"><span>Destellos</span><input type="checkbox" id="optFlashes"></label>
     <label class="row"><span>Penumbra suave <small>más visibilidad fuera de tu luz</small></span><input type="checkbox" id="optSoftDark"></label>
@@ -634,6 +711,21 @@ const MAX_ENEMIES = 240;
 const MAX_LEVEL = 5;
 const COFFIN = {x: 0, y: 0};
 
+/* Acciones voluntarias: alcance y tiempo en segundos, sin valores en la UI. */
+const ABILITY_BALANCE = {
+  lucia: {cooldown: 18, radius: 210, damage: 28, knock: 330},
+  julian: {cooldown: 20, radius: 158, damage: 34, knock: 260, wardLife: 4.5, wardDamage: 6, wardTick: 0.5},
+  matilde: {cooldown: 22, radius: 190, damage: 24, knock: 360, healing: 0.14}
+};
+const RITUAL_RADIUS = 48;
+const RITUAL_CHANNEL = 3.6;
+const RITUAL_LIGHT_RADIUS = 105;
+const RITUAL_SITES = [
+  {id: 'oeste', x: -320, y: 0},
+  {id: 'norte', x: 0, y: -320},
+  {id: 'este', x: 320, y: 0}
+];
+
 const fmtClock = t => {
   const s = clamp(t, 0, NIGHT);
   const h = Math.floor(s / HOUR), m = Math.min(59, Math.floor((s % HOUR) * 0.6));
@@ -662,7 +754,7 @@ const LIGHTHOUSE = {x: 1905, y: 420, lampY: -174};
 /* Los cuatro cirios del velatorio, alrededor del ataúd. */
 const CIRIOS = [{x: -58, y: -30}, {x: 58, y: -30}, {x: -58, y: 38}, {x: 58, y: 38}];
 
-return {NIGHT, HOUR, BOSS_AT, MAX_ENEMIES, MAX_LEVEL, COFFIN, fmtClock, ENEMIES, WORLD, LIGHTHOUSE, CIRIOS};
+return {NIGHT, HOUR, BOSS_AT, MAX_ENEMIES, MAX_LEVEL, COFFIN, ABILITY_BALANCE, RITUAL_RADIUS, RITUAL_CHANNEL, RITUAL_LIGHT_RADIUS, RITUAL_SITES, fmtClock, ENEMIES, WORLD, LIGHTHOUSE, CIRIOS};
 })();
 /* ---- sprites.js ---- */
 const __sprites_js = (() => {
@@ -2358,90 +2450,13 @@ function drawFog(c, camX, camY, w, h, time, density) {
 
 return {LANDMARKS, shoreX, terrain, surfaceAt, Cemetery, drawFlames, drawFog};
 })();
-/* ---- audio.js ---- */
-const __audio_js = (() => {
-/*
- * Sonido generado en el navegador, sin archivos: viento, mar, grillos, la lechuza,
- * la campana que da las horas y la nana de Amparo tocada con una cuerda pulsada.
- */
-
+/* ---- audio-synth.js ---- */
+const __audio_synth_js = (() => {
+/* Primitivas Web Audio: fuentes, envolventes y espacio acústico. */
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
-const rand = (a, b) => a + Math.random() * (b - a);
+const audioRand = (a, b) => a + Math.random() * (b - a);
 
-/* La nana de Amparo, en compás de 3/4: [nota MIDI, tiempos]. */
-const NANA = [
-  [69, 2], [74, 1], [72, 2], [69, 1], [70, 1], [69, 1], [67, 1], [69, 3],
-  [65, 2], [67, 1], [69, 1], [67, 1], [65, 1], [64, 2], [61, 1], [62, 3]
-];
-/* Un bajo por compás. */
-const NANA_BASS = [50, 53, 43, 45, 50, 46, 45, 50];
-const PENTA = [62, 65, 67, 69, 72, 74, 77, 79, 81, 84];
-
-class AudioEngine {
-  constructor() {
-    this.ctx = null;
-    this.muted = false;
-    this.volume = 0.8;
-    this.ready = false;
-    this.plucks = new Map();
-    this.last = {};
-    this.combo = 0;
-    this.comboClock = 0;
-    this.nanaStep = 0;
-    this.clock = 0;
-    this.scene = 'title';
-    this.timers = {cricket: 0.5, owl: 14, bird: 1, heart: 0, sea: 0, nana: 2.5, ctl: 0};
-  }
-
-  /* custom: un OfflineAudioContext para medir niveles en pruebas. */
-  init(custom) {
-    if (this.ctx) { this.resume(); return; }
-    if (custom) { this.ctx = custom; this.offline = true; }
-    else {
-      const AC = window.AudioContext || window.webkitAudioContext;
-      if (!AC) return;
-      try { this.ctx = new AC(); } catch { this.ctx = null; return; }
-    }
-    const c = this.ctx;
-    this.master = c.createGain();
-    this.master.gain.value = this.muted ? 0 : this.volume;
-    this.duck = c.createGain();
-    this.duck.gain.value = 1;
-    const comp = c.createDynamicsCompressor();
-    comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 4;
-    comp.attack.value = 0.004; comp.release.value = 0.25;
-    this.duck.connect(this.master); this.master.connect(comp); comp.connect(c.destination);
-    this.sfxBus = this.gain(0.85, this.duck);
-    this.ambBus = this.gain(0.7, this.duck);
-    this.musicBus = this.gain(0.75, this.duck);
-    this.reverb = c.createConvolver();
-    this.reverb.buffer = this.impulse(3.4);
-    this.reverb.connect(this.gain(0.55, this.duck));
-    this.noise = this.noiseBuffer(2.5);
-    this.buildAmbient();
-    this.ready = true;
-    if (this.muted && !this.offline) c.suspend?.().catch(() => {});
-  }
-
-  resume() { if (this.ctx && !this.muted && this.ctx.state !== 'running') this.ctx.resume?.().catch(() => {}); }
-
-  setMuted(value) {
-    this.muted = !!value;
-    if (!this.ctx) return;
-    const now = this.ctx.currentTime;
-    this.master.gain.cancelScheduledValues(now);
-    this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, now, 0.05);
-    if (this.muted) setTimeout(() => { if (this.muted) this.ctx.suspend?.().catch(() => {}); }, 200);
-    else this.ctx.resume?.().catch(() => {});
-  }
-
-  setVolume(value) {
-    this.volume = Math.max(0, Math.min(1, value));
-    if (this.ctx && !this.muted) this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
-  }
-
-  get live() { return this.ready && !this.muted && (this.offline || this.ctx.state === 'running'); }
-
+const synthMethods = {
   /* ---------- piezas básicas ---------- */
 
   gain(value, dest) {
@@ -2449,28 +2464,54 @@ class AudioEngine {
     g.gain.value = value;
     if (dest) g.connect(dest);
     return g;
-  }
+  },
 
-  out(bus, pan = 0, send = 0) {
+  out(bus, pan = 0, send = 0, life = 12) {
     const c = this.ctx;
     const g = c.createGain();
+    const nodes = [g];
     let node = g;
     if (pan && c.createStereoPanner) {
       const p = c.createStereoPanner();
       p.pan.value = Math.max(-1, Math.min(1, pan));
       g.connect(p); node = p;
+      nodes.push(p);
     }
     node.connect(bus);
-    if (send > 0) { const s = this.gain(send, this.reverb); node.connect(s); }
+    if (send > 0) {
+      const s = this.gain(send, this.reverbs.get(bus));
+      node.connect(s); nodes.push(s);
+    }
+    this.transients.push({nodes, until: c.currentTime + life});
+    this.pruneVoices();
     return g;
-  }
+  },
+
+  pruneVoices() {
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.transients = this.transients.filter(group => {
+      if (group.until > now) return true;
+      for (const node of group.nodes) node.disconnect();
+      return false;
+    });
+    while (this.transients.length > this.maxGroups) {
+      // Preserva notas y campanadas ya agendadas para más adelante.
+      let shortest = 0;
+      for (let i = 1; i < this.transients.length; i++) {
+        if (this.transients[i].until < this.transients[shortest].until) shortest = i;
+      }
+      const [group] = this.transients.splice(shortest, 1);
+      for (const node of group.nodes) node.disconnect();
+    }
+  },
 
   noiseBuffer(seconds) {
     const c = this.ctx, len = Math.floor(c.sampleRate * seconds);
     const buf = c.createBuffer(1, len, c.sampleRate), d = buf.getChannelData(0);
     for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
     return buf;
-  }
+  },
 
   impulse(seconds) {
     const c = this.ctx, rate = c.sampleRate, len = Math.floor(rate * seconds);
@@ -2487,7 +2528,7 @@ class AudioEngine {
       }
     }
     return buf;
-  }
+  },
 
   noiseShot(dest, {dur = 0.1, type = 'bandpass', f0 = 1000, f1 = f0, q = 1, vol = 0.05, attack = 0.004, when = 0} = {}) {
     const c = this.ctx, t = when || c.currentTime;
@@ -2502,9 +2543,10 @@ class AudioEngine {
     g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     src.connect(filter); filter.connect(g); g.connect(dest);
+    src.onended = () => { src.disconnect(); filter.disconnect(); g.disconnect(); };
     if (dur > 0.8) { src.loop = true; src.start(t, Math.random() * 0.5); src.stop(t + dur + 0.05); }
     else src.start(t, Math.random() * 1.5, dur + 0.05);
-  }
+  },
 
   tone(dest, {type = 'sine', f0 = 440, f1 = f0, dur = 0.15, vol = 0.05, attack = 0.005, when = 0} = {}) {
     const c = this.ctx, t = when || c.currentTime;
@@ -2517,8 +2559,9 @@ class AudioEngine {
     g.gain.exponentialRampToValueAtTime(vol, t + attack);
     g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
     o.connect(g); g.connect(dest);
+    o.onended = () => { o.disconnect(); g.disconnect(); };
     o.start(t); o.stop(t + dur + 0.05);
-  }
+  },
 
   /* Cuerda pulsada (Karplus-Strong), calculada una vez por nota. */
   pluckBuffer(midi) {
@@ -2545,7 +2588,7 @@ class AudioEngine {
     }
     this.plucks.set(midi, buf);
     return buf;
-  }
+  },
 
   pluck(midi, {when = 0, vol = 0.22, pan = 0, send = 0.35, bus = this.musicBus} = {}) {
     if (!this.ready) return;
@@ -2554,16 +2597,17 @@ class AudioEngine {
     src.buffer = this.pluckBuffer(midi);
     const lp = c.createBiquadFilter();
     lp.type = 'lowpass'; lp.frequency.value = 2600; lp.Q.value = 0.3;
-    const g = this.out(bus, pan, send);
+    const g = this.out(bus, pan, send, Math.max(5, t - c.currentTime + src.buffer.duration + 1));
     g.gain.value = vol;
     src.connect(lp); lp.connect(g);
+    src.onended = () => { src.disconnect(); lp.disconnect(); };
     src.start(t);
-  }
+  },
 
   /* Campana: parciales inarmónicos con batido. */
   bellStrike(fund, {when = 0, vol = 0.2, decay = 5, pan = 0, send = 0.6, bus = this.sfxBus} = {}) {
     const c = this.ctx, t = when || c.currentTime;
-    const out = this.out(bus, pan, send);
+    const out = this.out(bus, pan, send, t - c.currentTime + decay * 1.4 + 1);
     out.gain.value = vol;
     const partials = [[0.5, 0.5, 1.4], [1, 1, 1], [1.19, 0.45, 0.7], [1.5, 0.35, 0.55], [2, 0.5, 0.5], [2.51, 0.22, 0.35], [2.66, 0.18, 0.3], [3.01, 0.15, 0.25], [4.16, 0.1, 0.18]];
     for (const [ratio, amp, life] of partials) {
@@ -2578,144 +2622,30 @@ class AudioEngine {
         g.gain.exponentialRampToValueAtTime(amp * (detune ? 0.5 : 1), t + 0.004);
         g.gain.exponentialRampToValueAtTime(0.0001, end);
         o.connect(g); g.connect(out);
+        o.onended = () => { o.disconnect(); g.disconnect(); };
         o.start(t); o.stop(end + 0.05);
       }
     }
     this.noiseShot(out, {dur: 0.05, type: 'highpass', f0: 3000, vol: 0.15, when: t});
-  }
+  },
 
-  /* ---------- ambiente ---------- */
+};
 
-  buildAmbient() {
-    const c = this.ctx;
-    const loop = () => { const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true; return s; };
-    // Viento
-    this.wind = {src: loop(), filter: c.createBiquadFilter(), gain: this.gain(0.0001, this.ambBus)};
-    this.wind.filter.type = 'bandpass'; this.wind.filter.Q.value = 0.8; this.wind.filter.frequency.value = 420;
-    this.wind.src.connect(this.wind.filter); this.wind.filter.connect(this.wind.gain); this.wind.src.start();
-    // Mar
-    this.sea = {src: loop(), filter: c.createBiquadFilter(), gain: this.gain(0.0001, this.ambBus)};
-    this.sea.filter.type = 'lowpass'; this.sea.filter.frequency.value = 380; this.sea.filter.Q.value = 0.2;
-    this.sea.src.connect(this.sea.filter); this.sea.filter.connect(this.sea.gain); this.sea.src.start(0, 0.7);
-    // Zumbido grave que sube con el peligro
-    this.drone = {gain: this.gain(0.0001, this.ambBus), filter: c.createBiquadFilter(), oscs: []};
-    this.drone.filter.type = 'lowpass'; this.drone.filter.frequency.value = 160; this.drone.filter.Q.value = 3;
-    this.drone.filter.connect(this.drone.gain);
-    for (const f of [36.7, 36.95, 55.1]) {
-      const o = c.createOscillator();
-      o.type = f > 50 ? 'triangle' : 'sawtooth';
-      o.frequency.value = f;
-      o.connect(this.drone.filter); o.start();
-      this.drone.oscs.push(o);
-    }
-  }
+return {midiHz, audioRand, synthMethods};
+})();
+/* ---- audio-score.js ---- */
+const __audio_score_js = (() => {
+/* La nana de Amparo y sus variaciones durante la noche. */
+const { midiHz } = __audio_synth_js;
+/* La nana de Amparo, en compás de 3/4: [nota MIDI, tiempos]. */
+const NANA = [
+  [69, 2], [74, 1], [72, 2], [69, 1], [70, 1], [69, 1], [67, 1], [69, 3],
+  [65, 2], [67, 1], [69, 1], [67, 1], [65, 1], [64, 2], [61, 1], [62, 3]
+];
+/* Un bajo por compás. */
+const NANA_BASS = [50, 53, 43, 45, 50, 46, 45, 50];
 
-  /* Se llama cada fotograma con el estado de la noche. */
-  update(dt, s) {
-    if (!this.ready) return;
-    this.clock += dt;
-    this.comboClock = Math.max(0, this.comboClock - dt);
-    if (this.comboClock === 0) this.combo = 0;
-    if (!this.live) return;
-    const c = this.ctx, now = c.currentTime;
-    const scene = s.scene || 'title';
-    this.scene = scene;
-    const hour = s.hour || 0;
-    const T = this.timers;
-    T.ctl -= dt;
-    if (T.ctl <= 0) {
-      T.ctl = 0.12;
-      const gust = 0.5 + 0.5 * Math.sin(this.clock * 0.37) * Math.sin(this.clock * 0.13 + 1);
-      const windVol = (scene === 'dawn' ? 0.012 : 0.018 + gust * 0.03) * (hour > 2.8 && hour < 4.6 ? 1.35 : 1);
-      this.wind.gain.gain.setTargetAtTime(windVol, now, 0.4);
-      this.wind.filter.frequency.setTargetAtTime(300 + gust * 520, now, 0.5);
-      const danger = scene === 'run' ? (s.danger || 0) : 0;
-      const droneVol = scene === 'run' ? 0.012 + danger * 0.045 + (s.boss ? 0.03 : 0) : scene === 'end' ? 0 : 0.004;
-      this.drone.gain.gain.setTargetAtTime(droneVol, now, 0.8);
-      this.drone.filter.frequency.setTargetAtTime(120 + danger * 380 + (s.boss ? 160 : 0), now, 0.6);
-      this.duck.gain.setTargetAtTime(scene === 'pause' ? 0.35 : 1, now, 0.15);
-    }
-    // El mar respira cada pocos segundos.
-    T.sea -= dt;
-    if (T.sea <= 0) {
-      T.sea = rand(6.5, 10);
-      const peak = scene === 'dawn' ? 0.05 : 0.07;
-      this.sea.gain.gain.cancelScheduledValues(now);
-      this.sea.gain.gain.setTargetAtTime(peak, now, 1.4);
-      this.sea.gain.gain.setTargetAtTime(0.012, now + 3.2, 1.8);
-      this.sea.filter.frequency.setTargetAtTime(rand(320, 520), now, 1.5);
-    }
-    // Grillos hasta las tres; luego callan.
-    const crickets = scene === 'title' ? 1 : scene === 'run' || scene === 'pause' ? Math.max(0, 1 - hour / 3.1) : 0;
-    T.cricket -= dt;
-    if (T.cricket <= 0) {
-      T.cricket = rand(0.25, 0.9) / Math.max(0.15, crickets);
-      if (crickets > 0.05 && scene !== 'pause') this.cricket(rand(-0.8, 0.8), crickets);
-    }
-    // La lechuza, de vez en cuando.
-    T.owl -= dt;
-    if (T.owl <= 0) {
-      T.owl = rand(24, 55);
-      if ((scene === 'title' || (scene === 'run' && hour > 0.4 && hour < 5.3))) this.owl(rand(-0.9, 0.9));
-    }
-    // Pájaros al clarear.
-    const birds = scene === 'dawn' ? 1 : scene === 'run' && hour > 5.45 && !s.boss ? (hour - 5.45) * 1.6 : 0;
-    T.bird -= dt;
-    if (T.bird <= 0) {
-      T.bird = rand(0.35, 1.4) / Math.max(0.2, birds);
-      if (birds > 0.05) this.bird(rand(-0.9, 0.9));
-    }
-    // Latido con poca vida.
-    if (scene === 'run' && (s.hp ?? 1) < 0.3) {
-      T.heart -= dt;
-      if (T.heart <= 0) { T.heart = 0.62 + (s.hp || 0) * 1.2; this.heartbeat(); }
-    } else T.heart = 0.2;
-    // En la pantalla de título suena la nana, sin prisa.
-    if (scene === 'title') {
-      T.nana -= dt;
-      if (T.nana <= 0) { T.nana = 34; this.nana({vol: 0.16, tempo: 0.86}); }
-    } else T.nana = Math.min(T.nana, 6);
-  }
-
-  cricket(pan, density) {
-    const out = this.out(this.ambBus, pan, 0.1);
-    out.gain.value = 0.012 * (0.6 + density * 0.4);
-    const t = this.ctx.currentTime, f = rand(4300, 4900), pulses = 3 + (Math.random() * 2 | 0);
-    for (let i = 0; i < pulses; i++) this.tone(out, {f0: f, dur: 0.028, vol: 1, attack: 0.003, when: t + i * 0.045});
-  }
-
-  owl(pan) {
-    const out = this.out(this.ambBus, pan, 0.5);
-    out.gain.value = 0.05;
-    const t = this.ctx.currentTime;
-    const hoot = (when, f, dur) => {
-      const o = this.ctx.createOscillator(), g = this.ctx.createGain(), lfo = this.ctx.createOscillator(), lg = this.ctx.createGain();
-      o.type = 'sine'; o.frequency.setValueAtTime(f * 1.04, when); o.frequency.exponentialRampToValueAtTime(f, when + dur);
-      lfo.frequency.value = 7; lg.gain.value = 6; lfo.connect(lg); lg.connect(o.frequency);
-      g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(1, when + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
-      o.connect(g); g.connect(out); o.start(when); lfo.start(when); o.stop(when + dur + 0.05); lfo.stop(when + dur + 0.05);
-    };
-    hoot(t, 410, 0.42);
-    hoot(t + 0.62, 372, 0.3);
-    hoot(t + 1.02, 372, 0.7);
-  }
-
-  bird(pan) {
-    const out = this.out(this.ambBus, pan, 0.25);
-    out.gain.value = 0.028;
-    const t = this.ctx.currentTime, n = 2 + (Math.random() * 4 | 0), base = rand(2600, 3600);
-    for (let i = 0; i < n; i++) {
-      const w = t + i * rand(0.07, 0.13), up = Math.random() > 0.4;
-      this.tone(out, {f0: up ? base : base * 1.35, f1: up ? base * 1.4 : base * 0.9, dur: rand(0.05, 0.1), vol: 1, attack: 0.008, when: w});
-    }
-  }
-
-  heartbeat() {
-    const t = this.ctx.currentTime;
-    this.tone(this.sfxBus, {f0: 70, f1: 42, dur: 0.12, vol: 0.18, when: t});
-    this.tone(this.sfxBus, {f0: 62, f1: 40, dur: 0.14, vol: 0.13, when: t + 0.18});
-  }
-
+const scoreMethods = {
   /* ---------- música ---------- */
 
   /* La nana completa. dawn: termina en mayor, como si se abriera una ventana. */
@@ -2737,7 +2667,7 @@ class AudioEngine {
       t += len * beat;
       beats += len;
     });
-  }
+  },
 
   /* Cada recuerdo toca el siguiente trozo de la nana. */
   memoryMotif() {
@@ -2749,16 +2679,60 @@ class AudioEngine {
     }
     this.pluck(NANA_BASS[Math.floor(this.nanaStep / 4) % NANA_BASS.length], {when: t, vol: 0.14, send: 0.4});
     this.nanaStep = (this.nanaStep + 4) % NANA.length;
-  }
+  },
 
+  /* Fragmentos del mismo tema: cuerdas de refugio, pulsos de la Compaña.
+   * No se agenda una canción entera durante combate: una pausa no deja
+   * compases nuevos sonando sobre la elección de recuerdos. */
+  nightPhrase({hour = 0, danger = 0, boss = false, refuge = false} = {}) {
+    if (!this.live) return;
+    const t = this.ctx.currentTime + 0.02;
+    const step = this.scoreStep++;
+    const root = NANA_BASS[(step + Math.floor(hour)) % NANA_BASS.length];
+    const out = this.out(this.musicBus, boss ? -0.15 : 0.1, 0.45, 4);
+    if (refuge && !boss) {
+      this.pluck(root, {when: t, vol: 0.075, pan: -0.18, send: 0.4});
+      const note = NANA[(step * 2) % NANA.length][0];
+      this.pluck(note, {when: t + 0.22, vol: 0.09, pan: 0.2, send: 0.5});
+      this.pluck(note + 7, {when: t + 0.66, vol: 0.04, pan: -0.1, send: 0.5});
+      return;
+    }
+    // Quinta abierta: grave y cuerda. La Guía introduce una segunda áspera.
+    const notes = boss ? [root, root + 1, root + 7] : [root, root + 7];
+    for (let i = 0; i < notes.length; i++) {
+      this.tone(out, {type: 'triangle', f0: midiHz(notes[i]), dur: boss ? 1.6 : 2.2,
+        vol: (boss ? 0.026 : 0.018) / (i + 1), attack: 0.32, when: t + i * 0.075});
+    }
+    this.pluck(root + 12, {when: t + 0.35, vol: 0.065 + danger * 0.045, pan: 0.22, send: 0.42});
+    if (danger > 0.35 || boss) {
+      const count = boss ? 3 : 2;
+      for (let i = 0; i < count; i++) {
+        this.noiseShot(out, {dur: 0.11, type: 'lowpass', f0: 360, f1: 90,
+          vol: 0.025 + danger * 0.02, when: t + i * 0.48});
+      }
+    }
+  },
+
+};
+
+return {scoreMethods};
+})();
+/* ---- audio-cues.js ---- */
+const __audio_cues_js = (() => {
+/* Gestos sonoros de combate, criaturas y acontecimientos. */
+const { midiHz, audioRand } = __audio_synth_js;
+const rand = audioRand;
+const PENTA = [62, 65, 67, 69, 72, 74, 77, 79, 81, 84];
+
+const cueMethods = {
   /* ---------- efectos ---------- */
 
   limit(key, gap) {
     const now = this.ctx.currentTime;
-    if (this.last[key] && now - this.last[key] < gap) return false;
+    if (this.last[key] !== undefined && now - this.last[key] < gap) return false;
     this.last[key] = now;
     return true;
-  }
+  },
 
   sfx(name, opts = {}) {
     if (!this.live) return;
@@ -2768,8 +2742,10 @@ class AudioEngine {
       case 'chispa': {
         if (!this.limit('chispa', 0.07)) return;
         const out = this.out(b, pan, 0.08);
-        this.noiseShot(out, {dur: 0.05, f0: 3200, f1: 2200, q: 1.5, vol: 0.07});
-        this.tone(out, {type: 'triangle', f0: rand(1000, 1250), f1: 620, dur: 0.07, vol: 0.03});
+        const sacred = (opts.character || this.character) === 'matilde';
+        this.noiseShot(out, {dur: sacred ? 0.08 : 0.065, f0: sacred ? 2800 : 3400, f1: 1200, q: 1.5, vol: 0.055});
+        this.tone(out, {type: sacred ? 'sine' : 'triangle', f0: sacred ? 1175 : rand(920, 1120), f1: sacred ? 880 : 460, dur: sacred ? 0.15 : 0.09, vol: 0.035});
+        this.tone(out, {f0: 170, f1: 82, dur: 0.045, vol: 0.035});
         break;
       }
       case 'sal': {
@@ -2777,6 +2753,10 @@ class AudioEngine {
         const out = this.out(b, pan, 0.12);
         this.noiseShot(out, {dur: 0.16, type: 'lowpass', f0: 5200, f1: 700, q: 0.7, vol: 0.12, attack: 0.002});
         this.tone(out, {f0: 120, f1: 48, dur: 0.12, vol: 0.12});
+        // El golpe grave de la descarga acaba en granos sobre piedra.
+        const t = this.ctx.currentTime;
+        for (let i = 0; i < 3; i++) this.noiseShot(out, {dur: 0.028, type: 'highpass', f0: 4200,
+          f1: 2600, vol: 0.018, when: t + 0.055 + i * 0.026});
         break;
       }
       case 'golpe': {
@@ -2823,6 +2803,69 @@ class AudioEngine {
       case 'esquiva': {
         const out = this.out(b, pan, 0.2);
         this.noiseShot(out, {dur: 0.24, f0: 380, f1: 2600, q: 1.2, vol: 0.06, attack: 0.03});
+        break;
+      }
+      case 'paso': {
+        if (!this.limit('paso', 0.18)) return;
+        const out = this.out(b, pan, 0.035, 0.8);
+        const soft = ['grass', 'mud', 'hierba', 'barro'].includes(opts.surface);
+        this.noiseShot(out, {dur: soft ? 0.075 : 0.045, type: 'bandpass', f0: soft ? 700 : 1500,
+          f1: soft ? 260 : 520, q: 0.55, vol: soft ? 0.025 : 0.032});
+        this.tone(out, {f0: rand(105, 130), f1: 65, dur: 0.045, vol: 0.018});
+        break;
+      }
+      case 'select': {
+        if (!this.limit('select', 0.08)) return;
+        const out = this.out(b, 0, 0.12, 0.6);
+        this.tone(out, {f0: 740, f1: 880, dur: 0.065, vol: 0.035});
+        break;
+      }
+      case 'pulse': {
+        if (!this.limit('pulse', 0.35)) return;
+        const t = this.ctx.currentTime, out = this.out(b, pan, 0.32, 4);
+        const character = opts.character || this.character || 'lucia';
+        if (character === 'julian') {
+          // La sal se derrama alrededor del sepulturero y queda vibrando.
+          this.noiseShot(out, {dur: 0.65, type: 'highpass', f0: 4200, f1: 700, vol: 0.12, attack: 0.045});
+          this.tone(out, {f0: 92, f1: 41, dur: 0.5, vol: 0.16});
+          for (let i = 0; i < 6; i++) this.tone(out, {f0: midiHz(86 + i % 3 * 2),
+            dur: 0.12, vol: 0.022, when: t + i * 0.07});
+        } else if (character === 'matilde') {
+          // Responso: consonancia de voces, más cálida que una alarma.
+          for (const [i, note] of [62, 65, 69, 74].entries()) {
+            this.tone(out, {f0: midiHz(note), dur: 1.5, vol: 0.045, attack: 0.16, when: t + i * 0.055});
+            this.tone(out, {f0: midiHz(note) * 2.003, dur: 0.85, vol: 0.012, attack: 0.13, when: t + i * 0.055});
+          }
+          this.bellStrike(587.3, {vol: 0.035, decay: 1.5, send: 0.4});
+        } else {
+          // Lucía abre el fuego de la vela: aspiración, ráfaga y ascuas.
+          this.noiseShot(out, {dur: 0.16, type: 'bandpass', f0: 400, f1: 2400, vol: 0.11, attack: 0.04});
+          this.noiseShot(out, {dur: 0.52, type: 'lowpass', f0: 4800, f1: 180, vol: 0.16, attack: 0.014, when: t + 0.12});
+          this.tone(out, {f0: 240, f1: 55, dur: 0.45, vol: 0.15, when: t + 0.12});
+          for (let i = 0; i < 4; i++) this.noiseShot(out, {dur: 0.035, f0: 3200, f1: 1600,
+            vol: 0.023, when: t + 0.25 + i * 0.08});
+        }
+        break;
+      }
+      case 'ritual': {
+        if (!this.limit('ritual', 0.5)) return;
+        const t = this.ctx.currentTime;
+        [62, 69, 74].forEach((note, i) => this.bellStrike(midiHz(note),
+          {when: t + i * 0.18, vol: 0.045, decay: 2.8, send: 0.45, pan: (i - 1) * 0.18}));
+        this.noiseShot(this.out(b, 0, 0.25, 2), {dur: 0.8, type: 'highpass', f0: 800, f1: 4200, vol: 0.035, attack: 0.22});
+        break;
+      }
+      case 'ritualReady': {
+        if (!this.limit('ritualReady', 0.8)) return;
+        const t = this.ctx.currentTime, out = this.out(b, 0, 0.22, 1.5);
+        this.tone(out, {f0: midiHz(74), dur: 0.28, vol: 0.032, attack: 0.02});
+        this.tone(out, {f0: midiHz(81), dur: 0.42, vol: 0.024, attack: 0.025, when: t + 0.14});
+        break;
+      }
+      case 'perfectDash': {
+        if (!this.limit('perfectDash', 0.3)) return;
+        const out = this.out(b, pan, 0.22, 1.2);
+        this.tone(out, {f0: 880, f1: 1320, dur: 0.22, vol: 0.045});
         break;
       }
       case 'campana': {
@@ -2887,15 +2930,302 @@ class AudioEngine {
       case 'alba': this.nana({vol: 0.22, tempo: 0.95, dawn: true}); break;
       default: break;
     }
-  }
+  },
 
   /* La campana de la torre da la hora. */
   toll(count, gap = 2.3) {
     if (!this.live) return;
     const t = this.ctx.currentTime + 0.05;
     for (let i = 0; i < count; i++) this.bellStrike(146.8, {when: t + i * gap, vol: 0.17 * (count > 6 ? 0.8 : 1), decay: 6.5, send: 0.75});
+  },
+};
+
+return {cueMethods};
+})();
+/* ---- audio.js ---- */
+const __audio_js = (() => {
+/*
+ * Orquesta de la vigilia: ciclo de vida, mezcla y paisaje sonoro.
+ * Las voces se sintetizan sin archivos ni dependencias; funciona sin conexión.
+ */
+const { synthMethods, audioRand } = __audio_synth_js;
+const { scoreMethods } = __audio_score_js;
+const { cueMethods } = __audio_cues_js;
+const rand = audioRand;
+
+class AudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+    this.volume = 0.8;
+    this.mix = {music: 0.75, ambience: 0.7, effects: 0.85};
+    this.ready = false;
+    this.plucks = new Map();
+    this.last = {};
+    this.combo = 0;
+    this.comboClock = 0;
+    this.nanaStep = 0;
+    this.clock = 0;
+    this.scene = 'title';
+    this.transients = [];
+    this.maxGroups = 128;
+    this.stepSide = 1;
+    this.scoreStep = 0;
+    this.timers = {cricket: 0.5, owl: 14, bird: 1, heart: 0, sea: 0, nana: 2.5, ctl: 0, step: 0, score: 3, flame: 0.4};
   }
+
+  /* custom: un OfflineAudioContext para medir niveles en pruebas. */
+  init(custom) {
+    if (this.ctx) { this.resume(); return; }
+    if (custom) { this.ctx = custom; this.offline = true; }
+    else {
+      const AC = globalThis.AudioContext || globalThis.webkitAudioContext;
+      if (!AC) return;
+      try { this.ctx = new AC(); } catch { this.ctx = null; return; }
+    }
+    const c = this.ctx;
+    this.master = c.createGain();
+    this.master.gain.value = this.muted ? 0 : this.volume;
+    this.duck = c.createGain();
+    this.duck.gain.value = 1;
+    const comp = c.createDynamicsCompressor();
+    comp.threshold.value = -16; comp.knee.value = 10; comp.ratio.value = 4;
+    comp.attack.value = 0.004; comp.release.value = 0.25;
+    this.duck.connect(this.master); this.master.connect(comp); comp.connect(c.destination);
+    this.sfxBus = this.gain(this.mix.effects, this.duck);
+    this.ambBus = this.gain(this.mix.ambience, this.duck);
+    this.musicBus = this.gain(this.mix.music, this.duck);
+    // Cada retorno termina en su categoría: silenciar música elimina también
+    // su reverberación, sin silenciar las campanas ni el mar.
+    this.reverbs = new Map();
+    const impulse = this.impulse(2.8);
+    for (const bus of [this.sfxBus, this.ambBus, this.musicBus]) {
+      const reverb = c.createConvolver();
+      reverb.buffer = impulse;
+      reverb.connect(this.gain(0.42, bus));
+      this.reverbs.set(bus, reverb);
+    }
+    this.noise = this.noiseBuffer(2.5);
+    this.buildAmbient();
+    this.ready = true;
+    if (this.muted && !this.offline) c.suspend?.().catch(() => {});
+  }
+
+  resume() { if (this.ctx && !this.offline && !this.muted && this.ctx.state !== 'running') this.ctx.resume?.().catch(() => {}); }
+
+  setMuted(value) {
+    this.muted = !!value;
+    if (!this.ctx) return;
+    const now = this.ctx.currentTime;
+    this.master.gain.cancelScheduledValues(now);
+    this.master.gain.setTargetAtTime(this.muted ? 0 : this.volume, now, 0.05);
+    clearTimeout(this.muteTimer);
+    if (!this.offline) {
+      if (this.muted) this.muteTimer = setTimeout(() => { if (this.muted) this.ctx?.suspend?.().catch(() => {}); }, 200);
+      else this.ctx.resume?.().catch(() => {});
+    }
+  }
+
+  setVolume(value) {
+    if (!Number.isFinite(value)) return;
+    this.volume = Math.max(0, Math.min(1, value));
+    if (this.ctx && !this.muted) this.master.gain.setTargetAtTime(this.volume, this.ctx.currentTime, 0.05);
+  }
+
+  setMix(values = {}) {
+    const buses = {music: this.musicBus, ambience: this.ambBus, effects: this.sfxBus};
+    for (const key of Object.keys(this.mix)) {
+      if (!Number.isFinite(values[key])) continue;
+      this.mix[key] = Math.max(0, Math.min(1, values[key]));
+      if (this.ctx && buses[key]) {
+        const gain = buses[key].gain, now = this.ctx.currentTime;
+        gain.cancelScheduledValues(now);
+        gain.setTargetAtTime(this.mix[key], now, 0.035);
+      }
+    }
+  }
+
+  destroy() {
+    clearTimeout(this.muteTimer);
+    this.ready = false;
+    for (const group of this.transients) for (const node of group.nodes) node.disconnect();
+    this.transients = [];
+    if (this.ctx && !this.offline) this.ctx.close?.().catch(() => {});
+    this.ctx = null;
+    this.plucks.clear();
+  }
+
+  get live() { return this.ready && !this.muted && (this.offline || this.ctx.state === 'running'); }
+
+  /* ---------- ambiente ---------- */
+
+  buildAmbient() {
+    const c = this.ctx;
+    const loop = () => { const s = c.createBufferSource(); s.buffer = this.noise; s.loop = true; return s; };
+    // Viento
+    this.wind = {src: loop(), filter: c.createBiquadFilter(), gain: this.gain(0.0001, this.ambBus)};
+    this.wind.filter.type = 'bandpass'; this.wind.filter.Q.value = 0.8; this.wind.filter.frequency.value = 420;
+    this.wind.src.connect(this.wind.filter); this.wind.filter.connect(this.wind.gain); this.wind.src.start();
+    // Mar
+    this.sea = {src: loop(), filter: c.createBiquadFilter(), gain: this.gain(0.0001, this.ambBus)};
+    this.sea.filter.type = 'lowpass'; this.sea.filter.frequency.value = 380; this.sea.filter.Q.value = 0.2;
+    this.sea.src.connect(this.sea.filter);
+    const seaOut = c.createStereoPanner ? c.createStereoPanner() : this.gain(1);
+    if (seaOut.pan) seaOut.pan.value = 0.52; // El mar está al este del camposanto.
+    this.sea.filter.connect(seaOut); seaOut.connect(this.sea.gain); this.sea.src.start(0, 0.7);
+    // Zumbido grave que sube con el peligro
+    this.drone = {gain: this.gain(0.0001, this.ambBus), filter: c.createBiquadFilter(), oscs: []};
+    this.drone.filter.type = 'lowpass'; this.drone.filter.frequency.value = 160; this.drone.filter.Q.value = 3;
+    this.drone.filter.connect(this.drone.gain);
+    for (const f of [36.7, 36.95, 55.1]) {
+      const o = c.createOscillator();
+      o.type = f > 50 ? 'triangle' : 'sawtooth';
+      o.frequency.value = f;
+      o.connect(this.drone.filter); o.start();
+      this.drone.oscs.push(o);
+    }
+  }
+
+  /* Se llama cada fotograma con el estado de la noche. */
+  update(dt, s = {}) {
+    if (!this.ready) return;
+    this.pruneVoices();
+    this.clock += dt;
+    this.comboClock = Math.max(0, this.comboClock - dt);
+    if (this.comboClock === 0) this.combo = 0;
+    if (!this.live) return;
+    const c = this.ctx, now = c.currentTime;
+    const scene = s.scene || 'title';
+    this.character = s.character || this.character || 'lucia';
+    if (scene !== this.scene) {
+      this.timers.score = scene === 'run' ? 1.5 : 3;
+      if (scene === 'title') this.scoreStep = 0;
+      this.scene = scene;
+    }
+    const hour = s.hour || 0;
+    const T = this.timers;
+    T.ctl -= dt;
+    if (T.ctl <= 0) {
+      T.ctl = 0.12;
+      const gust = 0.5 + 0.5 * Math.sin(this.clock * 0.37) * Math.sin(this.clock * 0.13 + 1);
+      const windVol = (scene === 'dawn' ? 0.012 : 0.018 + gust * 0.03) * (hour > 2.8 && hour < 4.6 ? 1.35 : 1);
+      this.wind.gain.gain.setTargetAtTime(windVol, now, 0.4);
+      this.wind.filter.frequency.setTargetAtTime(300 + gust * 520, now, 0.5);
+      const danger = scene === 'run' ? Math.max(0, Math.min(1, s.danger || 0)) : 0;
+      const droneVol = scene === 'run' ? 0.012 + danger * 0.045 + (s.boss ? 0.03 : 0) : scene === 'end' ? 0 : 0.004;
+      this.drone.gain.gain.setTargetAtTime(droneVol, now, 0.8);
+      this.drone.filter.frequency.setTargetAtTime(120 + danger * 380 + (s.boss ? 160 : 0), now, 0.6);
+      this.duck.gain.setTargetAtTime(scene === 'pause' ? 0.35 : 1, now, 0.15);
+    }
+    // Los pasos siguen el desplazamiento real; esquivar y pausar los suspenden.
+    T.step -= dt;
+    if (scene === 'run' && s.moving && !s.dash && T.step <= 0) {
+      T.step = Math.max(0.22, Math.min(0.46, 44 / Math.max(95, s.speed || 125)));
+      this.sfx('paso', {pan: this.stepSide * 0.09, surface: s.surface});
+      this.stepSide *= -1;
+    } else if (!s.moving || scene !== 'run') T.step = 0.06;
+    // Leña/cera próxima al velatorio; el murmullo crece al encender un farol.
+    T.flame -= dt;
+    if (T.flame <= 0) {
+      T.flame = rand(0.35, 0.95);
+      if ((scene === 'title' || scene === 'run') && (scene === 'title' || s.nearCoffin || s.ritualProgress > 0)) {
+        const out = this.out(this.ambBus, rand(-0.2, 0.2), 0.08, 1.2);
+        this.noiseShot(out, {dur: 0.055, type: 'highpass', f0: 1600, f1: 700, vol: 0.018 + (s.ritualProgress || 0) * 0.024});
+      }
+    }
+    // El mar respira cada pocos segundos.
+    T.sea -= dt;
+    if (T.sea <= 0) {
+      T.sea = rand(6.5, 10);
+      const peak = scene === 'dawn' ? 0.05 : 0.07;
+      this.sea.gain.gain.cancelScheduledValues(now);
+      this.sea.gain.gain.setTargetAtTime(peak, now, 1.4);
+      this.sea.gain.gain.setTargetAtTime(0.012, now + 3.2, 1.8);
+      this.sea.filter.frequency.setTargetAtTime(rand(320, 520), now, 1.5);
+    }
+    // Grillos hasta las tres; luego callan.
+    const crickets = scene === 'title' ? 1 : scene === 'run' || scene === 'pause' ? Math.max(0, 1 - hour / 3.1) : 0;
+    T.cricket -= dt;
+    if (T.cricket <= 0) {
+      T.cricket = rand(0.25, 0.9) / Math.max(0.15, crickets);
+      if (crickets > 0.05 && scene !== 'pause') this.cricket(rand(-0.8, 0.8), crickets);
+    }
+    // La lechuza, de vez en cuando.
+    T.owl -= dt;
+    if (T.owl <= 0) {
+      T.owl = rand(24, 55);
+      if ((scene === 'title' || (scene === 'run' && hour > 0.4 && hour < 5.3))) this.owl(rand(-0.9, 0.9));
+    }
+    // Pájaros al clarear.
+    const birds = scene === 'dawn' ? 1 : scene === 'run' && hour > 5.45 && !s.boss ? (hour - 5.45) * 1.6 : 0;
+    T.bird -= dt;
+    if (T.bird <= 0) {
+      T.bird = rand(0.35, 1.4) / Math.max(0.2, birds);
+      if (birds > 0.05) this.bird(rand(-0.9, 0.9));
+    }
+    // Latido con poca vida.
+    if (scene === 'run' && (s.hp ?? 1) < 0.3) {
+      T.heart -= dt;
+      if (T.heart <= 0) { T.heart = 0.62 + (s.hp || 0) * 1.2; this.heartbeat(); }
+    } else T.heart = 0.2;
+    // En la pantalla de título suena la nana, sin prisa.
+    if (scene === 'title') {
+      T.nana -= dt;
+      if (T.nana <= 0) { T.nana = 34; this.nana({vol: 0.16, tempo: 0.86}); }
+    } else T.nana = Math.min(T.nana, 6);
+    // Una frase breve responde al peligro, dejando espacio para oír ataques.
+    T.score -= dt;
+    if (scene === 'run' && T.score <= 0) {
+      const danger = Math.max(0, Math.min(1, s.danger || 0));
+      T.score = s.boss ? 2.4 : danger > 0.35 ? 4.2 : 7.2;
+      this.nightPhrase({hour, danger, boss: !!s.boss, refuge: !!s.nearCoffin});
+    }
+  }
+
+  cricket(pan, density) {
+    const out = this.out(this.ambBus, pan, 0.1);
+    out.gain.value = 0.012 * (0.6 + density * 0.4);
+    const t = this.ctx.currentTime, f = rand(4300, 4900), pulses = 3 + (Math.random() * 2 | 0);
+    for (let i = 0; i < pulses; i++) this.tone(out, {f0: f, dur: 0.028, vol: 1, attack: 0.003, when: t + i * 0.045});
+  }
+
+  owl(pan) {
+    const out = this.out(this.ambBus, pan, 0.5);
+    out.gain.value = 0.05;
+    const t = this.ctx.currentTime;
+    const hoot = (when, f, dur) => {
+      const o = this.ctx.createOscillator(), g = this.ctx.createGain(), lfo = this.ctx.createOscillator(), lg = this.ctx.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(f * 1.04, when); o.frequency.exponentialRampToValueAtTime(f, when + dur);
+      lfo.frequency.value = 7; lg.gain.value = 6; lfo.connect(lg); lg.connect(o.frequency);
+      g.gain.setValueAtTime(0.0001, when); g.gain.exponentialRampToValueAtTime(1, when + 0.06); g.gain.exponentialRampToValueAtTime(0.0001, when + dur);
+      o.onended = () => { o.disconnect(); g.disconnect(); };
+      lfo.onended = () => { lfo.disconnect(); lg.disconnect(); };
+      o.connect(g); g.connect(out); o.start(when); lfo.start(when); o.stop(when + dur + 0.05); lfo.stop(when + dur + 0.05);
+    };
+    hoot(t, 410, 0.42);
+    hoot(t + 0.62, 372, 0.3);
+    hoot(t + 1.02, 372, 0.7);
+  }
+
+  bird(pan) {
+    const out = this.out(this.ambBus, pan, 0.25);
+    out.gain.value = 0.028;
+    const t = this.ctx.currentTime, n = 2 + (Math.random() * 4 | 0), base = rand(2600, 3600);
+    for (let i = 0; i < n; i++) {
+      const w = t + i * rand(0.07, 0.13), up = Math.random() > 0.4;
+      this.tone(out, {f0: up ? base : base * 1.35, f1: up ? base * 1.4 : base * 0.9, dur: rand(0.05, 0.1), vol: 1, attack: 0.008, when: w});
+    }
+  }
+
+  heartbeat() {
+    const t = this.ctx.currentTime;
+    this.tone(this.sfxBus, {f0: 70, f1: 42, dur: 0.12, vol: 0.18, when: t});
+    this.tone(this.sfxBus, {f0: 62, f1: 40, dur: 0.14, vol: 0.13, when: t + 0.18});
+  }
+
 }
+
+Object.assign(AudioEngine.prototype, synthMethods, scoreMethods, cueMethods);
 
 return {AudioEngine};
 })();
@@ -3456,17 +3786,34 @@ const BARKS = {
   }
 };
 
+const ABILITIES = {
+  lucia: {id: 'lumbre', name: 'Lumbre', description: 'Aparta a las criaturas con una ráfaga de fuego y atrae la luz cercana.'},
+  julian: {id: 'cerco', name: 'Cerco de sal', description: 'Aparta a las criaturas y deja un cerco que las frena y las hiere durante unos segundos.'},
+  matilde: {id: 'responso', name: 'Responso', description: 'Recupera vida, aparta a las criaturas y retrasa a la Guía si está cerca.'}
+};
+
+const RITES = {
+  labels: {oeste: 'Farol de la cancela', norte: 'Farol del cruceiro', este: 'Farol del mar'},
+  mapTitle: 'El velatorio', mapCount: 'Faroles', pointer: 'Farol',
+  introduction: {title: 'Tres faroles contra la noche', sub: 'Detente junto a un farol para encenderlo. Alza tu luz con E.'},
+  completed: 'Su luz te protege; tu habilidad vuelve antes.',
+  allLit: {title: 'El camino sigue encendido', sub: 'Tres luces acompañan la vigilia de Amparo.'}
+};
+
 const HELP = [
   ['Moverte', 'WASD o las flechas. En el móvil, arrastra el dedo sobre la pantalla.'],
   ['Atacar', 'Es automático: tus armas buscan solas lo que tengas más cerca.'],
   ['Esquivar', 'Espacio. Durante el salto nada te toca. Tiene unos segundos de recarga.'],
+  ['Alzar la luz', 'E o el botón de tu habilidad. Cada persona vela de otra manera: Lumbre, Cerco de sal o Responso. Aparta amenazas y disipa proyectiles cercanos; después necesita recargarse.'],
+  ['Los tres faroles', 'Son opcionales. Detente 3,6 segundos junto a uno para encenderlo. Si te hieren, se interrumpe; al alejarte, el progreso se pierde despacio. Cada farol cura, devuelve luz para recordar, frena a las criaturas cercanas y reduce la recarga de tu habilidad.'],
+  ['El mapa', 'El mapa del camposanto señala tu posición, el ataúd de Amparo, los faroles y la Guía. Las flechas del borde te ayudan a encontrar lo que queda fuera de la vista.'],
   ['Recordar', 'Recoge la luz que dejan las criaturas. Cada recuerdo de Amparo es una mejora: elige uno de tres.'],
   ['La luz', 'Si estás herido, tu luz se encoge. Junto al ataúd de Amparo te recuperas.'],
   ['Las cinco', 'Llega la Guía y va directa al ataúd. No dejes que se la lleve.'],
   ['Pausa', 'P o Esc.']
 ];
 
-return {WORLD, HOURS, CHARACTERS, MEMORIES, FALLBACK_CHOICES, CREATURES, BOSS, AMPARO, BARKS, HELP};
+return {WORLD, HOURS, CHARACTERS, MEMORIES, FALLBACK_CHOICES, CREATURES, BOSS, AMPARO, BARKS, ABILITIES, RITES, HELP};
 })();
 /* ---- input.js ---- */
 const __input_js = (() => {
@@ -3479,14 +3826,18 @@ const inputMethods = {
   listen(target, type, fn, opts) { target.addEventListener(type, fn, opts); this.handlers.push(() => target.removeEventListener(type, fn, opts)); },
 
   bindInput() {
-    const codes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Escape', 'KeyP'];
+    const codes = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'KeyE', 'Escape', 'KeyP'];
     this.listen(window, 'keydown', e => {
+      if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
       if (/INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || e.target?.isContentEditable || document.querySelector('dialog[open]')) return;
       if (!codes.includes(e.code)) return;
+      // Espacio, letras y flechas conservan su comportamiento nativo en controles.
+      if (e.target?.closest?.('button, a, [role="radio"]') && !['Escape', 'KeyP'].includes(e.code)) return;
       if (['running', 'paused'].includes(this.state)) e.preventDefault();
-      if (e.repeat && ['Escape', 'KeyP', 'Space'].includes(e.code)) return;
+      if (e.repeat && ['Escape', 'KeyP', 'Space', 'KeyE'].includes(e.code)) return;
       if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'running') this.pause(); else if (this.state === 'paused') this.resume(); }
       else if (e.code === 'Space') { if (this.state === 'running') this.dash(); }
+      else if (e.code === 'KeyE') { if (this.state === 'running') this.ability(); }
       else this.keys.add(e.code);
     });
     this.listen(window, 'keyup', e => this.keys.delete(e.code));
@@ -3495,6 +3846,7 @@ const inputMethods = {
     const pos = e => { const r = this.canvas.getBoundingClientRect(), z = this.zoom || 1; return {x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z}; };
     this.listen(this.canvas, 'pointerdown', e => {
       if (this.state !== 'running' || e.button > 0) return;
+      if (this.pointer && this.pointer.id !== e.pointerId) return;
       e.preventDefault();
       const p = pos(e);
       this.pointer = {id: e.pointerId, start: p, current: p};
@@ -3504,6 +3856,7 @@ const inputMethods = {
     const end = e => { if (this.pointer?.id === e.pointerId) this.pointer = null; };
     this.listen(this.canvas, 'pointerup', end);
     this.listen(this.canvas, 'pointercancel', end);
+    this.listen(this.canvas, 'lostpointercapture', end);
   },
 
   movement() {
@@ -3834,6 +4187,7 @@ const weaponMethods = {
     if (p.inv > 0 || this.dashTime > 0 || this.god || this.state !== 'running') return;
     const dmg = Math.max(1, Math.round(amount * (1 - this.st.armor)));
     p.hp -= dmg;
+    this.interruptRitual();
     this.damageTaken = (this.damageTaken || 0) + dmg;
     this.minHp = Math.min(this.minHp ?? Infinity, p.hp);
     p.inv = 0.75;
@@ -4016,6 +4370,9 @@ const __enemies_js = (() => {
 const { TAU, clamp, rand, lerp } = __util_js;
 const { ENEMIES, MAX_ENEMIES } = __balance_js;
 
+// Equivale a resolver un 25 % del solape a 60 Hz, sin depender de la pantalla.
+const SEPARATION_RATE = -Math.log(0.75) * 60;
+
 const enemyMethods = {
   spawn(force, at) {
     if (this.enemies.length >= MAX_ENEMIES && force !== 'guia') return null;
@@ -4084,7 +4441,7 @@ const enemyMethods = {
         this.hooks.onDiscover?.({kind: 'creature', id: e.type});
         if (e.type !== 'anima' || this.time > 20) this.bark('first_' + e.type, {priority: 1});
       }
-      const slow = e.hit > 0 ? 0.45 : 1;
+      const slow = Math.min(e.hit > 0 ? 0.45 : 1, this.enemySlow(e));
       this.behave(e, dx, dy, len, dt, slow);
       e.x += e.kx * dt; e.y += e.ky * dt;
       const damp = Math.exp(-dt * 9);
@@ -4100,7 +4457,7 @@ const enemyMethods = {
         if (o === e || o.hp <= 0) continue;
         const dx = e.x - o.x, dy = e.y - o.y, min = (e.r + o.r) * 0.82, d2 = dx * dx + dy * dy;
         if (d2 > 0.01 && d2 < min * min) {
-          const d = Math.sqrt(d2), push = (min - d) * 0.25;
+          const d = Math.sqrt(d2), push = (min - d) * (1 - Math.exp(-dt * SEPARATION_RATE));
           e.x += dx / d * push; e.y += dy / d * push;
         }
       }
@@ -4116,6 +4473,8 @@ const enemyMethods = {
       }
     }
     this.enemies = this.enemies.filter(e => e.hp > 0);
+    // Los proyectiles se comprueban después de movimiento, separación y reciclaje.
+    this.buildGrid();
   },
 
   behave(e, dx, dy, len, dt, slow) {
@@ -4375,12 +4734,232 @@ const bossMethods = {
 
 return {bossMethods};
 })();
+/* ---- scene-fx.js ---- */
+const __scene_fx_js = (() => {
+/*
+ * El suelo mojado, el viento y los faroles del ritual. El dibujo nunca decide
+ * colisiones ni daño. Las huellas tienen un presupuesto fijo; el resto se
+ * obtiene de coordenadas y semillas, sin generar objetos por fotograma.
+ */
+const { TAU, clamp } = __util_js;
+const { hash, drawShadow } = __art_js;
+const { surfaceAt } = __world_js;
+const { RITUAL_RADIUS, RITUAL_LIGHT_RADIUS } = __balance_js;
+const { RITES } = __story_js;
+
+const SCENE_PALETTE = Object.freeze({
+  wet: '#101d24', reflection: '#90b9ca', bronze: '#a58b55',
+  iron: '#252f35', stone: '#68777c', leaf: '#a78250', safe: '#f2d99b'
+});
+
+const MAX_FOOTPRINTS = 48;
+const circle = (ctx, x, y, r) => { ctx.beginPath(); ctx.arc(x, y, r, 0, TAU); };
+
+class SceneEffects {
+  constructor() { this.owner = null; this.footprints = []; this.last = null; this.foot = 0; }
+
+  update(dt, game) {
+    const p = game.player;
+    if (this.owner !== p) { this.owner = p; this.footprints = []; this.last = {x: p.x, y: p.y}; this.foot = 0; }
+    for (const mark of this.footprints) mark.life -= dt;
+    this.footprints = this.footprints.filter(mark => mark.life > 0);
+    const distance = Math.hypot(p.x - this.last.x, p.y - this.last.y);
+    if (game.state !== 'running' || distance > 90 || dt > 0.2) { this.last = {x: p.x, y: p.y}; return; }
+    if (distance < 15 || game.dashTime > 0) return;
+    const a = Math.atan2(p.y - this.last.y, p.x - this.last.x), side = this.foot++ % 2 ? 1 : -1;
+    this.footprints.push({x: p.x + Math.cos(a + Math.PI / 2) * side * 4,
+      y: p.y + 8 + Math.sin(a + Math.PI / 2) * side * 4, a, life: 3.8, wet: surfaceAt(p.x, p.y) !== 'hierba'});
+    if (this.footprints.length > MAX_FOOTPRINTS) this.footprints.shift();
+    this.last = {x: p.x, y: p.y};
+  }
+
+  ground(ctx, game, camX, camY) {
+    const w = game.width, h = game.height, time = game.options.shake || game.options.flashes ? game.clock : 0;
+    ctx.save();
+    // Charcos pequeños en las avenidas: aristas de píxel y reflejos horizontales.
+    let count = 0;
+    for (let gy = Math.floor(camY / 128); gy <= (camY + h) / 128; gy++) {
+      for (let gx = Math.floor(camX / 128); gx <= (camX + w) / 128; gx++) {
+        if (count >= 28) break;
+        const seed = hash(gx, gy, 207), wx = gx * 128 + 24 + seed * 80, wy = gy * 128 + hash(gx, gy, 208) * 104;
+        if (seed < 0.24 || surfaceAt(wx, wy) === 'hierba' || Math.hypot(wx, wy) < 104) continue;
+        count++;
+        const x = Math.round(wx - camX), y = Math.round(wy - camY), r = 11 + Math.round(seed * 16);
+        ctx.fillStyle = SCENE_PALETTE.wet; ctx.globalAlpha = 0.74;
+        ctx.beginPath(); ctx.moveTo(x - r, y - 2); ctx.lineTo(x - r + 6, y - 6); ctx.lineTo(x + r - 8, y - 7);
+        ctx.lineTo(x + r, y - 2); ctx.lineTo(x + r - 3, y + 4); ctx.lineTo(x - r + 8, y + 6); ctx.closePath(); ctx.fill();
+        ctx.globalAlpha = 0.18; ctx.fillStyle = SCENE_PALETTE.reflection;
+        ctx.fillRect(x - r + 8, y - 5, Math.round(r * 0.85), 1); ctx.fillRect(x + 3, y + 3, r - 6, 1);
+        const distance = Math.hypot(game.player.x - wx, game.player.y - wy);
+        if (game.state !== 'ready' && distance < 160) {
+          const strength = (1 - distance / 160) * 0.38;
+          ctx.fillStyle = SCENE_PALETTE.safe;
+          for (let k = 0; k < 4; k++) {
+            ctx.globalAlpha = strength * (1 - k * 0.19);
+            ctx.fillRect(x - 3 - k + Math.round(Math.sin(time * 2 + k + seed) * 2), y - 4 + k * 2, 4 + k * 2, 1);
+          }
+        }
+      }
+    }
+    if (this.owner === game.player) for (const mark of this.footprints) {
+      ctx.save(); ctx.translate(Math.round(mark.x - camX), Math.round(mark.y - camY)); ctx.rotate(mark.a);
+      ctx.globalAlpha = clamp(mark.life / 3.8, 0, 1) * 0.35;
+      ctx.fillStyle = mark.wet ? '#070c10' : '#6b6350'; ctx.fillRect(-3, -1, 6, 3);
+      if (mark.wet) { ctx.fillStyle = SCENE_PALETTE.reflection; ctx.globalAlpha *= 0.5; ctx.fillRect(-2, 2, 4, 1); }
+      ctx.restore();
+    }
+    ctx.restore();
+  }
+
+  leaves(ctx, game, camX, camY) {
+    if (!game.options.shake && !game.options.flashes) return;
+    const cell = 180, time = game.clock;
+    ctx.save();
+    let drawn = 0;
+    for (let gy = Math.floor((camY - 100) / cell); gy <= (camY + game.height + 100) / cell; gy++) {
+      for (let gx = Math.floor((camX - 100) / cell); gx <= (camX + game.width + 100) / cell; gx++) {
+        if (drawn >= 36) break;
+        const seed = hash(gx, gy, 219);
+        if (seed < 0.32) continue;
+        const drift = ((time * (10 + seed * 12) + seed * 430) % (cell * 2)) - cell;
+        const x = gx * cell + drift - camX, y = gy * cell + seed * cell + Math.sin(time * 0.7 + seed * 12) * 13 - camY;
+        if (x < -10 || x > game.width + 10 || y < -10 || y > game.height + 10) continue;
+        drawn++;
+        ctx.globalAlpha = 0.25; ctx.fillStyle = '#060b10'; ctx.fillRect(Math.round(x + 3), Math.round(y + 14), 5, 1);
+        ctx.globalAlpha = 0.54; ctx.fillStyle = SCENE_PALETTE.leaf;
+        ctx.save(); ctx.translate(Math.round(x), Math.round(y)); ctx.rotate(Math.sin(time * 2 + seed * 15) * 0.7);
+        ctx.fillRect(-2, -1, 5, 2); ctx.fillRect(-1, -2, 2, 4); ctx.restore();
+      }
+    }
+    ctx.restore();
+  }
+
+  ritualGround(ctx, ritual, camX, camY) {
+    const x = ritual.x - camX, y = ritual.y - camY, near = ritual.progress > 0 && !ritual.lit;
+    ctx.save();
+    ctx.strokeStyle = ritual.lit ? 'rgba(242,217,155,.23)' : near ? 'rgba(242,217,155,.65)' : 'rgba(144,185,202,.2)';
+    ctx.lineWidth = 1; ctx.setLineDash(ritual.lit ? [2, 10] : [3, 7]);
+    const radius = ritual.lit ? RITUAL_LIGHT_RADIUS : RITUAL_RADIUS;
+    circle(ctx, x, y, radius); ctx.stroke(); ctx.setLineDash([]);
+    if (ritual.lit) {
+      ctx.fillStyle = 'rgba(242,217,155,.035)'; circle(ctx, x, y, radius); ctx.fill();
+      ctx.strokeStyle = 'rgba(242,217,155,.14)'; circle(ctx, x, y, radius - 8); ctx.stroke();
+    }
+    // Cuatro granos de sal indican el círculo incluso con destellos apagados.
+    ctx.fillStyle = ritual.lit ? SCENE_PALETTE.safe : SCENE_PALETTE.stone;
+    for (let i = 0; i < 4; i++) { const a = i * TAU / 4; ctx.fillRect(Math.round(x + Math.cos(a) * RITUAL_RADIUS - 1), Math.round(y + Math.sin(a) * RITUAL_RADIUS - 1), 2, 2); }
+    if (near) {
+      ctx.strokeStyle = SCENE_PALETTE.safe; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.arc(x, y, RITUAL_RADIUS, -Math.PI / 2, -Math.PI / 2 + TAU * ritual.progress); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  ritual(ctx, ritual, x, y, layer, clock, flashes) {
+    const lit = ritual.lit, progress = ritual.progress || 0;
+    ctx.save(); ctx.translate(Math.round(x), Math.round(y));
+    if (layer === 'base') {
+      drawShadow(ctx, 0, 7, 13, 0.5);
+      ctx.fillStyle = '#141a20'; ctx.fillRect(-12, 2, 24, 6); ctx.fillRect(-9, -2, 18, 5);
+      ctx.fillStyle = '#526168'; ctx.fillRect(-10, 2, 20, 2); ctx.fillStyle = '#2d3a40'; ctx.fillRect(-7, -2, 14, 4);
+      ctx.fillStyle = SCENE_PALETTE.iron; ctx.fillRect(-4, -24, 8, 23); ctx.fillRect(-9, -33, 18, 17);
+      ctx.fillStyle = lit ? '#806133' : '#34434a'; ctx.fillRect(-6, -30, 12, 12);
+      ctx.fillStyle = '#101a20'; ctx.fillRect(-9, -35, 18, 3); ctx.fillRect(-6, -38, 12, 3); ctx.fillRect(-2, -42, 4, 5);
+      ctx.fillStyle = SCENE_PALETTE.bronze; ctx.fillRect(-9, -34, 18, 1); ctx.fillRect(-7, -17, 14, 2);
+      ctx.fillStyle = '#728b94'; ctx.fillRect(-6, -29, 2, 9); ctx.fillRect(4, -29, 1, 9);
+      ctx.fillStyle = '#060e14'; ctx.fillRect(-8, -31, 2, 15); ctx.fillRect(6, -31, 2, 15);
+      ctx.fillStyle = '#899197'; ctx.fillRect(-6, 0, 4, 1);
+    } else {
+      const strength = lit ? 1 : progress * 0.75;
+      if (strength > 0) {
+        ctx.globalAlpha = strength;
+        ctx.fillStyle = 'rgba(255,176,74,.45)'; ctx.fillRect(-5, -29, 10, 12);
+        ctx.fillStyle = '#ffb04a'; ctx.fillRect(-3, -28, 6, 10);
+        ctx.fillStyle = '#fff2bc'; ctx.fillRect(-1, -28 - (flashes ? Math.round(Math.sin(clock * 7 + ritual.x) * 1) : 0), 2, 8);
+        ctx.fillStyle = SCENE_PALETTE.bronze; ctx.fillRect(-1, -17, 2, 6);
+      } else {
+        ctx.fillStyle = '#9cbfca'; ctx.globalAlpha = 0.65; ctx.fillRect(-1, -26, 2, 4);
+      }
+    }
+    ctx.restore();
+  }
+
+  signals(ctx, game, camX, camY) {
+    ctx.save();
+    for (const ward of game.wards || []) {
+      const x = ward.x - camX, y = ward.y - camY, fade = clamp(ward.life / 0.55, 0, 1);
+      ctx.globalAlpha = fade;
+      ctx.strokeStyle = '#bee0f2'; ctx.lineWidth = 1.5; circle(ctx, x, y, ward.r); ctx.stroke();
+      ctx.strokeStyle = 'rgba(190,224,242,.32)'; circle(ctx, x, y, ward.r - 7); ctx.stroke();
+      // Granos de sal inmóviles: el límite real sigue siendo legible sin pulsos.
+      for (let i = 0; i < 52; i++) {
+        const a = i * TAU / 52, r = ward.r - hash(i, 0, 77) * 6;
+        ctx.fillStyle = i % 3 ? '#bee0f2' : '#f4fbff';
+        ctx.fillRect(Math.round(x + Math.cos(a) * r), Math.round(y + Math.sin(a) * r), i % 4 ? 2 : 3, 2);
+      }
+      ctx.fillStyle = 'rgba(190,224,242,.025)'; circle(ctx, x, y, ward.r - 8); ctx.fill();
+    }
+    if (game.abilityTime > 0 && game.character !== 'julian') {
+      const x = game.player.x - camX, y = game.player.y - camY - 6;
+      const matilde = game.character === 'matilde', time = game.options.flashes ? game.clock : 0;
+      ctx.globalAlpha = clamp(game.abilityTime * 2, 0, 0.65);
+      ctx.strokeStyle = matilde ? '#f2d99b' : '#ffb04a'; ctx.lineWidth = 1;
+      const r = matilde ? 52 : 40;
+      circle(ctx, x, y, r); ctx.stroke();
+      for (let i = 0; i < (matilde ? 12 : 8); i++) {
+        const a = i * TAU / (matilde ? 12 : 8) + time * 0.35;
+        ctx.save(); ctx.translate(x + Math.cos(a) * r, y + Math.sin(a) * r); ctx.rotate(a);
+        ctx.fillStyle = matilde ? '#fff4d8' : '#ffb04a'; ctx.fillRect(-3, -1, 7, 2); ctx.restore();
+      }
+      if (matilde) { ctx.fillStyle = '#fff4d8'; ctx.fillRect(x - 1, y - 17, 2, 25); ctx.fillRect(x - 8, y - 9, 16, 2); }
+    }
+    ctx.restore();
+  }
+
+  minimap(ctx, game) {
+    if (!game.rituals?.length || !['running', 'paused', 'upgrade'].includes(game.state)) return;
+    const zoom = game.zoom || 1, width = game.width * zoom, height = game.height * zoom;
+    const small = width < 640;
+    // En móvil el jefe ocupa esta zona: las flechas del mundo siguen orientando.
+    if (small && game.boss?.hp > 0) return;
+    const size = small ? 80 : 112, x = width - size - (small ? 14 : 24), y = small ? 114 : height - size - 148;
+    if (height < 460) return;
+    ctx.save(); ctx.scale(1 / zoom, 1 / zoom); ctx.translate(x, y);
+    ctx.fillStyle = 'rgba(7,12,17,.66)'; ctx.fillRect(-8, -19, size + 16, size + 43);
+    ctx.strokeStyle = 'rgba(190,224,242,.23)'; ctx.lineWidth = 1; ctx.strokeRect(-8, -19, size + 16, size + 43);
+    ctx.font = `${small ? 9 : 10}px 'Alegreya Sans', system-ui, sans-serif`; ctx.textAlign = 'left'; ctx.fillStyle = '#c7bdab';
+    ctx.fillText(RITES.mapTitle.toLocaleUpperCase('es'), 0, -6);
+    const center = size / 2, unit = size / 1240;
+    const point = (wx, wy) => [clamp(center + wx * unit, 2, size - 2), clamp(center + wy * unit, 2, size - 2)];
+    ctx.strokeStyle = 'rgba(190,224,242,.13)';
+    ctx.beginPath(); ctx.moveTo(center, 0); ctx.lineTo(center, size); ctx.moveTo(0, center); ctx.lineTo(size, center); ctx.stroke();
+    ctx.strokeStyle = 'rgba(242,217,155,.15)'; circle(ctx, center, center, size * 0.26); ctx.stroke();
+    ctx.fillStyle = '#efe6d4'; ctx.fillRect(center - 1, center - 4, 2, 8); ctx.fillRect(center - 4, center - 2, 8, 2);
+    for (const ritual of game.rituals) {
+      const [rx, ry] = point(ritual.x, ritual.y);
+      ctx.fillStyle = ritual.lit ? '#ffb04a' : '#1c2a32'; ctx.fillRect(rx - 3, ry - 3, 6, 6);
+      ctx.strokeStyle = ritual.lit ? '#ffb04a' : '#a5bdc5'; ctx.strokeRect(rx - 3, ry - 3, 6, 6);
+    }
+    if (game.boss?.hp > 0) {
+      const [bx, by] = point(game.boss.x, game.boss.y);
+      ctx.fillStyle = '#ff785a'; circle(ctx, bx, by, 3); ctx.fill();
+    }
+    const [px, py] = point(game.player.x, game.player.y), a = Math.atan2(game.lastMove?.y || 0, game.lastMove?.x || 1);
+    ctx.save(); ctx.translate(px, py); ctx.rotate(a); ctx.fillStyle = '#f4fbff';
+    ctx.beginPath(); ctx.moveTo(5, 0); ctx.lineTo(-3, -3); ctx.lineTo(-2, 0); ctx.lineTo(-3, 3); ctx.closePath(); ctx.fill(); ctx.restore();
+    ctx.fillStyle = '#c7bdab'; ctx.fillText(`${RITES.mapCount} ${game.rituals.filter(r => r.lit).length} / ${game.rituals.length}`, 0, size + 15);
+    ctx.restore();
+  }
+}
+
+return {SCENE_PALETTE, SceneEffects};
+})();
 /* ---- fx.js ---- */
 const __fx_js = (() => {
 /*
  * Partículas, anillos y números: lo que se ve un instante y se va.
  */
-
+const { SceneEffects } = __scene_fx_js;
 
 const fxMethods = {
   particle(o) {
@@ -4390,6 +4969,8 @@ const fxMethods = {
   },
 
   updateFx(dt) {
+    if (!this.sceneFx) this.sceneFx = new SceneEffects();
+    this.sceneFx.update(dt, this);
     this.combatFx.update(dt);
     if (this.player.attack) this.player.attack.life = Math.max(0, this.player.attack.life - dt);
     this.shake = Math.max(0, this.shake - dt * 22);
@@ -4441,6 +5022,8 @@ const botMethods = {
       const dx = p.x - h.x, dy = p.y - h.y, d = Math.hypot(dx, dy) || 1;
       if (d < h.r + 30) { fx += dx / d * 4; fy += dy / d * 4; }
     }
+    const closeEnemies = this.enemies.filter(e => e.hp > 0 && !e.dissolve && Math.hypot(e.x - p.x, e.y - p.y) < 150).length;
+    if (this.abilityCd <= 0 && (closeEnemies >= (sloppy ? 6 : 4) || (this.character === 'matilde' && p.hp < this.st.maxHp * 0.45))) this.ability();
     // Da vueltas alrededor del velatorio; cuando llega la Guía, va a por ella.
     let tx, ty;
     if (this.boss && this.boss.hp > 0) {
@@ -4452,6 +5035,18 @@ const botMethods = {
       let best = null, bd = 160 * 160;
       for (const g of this.gems) { const d = (g.x - p.x) ** 2 + (g.y - p.y) ** 2; if (d < bd) { bd = d; best = g; } }
       if (best) { tx = best.x; ty = best.y; }
+      // El bot recorre los faroles sin sacrificar sus reflejos frente a la horda.
+      if (this.time > 10 && this.time < 420 && closeEnemies === 0 && !this.hazards.length && !this.enemyShots.some(s => Math.hypot(s.x - p.x, s.y - p.y) < 150)) {
+        const site = this.rituals.filter(r => !r.lit).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+        if (site) {
+          tx = site.x; ty = site.y;
+          if (Math.hypot(tx - p.x, ty - p.y) < 38) {
+            const mv = {x: 0, y: 0};
+            if (sloppy) this.botMemo = {at: this.clock, mv};
+            return mv;
+          }
+        }
+      }
     }
     const gx = tx - p.x, gy = ty - p.y, gd = Math.hypot(gx, gy) || 1;
     fx += gx / gd * 0.9; fy += gy / gd * 0.9;
@@ -4477,6 +5072,8 @@ const { TAU, clamp, rand, lerp } = __util_js;
 const { NIGHT, COFFIN, ENEMIES, WORLD, LIGHTHOUSE } = __balance_js;
 const { drawSprite, drawShadow, sprite } = __art_js;
 const { drawFlames, drawFog } = __world_js;
+const { SceneEffects } = __scene_fx_js;
+const { RITES } = __story_js;
 
 const renderMethods = {
   nightLook() {
@@ -4522,12 +5119,13 @@ const renderMethods = {
   /* El faro da una vuelta cada quince segundos. */
   beamAngle() { return this.clock * 0.42; },
 
-  render() {
+  render(dt = 1 / 60) {
     const ctx = this.ctx, w = this.width, h = this.height, p = this.player;
+    if (!this.sceneFx) this.sceneFx = new SceneEffects();
     const title = this.state === 'ready';
     const target = title ? this.titleFocus : p;
     if (title) { this.cam.x = target.x; this.cam.y = target.y; }
-    else { const k = 1 - Math.exp(-0.016 * 12); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
+    else { const k = 1 - Math.exp(-clamp(dt, 0, 0.05) * 12); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
     this.clampCamera();
     const camX = Math.round(this.cam.x - w / 2), camY = Math.round(this.cam.y - h / 2);
     const look = this.nightLook();
@@ -4537,7 +5135,16 @@ const renderMethods = {
     if (this.shake > 0.2 && this.options.shake) ctx.translate(Math.round(rand(-1, 1) * this.shake), Math.round(rand(-1, 1) * this.shake));
     this.cemetery.ground(ctx, camX, camY, w, h);
     this.cemetery.sea(ctx, camX, camY, w, h, this.clock);
+    this.sceneFx.ground(ctx, this, camX, camY);
     this.cemetery.collect(ctx, camX, camY, w, h, this.clock, wake, items, flames, lights);
+    if (!title) for (const ritual of this.rituals || []) {
+      const x = ritual.x - camX, y = ritual.y - camY;
+      if (x < -150 || x > w + 150 || y < -150 || y > h + 150) continue;
+      this.sceneFx.ritualGround(ctx, ritual, camX, camY);
+      items.push({kind: 'ritual', ritual, x, y, sortY: y + 6});
+      lights.push({x, y: y - 24, r: ritual.lit ? 185 : 50 + ritual.progress * 90,
+        i: ritual.lit ? 0.9 : 0.35 + ritual.progress * 0.5, c: ritual.lit ? 'warm' : 'pale', g: ritual.lit ? 0.65 : 0.18});
+    }
     if (this.mem.farol && !title && this.state !== 'ended') this.combatFx.drawLanternAura(ctx, p, this.lightRadius() * 0.7, this.clock, camX, camY, this.options.flashes);
 
     // Café en el suelo
@@ -4575,6 +5182,7 @@ const renderMethods = {
       entityLights.length = 56;
     }
     for (const L of entityLights) lights.push(L);
+    this.sceneFx.leaves(ctx, this, camX, camY);
     drawFog(ctx, camX, camY, w, h, this.clock, look.fog * 0.9);
 
     // Polillas
@@ -4649,6 +5257,7 @@ const renderMethods = {
       this.combatFx.drawRosary(ctx, p, this.mem.rosario, this.clock, camX, camY, this.options.flashes);
     }
     this.combatFx.render(ctx, camX, camY, this.options.flashes);
+    if (!title) this.sceneFx.signals(ctx, this, camX, camY);
     // Partículas con luz
     for (const q of this.particles) {
       if (!q.glow) continue;
@@ -4688,6 +5297,7 @@ const renderMethods = {
     }
     if (!title && ['running', 'paused', 'upgrade'].includes(this.state)) this.drawPointers(ctx, camX, camY);
     this.drawOverlays(ctx, look);
+    this.sceneFx.minimap(ctx, this);
     if (this.pointer) {
       ctx.strokeStyle = 'rgba(241,232,210,.25)'; ctx.fillStyle = 'rgba(241,232,210,.06)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(this.pointer.start.x, this.pointer.start.y, 40, 0, TAU); ctx.fill(); ctx.stroke();
@@ -4727,6 +5337,10 @@ const renderMethods = {
 
   drawItem(ctx, it, lights, layer) {
     const t = this.clock;
+    if (it.kind === 'ritual') {
+      this.sceneFx.ritual(ctx, it.ritual, it.x, it.y, layer, t, this.options.flashes);
+      return;
+    }
     if (it.kind === 'prop') {
       if (layer === 'base') this.cemetery.drawProp(ctx, it, this.wakeLook());
       return;
@@ -4805,20 +5419,39 @@ const renderMethods = {
   drawTelegraphs(ctx, camX, camY) {
     const t = this.clock;
     ctx.save();
+    const charge = (x, y, angle, length, width, rgb, progress) => {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+      // La banda muestra el ancho de la embestida; las muescas apuntan al peligro.
+      ctx.fillStyle = `rgba(${rgb},.09)`; ctx.fillRect(0, -width, length, width * 2);
+      ctx.strokeStyle = `rgba(${rgb},.7)`; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
+      ctx.beginPath(); ctx.moveTo(0, -width); ctx.lineTo(length, -width); ctx.moveTo(0, width); ctx.lineTo(length, width); ctx.stroke(); ctx.setLineDash([]);
+      ctx.lineWidth = 2; ctx.strokeStyle = `rgba(${rgb},.9)`;
+      for (let i = 1; i <= 3; i++) {
+        const d = length * i / 4;
+        ctx.beginPath(); ctx.moveTo(d - 5, -5); ctx.lineTo(d, 0); ctx.lineTo(d - 5, 5); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(0, 0, width + 5, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(progress, 0, 1)); ctx.stroke();
+      ctx.restore();
+    };
     for (const e of this.enemies) {
       if (e.hp <= 0 || e.dissolve) continue;
       const x = e.x - camX, y = e.y - camY;
+      if (x < -220 || x > this.width + 220 || y < -220 || y > this.height + 220) continue;
       if (e.type === 'urco' && e.mode === 'windup') {
-        ctx.strokeStyle = `rgba(255,78,58,${0.45 + Math.sin(t * 20) * 0.2})`; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
         const L = e.speed * 4.4 * 0.42;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(e.lock) * L, y + Math.sin(e.lock) * L); ctx.stroke();
-        ctx.setLineDash([]);
+        charge(x, y, e.lock, L, e.r + 3, '255,112,83', 1 - e.modeT / 0.72);
       }
       if (e.type === 'curuxa' && e.mode === 'windup') {
-        ctx.strokeStyle = `rgba(255,212,71,${0.4 + Math.sin(t * 24) * 0.2})`; ctx.lineWidth = 1; ctx.setLineDash([3, 5]);
         const L = e.speed * 3.8 * 0.55;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(e.lock) * L, y + Math.sin(e.lock) * L); ctx.stroke();
-        ctx.setLineDash([]);
+        charge(x, y, e.lock, L, e.r + 2, '255,212,111', 1 - e.modeT / 0.5);
+      }
+      if (e.type === 'planidera' && e.mode === 'cry') {
+        const a = Math.atan2(this.player.y - e.y, this.player.x - e.x), k = clamp(1 - e.modeT / 0.65, 0, 1);
+        ctx.save(); ctx.translate(x, y - 10); ctx.rotate(a);
+        ctx.fillStyle = 'rgba(190,224,242,.07)';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 88, -0.24, 0.24); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(190,224,242,.8)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0, 0, 19 + k * 13, -1.1, 1.1); ctx.stroke(); ctx.restore();
       }
       if (e.type === 'espantajo' && e.mode === 'swing') {
         const k = 1 - e.modeT / 0.85;
@@ -4868,6 +5501,16 @@ const renderMethods = {
     };
     arrow(COFFIN.x, COFFIN.y, 'rgba(255,213,154,.85)', 'Amparo');
     if (this.boss && this.boss.hp > 0) arrow(this.boss.x, this.boss.y, 'rgba(255,120,90,.95)', 'La Guía');
+    else {
+      const nearest = (this.rituals || []).filter(r => !r.lit).sort((a, b) =>
+        Math.hypot(a.x - this.player.x, a.y - this.player.y) - Math.hypot(b.x - this.player.x, b.y - this.player.y))[0];
+      if (nearest) {
+        const toCoffin = Math.atan2(COFFIN.y - this.player.y, COFFIN.x - this.player.x);
+        const toRitual = Math.atan2(nearest.y - this.player.y, nearest.x - this.player.x);
+        const difference = Math.abs(Math.atan2(Math.sin(toCoffin - toRitual), Math.cos(toCoffin - toRitual)));
+        if (difference > 0.35 || Math.hypot(this.player.x, this.player.y) < 100) arrow(nearest.x, nearest.y, 'rgba(190,224,242,.9)', RITES.pointer);
+      }
+    }
   },
 
   drawOverlays(ctx, look) {
@@ -4912,6 +5555,150 @@ const renderMethods = {
 
 return {renderMethods};
 })();
+/* ---- ritual.js ---- */
+const __ritual_js = (() => {
+/*
+ * Lo que decide quien vela: alzar su luz y encender los faroles del camino.
+ * El reloj, el daño y los dibujos siguen perteneciendo a sus propios sistemas.
+ */
+const { TAU, clamp, rand } = __util_js;
+const { ABILITY_BALANCE, RITUAL_RADIUS, RITUAL_CHANNEL, RITUAL_LIGHT_RADIUS, RITUAL_SITES } = __balance_js;
+const { ABILITIES, RITES } = __story_js;
+
+const TONES = {lucia: '#ffb04a', julian: '#bee0f2', matilde: '#eecd81'};
+
+const ritualMethods = {
+  resetRituals() {
+    this.rituals = RITUAL_SITES.map(site => ({...site, label: RITES.labels[site.id], progress: 0, lit: false}));
+    this.ritualActiveId = null;
+    this.ritualInterrupted = 0;
+    this.ritualIntro = false;
+    this.abilityCd = 0;
+    this.abilityTime = 0;
+    this.abilitiesUsed = 0;
+    this.wards = [];
+  },
+
+  litRituals() { return this.rituals.filter(site => site.lit).length; },
+
+  abilityMax() { return ABILITY_BALANCE[this.character].cooldown * (1 - this.litRituals() * 0.06); },
+
+  abilitySnapshot() {
+    return {...ABILITIES[this.character], cd: this.abilityCd, max: this.abilityMax(), ready: this.abilityCd <= 0 && this.state === 'running' && this.phase !== 'rush'};
+  },
+
+  ritualSnapshot() {
+    const p = this.player;
+    const remaining = this.rituals.filter(site => !site.lit);
+    const nearest = remaining.sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+    const info = nearest ? {id: nearest.id, label: nearest.label, distance: Math.round(Math.hypot(nearest.x - p.x, nearest.y - p.y)), progress: nearest.progress} : null;
+    return {lit: this.litRituals(), total: this.rituals.length, active: this.ritualActiveId ? info : null, nearest: info, interrupted: this.ritualInterrupted > 0};
+  },
+
+  ability() {
+    if (this.state !== 'running' || this.phase === 'rush' || this.abilityCd > 0) return false;
+    const p = this.player, config = ABILITY_BALANCE[this.character], color = TONES[this.character];
+    this.abilityCd = this.abilityMax();
+    this.abilityTime = 0.7;
+    this.abilitiesUsed++;
+    p.inv = Math.max(p.inv, 0.4);
+    // Una amenaza anunciada conserva su origen, pero el pulso disipa su proyectil.
+    this.enemyShots = this.enemyShots.filter(shot => Math.hypot(shot.x - p.x, shot.y - p.y) > config.radius);
+    this.hazards = this.hazards.filter(hazard => Math.hypot(hazard.x - p.x, hazard.y - p.y) > config.radius);
+    for (const enemy of this.enemies) {
+      if (enemy.hp <= 0 || enemy.dissolve || Math.hypot(enemy.x - p.x, enemy.y - p.y) > config.radius + enemy.r) continue;
+      this.hurt(enemy, config.damage + Math.min(20, (this.level - 1) * 1.5), {knock: config.knock, from: p, fx: this.character === 'julian' ? 'salt' : this.character === 'lucia' ? 'ember' : 'sacred'});
+      if (this.character === 'matilde' && enemy.type === 'guia' && enemy.hp > 0) {
+        enemy.stun = Math.max(enemy.stun, 1.2);
+        this.soul = Math.max(0, this.soul - 0.1);
+      }
+    }
+    if (this.character === 'lucia') {
+      for (const gem of this.gems) if (Math.hypot(gem.x - p.x, gem.y - p.y) < 410) gem.magnet = true;
+    } else if (this.character === 'julian') {
+      this.wards.push({x: p.x, y: p.y, r: config.radius, life: config.wardLife, total: config.wardLife, tick: config.wardTick});
+    } else p.hp = Math.min(this.st.maxHp, p.hp + this.st.maxHp * config.healing);
+    this.rings.push({x: p.x, y: p.y - 4, r: 12, max: config.radius, life: 0.65, total: 0.65, color, width: 3, light: config.radius});
+    for (let i = 0; i < 24; i++) {
+      const angle = i / 24 * TAU;
+      this.particle({x: p.x, y: p.y - 8, vx: Math.cos(angle) * rand(110, 220), vy: Math.sin(angle) * rand(110, 220), life: rand(0.3, 0.65), size: 2, color, glow: true});
+    }
+    this.audio.sfx('pulse', {character: this.character});
+    if (this.options.shake) this.shake = Math.max(this.shake, 2.5);
+    this.emitStats();
+    return true;
+  },
+
+  enemySlow(enemy) {
+    if (this.wards.some(ward => ward.life > 0 && Math.hypot(enemy.x - ward.x, enemy.y - ward.y) < ward.r)) return enemy.type === 'guia' ? 0.8 : 0.45;
+    if (this.rituals.some(site => site.lit && Math.hypot(enemy.x - site.x, enemy.y - site.y) < RITUAL_LIGHT_RADIUS)) return 0.8;
+    return 1;
+  },
+
+  updateRituals(dt) {
+    const p = this.player;
+    const previousCd = this.abilityCd;
+    this.abilityCd = Math.max(0, this.abilityCd - dt);
+    this.abilityTime = Math.max(0, this.abilityTime - dt);
+    this.ritualInterrupted = Math.max(0, this.ritualInterrupted - dt);
+    if (previousCd > 0 && this.abilityCd === 0) this.audio.sfx('ritualReady');
+    if (!this.ritualIntro && this.time >= 10 && this.phase === 'night') {
+      this.ritualIntro = true;
+      this.banner(RITES.introduction.title, RITES.introduction.sub, 'ritual');
+    }
+    this.ritualActiveId = null;
+    for (const site of this.rituals) {
+      if (site.lit) continue;
+      const nearby = Math.hypot(p.x - site.x, p.y - site.y) <= RITUAL_RADIUS;
+      const channeling = nearby && !p.moving && this.dashTime <= 0 && this.ritualInterrupted <= 0 && this.phase === 'night';
+      if (channeling) {
+        this.ritualActiveId = site.id;
+        site.progress = clamp(site.progress + dt / RITUAL_CHANNEL, 0, 1);
+        if (site.progress >= 1) this.lightRitual(site);
+      } else site.progress = Math.max(0, site.progress - dt * 0.12);
+    }
+    const config = ABILITY_BALANCE.julian;
+    for (const ward of this.wards) {
+      const activeDt = Math.min(dt, ward.life);
+      ward.tick -= activeDt;
+      while (ward.tick <= 0) {
+        ward.tick += config.wardTick;
+        for (const enemy of this.enemies) {
+          if (enemy.hp > 0 && !enemy.dissolve && Math.hypot(enemy.x - ward.x, enemy.y - ward.y) < ward.r + enemy.r) this.hurt(enemy, config.wardDamage, {knock: 0, from: ward, silent: true});
+        }
+      }
+      ward.life = Math.max(0, ward.life - dt);
+    }
+    this.wards = this.wards.filter(ward => ward.life > 0);
+  },
+
+  lightRitual(site) {
+    if (site.lit) return false;
+    const oldMax = this.abilityMax();
+    site.lit = true;
+    site.progress = 1;
+    this.ritualActiveId = null;
+    this.player.hp = Math.min(this.st.maxHp, this.player.hp + this.st.maxHp * 0.16);
+    this.xp += Math.ceil(this.xpNext * 0.65);
+    this.abilityCd *= this.abilityMax() / oldMax;
+    this.rings.push({x: site.x, y: site.y, r: 8, max: 155, life: 1, total: 1, color: '#ffb04a', width: 3, light: 190});
+    for (let i = 0; i < 20; i++) this.particle({x: site.x + rand(-10, 10), y: site.y - 20, vx: rand(-65, 65), vy: rand(-100, -30), life: rand(0.5, 1), size: 2, color: '#ffe2a0', glow: true});
+    this.audio.sfx('ritual');
+    const allLit = this.litRituals() === this.rituals.length;
+    this.banner(allLit ? RITES.allLit.title : site.label, allLit ? RITES.allLit.sub : RITES.completed, 'ritual');
+    this.emitStats();
+    return true;
+  },
+
+  interruptRitual() {
+    this.ritualInterrupted = 0.9;
+    this.ritualActiveId = null;
+    for (const site of this.rituals) if (!site.lit) site.progress = Math.max(0, site.progress - 0.2);
+  }
+};
+
+return {ritualMethods};
+})();
 /* ---- game.js ---- */
 const __game_js = (() => {
 /*
@@ -4922,7 +5709,7 @@ const __game_js = (() => {
 const { TAU, clamp, rand, pick } = __util_js;
 const { NIGHT, HOUR, BOSS_AT, COFFIN, fmtClock } = __balance_js;
 const { Lighting } = __art_js;
-const { Cemetery } = __world_js;
+const { Cemetery, surfaceAt } = __world_js;
 const { AudioEngine } = __audio_js;
 const { CombatEffects } = __combat_fx_js;
 const { CHARACTERS, MEMORIES, BARKS, AMPARO, HOURS } = __story_js;
@@ -4935,6 +5722,7 @@ const { bossMethods } = __boss_js;
 const { fxMethods } = __fx_js;
 const { botMethods } = __bot_js;
 const { renderMethods } = __render_js;
+const { ritualMethods } = __ritual_js;
 
 class VigilGame {
   constructor(canvas, hooks = {}) {
@@ -4996,6 +5784,9 @@ class VigilGame {
     this.seen = new Set(); this.said = new Set(); this.subQueue = []; this.sub = null; this.subT = 0;
     this.lowHpCd = 0; this.amparoSaid = new Set(); this.danger = 0;
     this.choices = []; this.enemyId = 0; this.cafeDrops = 0;
+    this.grid.clear();
+    this.botMemo = null;
+    this.resetRituals();
     this.keys.clear(); this.pointer = null;
   }
 
@@ -5032,7 +5823,7 @@ class VigilGame {
   setVolume(v) { this.audio.setVolume(v); }
   setOptions(o) { Object.assign(this.options, o); }
   backToTitle() { this.reset(); this.setState('ready'); this.hooks.onSubtitle?.(null); this.emitStats(); }
-  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); }
+  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); this.audio.destroy?.(); }
 
   resize() {
     const rect = this.canvas.getBoundingClientRect();
@@ -5075,7 +5866,11 @@ class VigilGame {
 
   audioState() {
     const scene = {ready: 'title', running: 'run', paused: 'pause', upgrade: 'pause', dying: 'end', dawn: 'dawn', ended: this.lastVictory ? 'dawn' : 'end'}[this.state] || 'title';
-    return {scene, hour: this.time / HOUR, danger: this.danger, hp: this.player.hp / this.st.maxHp, boss: !!(this.boss && this.boss.hp > 0)};
+    const active = this.rituals.find(site => site.id === this.ritualActiveId);
+    return {scene, character: this.character, hour: this.time / HOUR, danger: this.danger, hp: this.player.hp / this.st.maxHp, boss: !!(this.boss && this.boss.hp > 0),
+      moving: this.player.moving, speed: this.st.speed, dash: this.dashTime > 0,
+      nearCoffin: Math.hypot(this.player.x - COFFIN.x, this.player.y - COFFIN.y) < 125,
+      ritualProgress: active?.progress || 0, surface: surfaceAt(this.player.x, this.player.y)};
   }
 
   update(dt) {
@@ -5117,6 +5912,8 @@ class VigilGame {
       if (this.t.regenFx <= 0) { this.t.regenFx = 0.25; this.particle({x: p.x + rand(-10, 10), y: p.y + rand(-6, 10), vx: 0, vy: -24, life: 0.9, size: 2, color: '#ffd59a', glow: true}); }
     }
 
+    // Las armas orbitales también necesitan posiciones actuales tras reiniciar o saltar.
+    this.buildGrid();
     this.weapons(dt);
     this.spawning(dt);
     this.updateEnemies(dt);
@@ -5124,6 +5921,7 @@ class VigilGame {
     this.updateShots(dt);
     this.updateHazards(dt);
     if (this.state !== 'running') return;
+    this.updateRituals(dt);
     this.updatePickups(dt);
     this.updateFx(dt);
     if (this.boss && this.boss.hp > 0) this.updateSoul(dt);
@@ -5164,6 +5962,7 @@ class VigilGame {
     this.dawnT = 0;
     for (const e of this.enemies) if (e.hp > 0 && !e.dissolve) { e.dissolve = true; e.dissolveT = rand(0.3, 1.8); }
     this.enemyShots = []; this.hazards = []; this.marks = [];
+    this.wards = []; this.abilityTime = 0;
     this.audio.sfx('hora', {count: 6, gap: 1.6});
     this.audio.sfx('alba');
     this.banner(HOURS[6].name, HOURS[6].mood, 'dawn');
@@ -5201,7 +6000,7 @@ class VigilGame {
     this.lastVictory = victory;
     const result = {victory, cause: victory ? 'dawn' : this.cause, time: this.time, clock: victory ? '06:00' : this.deathClock || fmtClock(this.time),
       kills: this.kills, level: this.level, character: this.character, memories: {...this.mem}, order: [...this.order],
-      freed: !!(this.boss && this.boss.hp <= 0)};
+      freed: !!(this.boss && this.boss.hp <= 0), ritualsLit: this.litRituals(), abilitiesUsed: this.abilitiesUsed};
     this.setState('ended');
     this.keys.clear(); this.pointer = null;
     this.hooks.onSubtitle?.(null);
@@ -5258,6 +6057,7 @@ class VigilGame {
       kills: this.kills, level: this.level, xp: this.xp, xpNext: this.xpNext,
       hp: this.player.hp, maxHp: this.st.maxHp, dashCd: this.dashCd, dashMax: this.st.dashCd,
       character: this.character, mem: {...this.mem}, order: [...this.order],
+      ability: this.abilitySnapshot(), ritual: this.ritualSnapshot(),
       boss: b ? {alive: b.hp > 0, hp: Math.max(0, b.hp), maxHp: b.maxHp, soul: this.soul} : null
     };
   }
@@ -5265,15 +6065,132 @@ class VigilGame {
   emitStats() { this.hooks.onStats?.(this.getSnapshot()); }
 }
 
-Object.assign(VigilGame.prototype, inputMethods, directorMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods);
+Object.assign(VigilGame.prototype, inputMethods, directorMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods, ritualMethods);
 
 return {VigilGame};
+})();
+/* ---- storage.js ---- */
+const __storage_js = (() => {
+/* Almacenamiento compatible con las noches de la versión anterior. */
+const store = {
+  get(key, fallback) {
+    try { return JSON.parse(localStorage.getItem('vigilia2.' + key)) ?? fallback; }
+    catch { return fallback; }
+  },
+  set(key, value) {
+    try { localStorage.setItem('vigilia2.' + key, JSON.stringify(value)); }
+    catch { /* El juego también funciona sin almacenamiento. */ }
+  }
+};
+
+function loadSettings(reducedMotion) {
+  const defaults = {muted: false, volume: 0.8, music: 0.75, ambience: 0.7, effects: 0.85,
+    shake: !reducedMotion, flashes: !reducedMotion, numbers: false, softDark: false};
+  const saved = store.get('settings', {});
+  if (!saved || typeof saved !== 'object') return defaults;
+  for (const key of Object.keys(defaults)) {
+    if (typeof defaults[key] === 'boolean' && typeof saved[key] === 'boolean') defaults[key] = saved[key];
+    else if (typeof defaults[key] === 'number' && Number.isFinite(saved[key])) defaults[key] = Math.max(0, Math.min(1, saved[key]));
+  }
+  return defaults;
+}
+
+function loadFound() {
+  const saved = store.get('found', {}) || {};
+  return {memories: Array.isArray(saved.memories) ? saved.memories : [],
+    creatures: Array.isArray(saved.creatures) ? saved.creatures : [],
+    dawns: saved.dawns && typeof saved.dawns === 'object' ? saved.dawns : {},
+    freed: Number.isFinite(saved.freed) ? saved.freed : 0};
+}
+
+return {store, loadSettings, loadFound};
+})();
+/* ---- settings.js ---- */
+const __settings_js = (() => {
+/* Un único adaptador entre preferencias guardadas, controles y motores. */
+function bindSettings(game, settings, store, toast) {
+  const $ = id => document.getElementById(id);
+  const apply = () => {
+    game.setOptions({shake: settings.shake, flashes: settings.flashes, numbers: settings.numbers, softDark: settings.softDark});
+    game.audio.setMix({music: settings.music, ambience: settings.ambience, effects: settings.effects});
+    store.set('settings', settings);
+  };
+  const syncSound = () => {
+    $('soundButton').querySelector('use').setAttribute('href', settings.muted ? '#i-mute' : '#i-sound');
+    $('soundButton').setAttribute('aria-label', settings.muted ? 'Activar sonido' : 'Silenciar');
+    $('optSound').checked = !settings.muted;
+  };
+  const setMuted = value => {
+    settings.muted = value;
+    game.audio.init(); game.setMuted(value);
+    syncSound(); apply();
+  };
+  $('soundButton').addEventListener('click', () => {
+    setMuted(!settings.muted);
+    toast(settings.muted ? 'Sonido apagado' : 'Sonido encendido');
+  });
+  $('optSound').addEventListener('change', e => setMuted(!e.target.checked));
+  for (const [id, key] of [['optVolume', 'volume'], ['optMusic', 'music'], ['optAmbience', 'ambience'], ['optEffects', 'effects']]) {
+    const input = $(id), output = $(id + 'Value');
+    const sync = () => { input.value = Math.round(settings[key] * 100); output.value = input.value + ' %'; };
+    sync();
+    input.addEventListener('input', () => {
+      settings[key] = Number(input.value) / 100;
+      game.setVolume(settings.volume); sync(); apply();
+    });
+  }
+  for (const [id, key] of [['optShake', 'shake'], ['optFlashes', 'flashes'], ['optNumbers', 'numbers'], ['optSoftDark', 'softDark']]) {
+    $(id).checked = settings[key];
+    $(id).addEventListener('change', e => { settings[key] = e.target.checked; apply(); });
+  }
+  game.setVolume(settings.volume);
+  game.audio.setMix({music: settings.music, ambience: settings.ambience, effects: settings.effects});
+  syncSound();
+}
+
+return {bindSettings};
+})();
+/* ---- interface.js ---- */
+const __interface_js = (() => {
+/* Las capas comparten aislamiento, teclado y restauración del foco. */
+function syncScreens(state) {
+  const modalId = {paused: 'pause', upgrade: 'choice', ended: 'end'}[state];
+  for (const id of ['game', 'title', 'hud']) document.getElementById(id).inert = !!modalId;
+  document.querySelector('.corner-tools').inert = !!modalId;
+  for (const id of ['pause', 'choice', 'end']) {
+    const el = document.getElementById(id);
+    el.inert = id !== modalId;
+    if (id === modalId) el.setAttribute('aria-modal', 'true');
+    else el.removeAttribute('aria-modal');
+  }
+}
+
+function bindOverlayKeyboard() {
+  document.addEventListener('keydown', e => {
+    if (e.key !== 'Tab' || document.querySelector('dialog[open]')) return;
+    const panel = document.querySelector('.overlay[aria-modal="true"]');
+    if (!panel) return;
+    const controls = [...panel.querySelectorAll('button:not(:disabled), a[href], [tabindex="0"]')]
+      .filter(el => el.getClientRects().length);
+    const first = controls[0], last = controls.at(-1);
+    if (e.shiftKey && (document.activeElement === first || !panel.contains(document.activeElement))) {
+      e.preventDefault(); last?.focus();
+    } else if (!e.shiftKey && (document.activeElement === last || !panel.contains(document.activeElement))) {
+      e.preventDefault(); first?.focus();
+    }
+  });
+}
+
+return {syncScreens, bindOverlayKeyboard};
 })();
 /* ---- app.js ---- */
 const __app_js = (() => {
 const { VigilGame } = __game_js;
 const { drawPortrait, drawSprite, sprite } = __art_js;
-const { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP } = __story_js;
+const { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP, ABILITIES } = __story_js;
+const { store, loadSettings, loadFound } = __storage_js;
+const { bindSettings } = __settings_js;
+const { syncScreens, bindOverlayKeyboard } = __interface_js;
 
 const $ = id => document.getElementById(id);
 const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
@@ -5282,14 +6199,10 @@ const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
 /* ---------- lo que se guarda en este navegador ---------- */
 
-const store = {
-  get(key, fallback) { try { const v = JSON.parse(localStorage.getItem('vigilia2.' + key)); return v ?? fallback; } catch { return fallback; } },
-  set(key, value) { try { localStorage.setItem('vigilia2.' + key, JSON.stringify(value)); } catch { /* sin almacenamiento */ } }
-};
-const settings = Object.assign({muted: false, volume: 0.8, shake: !reducedMotion, flashes: !reducedMotion, numbers: false, softDark: false}, store.get('settings', {}));
+const settings = loadSettings(reducedMotion);
 let nights = store.get('nights', []);
 if (!Array.isArray(nights)) nights = [];
-const found = Object.assign({memories: [], creatures: [], dawns: {}, freed: 0}, store.get('found', {}));
+const found = loadFound();
 let selected = store.get('selected', 'lucia');
 if (!CHARACTERS[selected]) selected = 'lucia';
 
@@ -5363,6 +6276,8 @@ function selectCharacter(id) {
   const ch = CHARACTERS[id];
   $('castDetail').textContent = `${ch.age}. ${ch.blurb}`;
   $('castPerk').textContent = ch.perk;
+  $('castAbility').textContent = `${ABILITIES[id].name} · ${ABILITIES[id].description}`;
+  for (const el of castEl.children) el.tabIndex = el.dataset.character === id ? 0 : -1;
 }
 
 function updateNightCount() {
@@ -5400,7 +6315,8 @@ $('otherButton').addEventListener('click', () => { game.backToTitle(); selectCha
 $('quitButton').addEventListener('click', () => { game.backToTitle(); selectCharacter(selected); });
 $('resumeButton').addEventListener('click', () => game.resume());
 $('pauseButton').addEventListener('click', () => game.state === 'paused' ? game.resume() : game.pause());
-$('dashButton').addEventListener('click', () => game.dash());
+$('dashButton').addEventListener('click', () => { game.dash(); $('game').focus({preventScroll: true}); });
+$('abilityButton').addEventListener('click', () => { game.ability(); $('game').focus({preventScroll: true}); });
 
 /* ---------- durante la noche ---------- */
 
@@ -5426,6 +6342,7 @@ function onStats(s) {
     $('soulBar').style.width = `${s.boss.soul * 100}%`;
     $('bossBox').classList.toggle('danger', s.boss.soul > 0.5);
   }
+  updateRitualHud(s);
   $('pauseClock').textContent = `${s.clock} · ${s.mood}`;
   const sig = s.order.map(id => id + s.mem[id]).join('|');
   if (sig !== memSignature) {
@@ -5433,6 +6350,28 @@ function onStats(s) {
     memSignature = sig;
     renderHudMemories(s, before);
   }
+}
+
+function updateRitualHud(s) {
+  const ability = s.ability;
+  if (ability) {
+    $('abilityName').textContent = ability.name;
+    $('abilityKey').textContent = ability.ready ? 'E' : `${Math.ceil(ability.cd)} s`;
+    $('abilityFill').style.width = `${ability.ready ? 100 : Math.max(0, 1 - ability.cd / ability.max) * 100}%`;
+    $('abilityButton').disabled = !ability.ready || s.state !== 'running';
+    $('abilityButton').title = `${ability.description} (E)`;
+    $('abilityButton').setAttribute('aria-label', `${ability.name}${ability.ready ? ', disponible' : `, ${Math.ceil(ability.cd)} segundos`}`);
+  }
+  const ritual = s.ritual;
+  if (!ritual) return;
+  $('ritualCount').textContent = `${ritual.lit} / ${ritual.total}`;
+  const active = ritual.active;
+  const hint = active ? `Encendiendo ${active.label}…` : ritual.lit === ritual.total ? 'Los tres faroles protegen la vigilia.' : 'Acércate a un farol y permanece junto a él.';
+  $('ritualHint').textContent = hint;
+  $('ritualPanel').classList.toggle('channeling', !!active);
+  $('ritualProgress').style.width = `${(active?.progress || 0) * 100}%`;
+  $('ritualMeter').setAttribute('aria-valuenow', String(Math.round((active?.progress || 0) * 100)));
+  $('dashButton').disabled = s.dashCd > 0 || s.state !== 'running';
 }
 
 function renderHudMemories(s, before) {
@@ -5462,8 +6401,10 @@ function onState(state) {
   $('choice').classList.toggle('hidden', state !== 'upgrade');
   $('pause').classList.toggle('hidden', state !== 'paused');
   $('end').classList.toggle('hidden', state !== 'ended');
+  syncScreens(state);
+  document.title = state === 'ready' ? 'La última vigilia' : state === 'ended' ? 'La noche ha terminado · La última vigilia' : 'Velando a Amparo · La última vigilia';
   if (state === 'paused') requestAnimationFrame(() => $('resumeButton').focus({preventScroll: true}));
-  if (state === 'ready') { updateNightCount(); onSubtitle(null); }
+  if (state === 'ready') { updateNightCount(); onSubtitle(null); requestAnimationFrame(() => $('startButton').focus({preventScroll: true})); }
   if (state === 'running') $('game').focus({preventScroll: true});
 }
 
@@ -5475,8 +6416,13 @@ function onLevelUp({choices: list}) {
     const b = document.createElement('button');
     b.className = 'card';
     const kindLabel = c.kind === 'arma' ? 'Arma' : c.kind === 'consuelo' ? 'Consuelo' : 'Recuerdo';
-    const level = c.kind === 'consuelo' ? '' : c.isNew ? '<span class="new">· nuevo</span>' : `· nivel ${c.level}`;
-    b.innerHTML = `<kbd>${i + 1}</kbd><span class="kind">${kindLabel} ${level}</span><h3></h3><p class="memory"></p><p class="effect"></p>`;
+    const key = document.createElement('kbd'); key.textContent = i + 1;
+    const kind = document.createElement('span'); kind.className = 'kind';
+    kind.textContent = kindLabel + (c.kind === 'consuelo' ? '' : c.isNew ? ' · nuevo' : ` · nivel ${c.level}`);
+    const title = document.createElement('h3');
+    const memory = document.createElement('p'); memory.className = 'memory';
+    const effect = document.createElement('p'); effect.className = 'effect';
+    b.append(key, kind, title, memory, effect);
     b.prepend(iconCanvas(c.id, 48, 4));
     b.querySelector('h3').textContent = c.name;
     b.querySelector('.memory').textContent = c.line;
@@ -5558,15 +6504,15 @@ function onEnd(result) {
     $('endWords').textContent = frags.length ? `Esa noche recordó ${list(frags)}.` : '';
     $('loopLine').textContent = WORLD.loop;
   }
-  $('endStats').innerHTML = '';
-  for (const [value, label] of [[result.clock, 'la hora'], [result.kills.toLocaleString('es-ES'), 'ahuyentados'], [total, 'recuerdos']]) {
+  $('endStats').replaceChildren();
+  for (const [value, label] of [[result.clock, 'la hora'], [result.kills.toLocaleString('es-ES'), 'ahuyentados'], [total, 'recuerdos'], [`${result.ritualsLit || 0}/3`, 'faroles']]) {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = value;
     const s = document.createElement('span'); s.textContent = label;
     d.append(b, s);
     $('endStats').append(d);
   }
-  nights.push({n, character: result.character, victory: result.victory, cause: result.cause, clock: result.clock, kills: result.kills, memories: total, date: new Date().toISOString()});
+  nights.push({n, character: result.character, victory: result.victory, cause: result.cause, clock: result.clock, kills: result.kills, memories: total, ritualsLit: result.ritualsLit || 0, date: new Date().toISOString()});
   if (nights.length > 60) nights = nights.slice(-60);
   store.set('nights', nights);
   store.set('found', found);
@@ -5635,7 +6581,7 @@ function renderRecords() {
   const dawns = nights.filter(r => r.victory).length;
   const latest = nights.filter(r => !r.victory).reduce((best, r) => (r.clock > best ? r.clock : best), '00:00');
   const sum = $('recordSummary');
-  sum.innerHTML = '';
+  sum.replaceChildren();
   for (const [v, l] of [[nights.length, 'noches veladas'], [dawns, dawns === 1 ? 'amanecer' : 'amaneceres'], [dawns ? '06:00' : latest, 'la hora más tardía']]) {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = v;
@@ -5661,35 +6607,8 @@ function renderRecords() {
 
 /* ---------- ajustes y ayuda ---------- */
 
-function saveSettings() {
-  store.set('settings', settings);
-  game.setOptions({shake: settings.shake, flashes: settings.flashes, numbers: settings.numbers, softDark: settings.softDark});
-}
-
-function syncSoundButton() {
-  const btn = $('soundButton');
-  btn.querySelector('use').setAttribute('href', settings.muted ? '#i-mute' : '#i-sound');
-  btn.setAttribute('aria-label', settings.muted ? 'Activar sonido' : 'Silenciar');
-  $('optSound').checked = !settings.muted;
-}
-
-function setMuted(m) {
-  settings.muted = m;
-  game.audio.init();
-  game.setMuted(m);
-  syncSoundButton();
-  saveSettings();
-}
-
-$('soundButton').addEventListener('click', () => { setMuted(!settings.muted); toast(settings.muted ? 'Sonido apagado' : 'Sonido encendido'); });
-$('optSound').addEventListener('change', e => setMuted(!e.target.checked));
-$('optVolume').value = Math.round(settings.volume * 100);
-$('optVolume').addEventListener('input', e => { settings.volume = Number(e.target.value) / 100; game.setVolume(settings.volume); saveSettings(); });
-for (const [id, key] of [['optShake', 'shake'], ['optFlashes', 'flashes'], ['optNumbers', 'numbers'], ['optSoftDark', 'softDark']]) {
-  $(id).checked = !!settings[key];
-  $(id).addEventListener('change', e => { settings[key] = e.target.checked; saveSettings(); });
-}
-syncSoundButton();
+bindSettings(game, settings, store, toast);
+bindOverlayKeyboard();
 
 const help = $('helpList');
 for (const [term, text] of HELP) {
@@ -5714,6 +6633,9 @@ function openDialog(id) {
   if (id === 'albumDialog') renderAlbum();
   if (id === 'recordsDialog') renderRecords();
   d.showModal();
+  d.addEventListener('close', () => {
+    if (game.state === 'paused') $('resumeButton').focus({preventScroll: true});
+  }, {once: true});
 }
 document.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => openDialog(el.dataset.open)));
 document.querySelectorAll('dialog').forEach(d => {
@@ -5729,7 +6651,7 @@ document.querySelectorAll('dialog').forEach(d => {
 
 const order = Object.keys(CHARACTERS);
 addEventListener('keydown', e => {
-  if (document.querySelector('dialog[open]')) return;
+  if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || document.querySelector('dialog[open]')) return;
   if (e.key === '?') { e.preventDefault(); openDialog('helpDialog'); return; }
   if (game.state === 'upgrade' && ['Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3'].includes(e.code)) {
     e.preventDefault();
@@ -5739,8 +6661,10 @@ addEventListener('keydown', e => {
   }
   if (game.state === 'ready') {
     if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) { selectCharacter(order[Number(e.code.at(-1)) - 1]); return; }
-    if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
-      const i = order.indexOf(selected), next = order[(i + (e.code === 'ArrowRight' ? 1 : order.length - 1)) % order.length];
+    if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.code) && castEl.contains(document.activeElement)) {
+      e.preventDefault();
+      const i = order.indexOf(selected), forward = ['ArrowRight', 'ArrowDown'].includes(e.code);
+      const next = e.code === 'Home' ? order[0] : e.code === 'End' ? order.at(-1) : order[(i + (forward ? 1 : order.length - 1)) % order.length];
       selectCharacter(next);
       castEl.querySelector(`[data-character="${next}"]`)?.focus({preventScroll: true});
       return;

@@ -279,10 +279,27 @@ export const BARKS = {
   }
 };
 
+export const ABILITIES = {
+  lucia: {id: 'lumbre', name: 'Lumbre', description: 'Aparta a las criaturas con una ráfaga de fuego y atrae la luz cercana.'},
+  julian: {id: 'cerco', name: 'Cerco de sal', description: 'Aparta a las criaturas y deja un cerco que las frena y las hiere durante unos segundos.'},
+  matilde: {id: 'responso', name: 'Responso', description: 'Recupera vida, aparta a las criaturas y retrasa a la Guía si está cerca.'}
+};
+
+export const RITES = {
+  labels: {oeste: 'Farol de la cancela', norte: 'Farol del cruceiro', este: 'Farol del mar'},
+  mapTitle: 'El velatorio', mapCount: 'Faroles', pointer: 'Farol',
+  introduction: {title: 'Tres faroles contra la noche', sub: 'Detente junto a un farol para encenderlo. Alza tu luz con E.'},
+  completed: 'Su luz te protege; tu habilidad vuelve antes.',
+  allLit: {title: 'El camino sigue encendido', sub: 'Tres luces acompañan la vigilia de Amparo.'}
+};
+
 export const HELP = [
   ['Moverte', 'WASD o las flechas. En el móvil, arrastra el dedo sobre la pantalla.'],
   ['Atacar', 'Es automático: tus armas buscan solas lo que tengas más cerca.'],
   ['Esquivar', 'Espacio. Durante el salto nada te toca. Tiene unos segundos de recarga.'],
+  ['Alzar la luz', 'E o el botón de tu habilidad. Cada persona vela de otra manera: Lumbre, Cerco de sal o Responso. Aparta amenazas y disipa proyectiles cercanos; después necesita recargarse.'],
+  ['Los tres faroles', 'Son opcionales. Detente 3,6 segundos junto a uno para encenderlo. Si te hieren, se interrumpe; al alejarte, el progreso se pierde despacio. Cada farol cura, devuelve luz para recordar, frena a las criaturas cercanas y reduce la recarga de tu habilidad.'],
+  ['El mapa', 'El mapa del camposanto señala tu posición, el ataúd de Amparo, los faroles y la Guía. Las flechas del borde te ayudan a encontrar lo que queda fuera de la vista.'],
   ['Recordar', 'Recoge la luz que dejan las criaturas. Cada recuerdo de Amparo es una mejora: elige uno de tres.'],
   ['La luz', 'Si estás herido, tu luz se encoge. Junto al ataúd de Amparo te recuperas.'],
   ['Las cinco', 'Llega la Guía y va directa al ataúd. No dejes que se la lleve.'],

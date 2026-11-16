@@ -4,22 +4,52 @@
 
 Ha muerto Amparo. Según la costumbre, alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve. Esta noche te toca a ti.
 
-Juego de supervivencia para navegador sobre una Noche de Difuntos, una vela y lo que se recuerda de quien se va. Diez minutos, de medianoche a las seis. Sin dependencias: el arte y el sonido se generan con código.
+Supervivencia para navegador durante una Noche de Difuntos: diez minutos, de medianoche a las seis. El arte y el sonido se generan con código; el juego funciona sin conexión y sin dependencias en ejecución.
 
 ![El velatorio de Amparo en la pantalla de título](la-ultima-vigilia/docs/titulo.jpg)
 
 ## Jugar
 
-Descarga [`la-ultima-vigilia/la-ultima-vigilia.html`](la-ultima-vigilia/la-ultima-vigilia.html) y ábrelo con doble clic en cualquier navegador moderno. Funciona sin conexión.
+Descarga [`la-ultima-vigilia/la-ultima-vigilia.html`](la-ultima-vigilia/la-ultima-vigilia.html) y ábrelo con doble clic en un navegador moderno.
 
-Se mueve con WASD o las flechas, se esquiva con Espacio y las armas atacan solas. En el móvil, arrastra el dedo sobre la pantalla.
+Muévete con **WASD o las flechas**, esquiva con **Espacio** y usa tu habilidad con **E**. Las armas atacan solas. En móvil, arrastra el dedo para moverte y usa los botones de acción.
 
-![Las tres de la madrugada: la hora de las ánimas](la-ultima-vigilia/docs/las-tres.jpg)
+## Una luz distinta para cada persona
+
+| Personaje | Habilidad activa |
+|---|---|
+| Lucía · la nieta | **Lumbre:** aparta criaturas con fuego y atrae la luz que dejan atrás. |
+| Julián · el sepulturero | **Cerco de sal:** deja un círculo que frena y hiere a las criaturas. |
+| Matilde · la rezadora | **Responso:** recupera vida, aparta amenazas y retrasa a la Guía cercana. |
+
+Tres faroles opcionales abren otra forma de afrontar la noche. Detente junto a uno durante **3,6 segundos** para encenderlo: recuperas vida y luz para recordar, creas un refugio que frena criaturas y tu habilidad se recarga antes. El minimapa y las flechas te orientan entre el ataúd, los faroles y la Guía.
+
+Las señales de ataque, los reflejos del suelo mojado, las huellas y las luces conservan el dibujo de píxel del camposanto. La mezcla permite ajustar por separado música, ambiente y efectos; la nana responde al peligro y cada habilidad tiene su propio sonido.
+
+![Cerco de sal, faroles y minimapa durante la vigilia](la-ultima-vigilia/docs/rituales.jpg)
+
+## Desarrollar
+
+Requiere Node.js 22 o posterior; el servidor de desarrollo usa Python 3. Desde la raíz:
+
+```sh
+npm ci
+npm run dev
+```
+
+Abre <http://localhost:8000>. Después de cambiar los módulos, `npm run build` regenera el HTML que se distribuye. `npm run check` comprueba sintaxis y que ese archivo esté actualizado.
+
+Para ejecutar las pruebas de navegador:
+
+```sh
+npx playwright install chromium
+npm test
+```
+
+La instalación de Playwright solo se usa para verificar el juego. Controles, accesibilidad y pruebas individuales: [guía del juego](la-ultima-vigilia/README.md). Responsabilidades de cada sistema y cómo ampliarlo: [arquitectura](ARCHITECTURE.md).
 
 ## Cambiar la historia
 
-Todo el texto (Amparo, quién la vela, sus recuerdos, lo que dice cada uno y los finales) está en [`la-ultima-vigilia/story.js`](la-ultima-vigilia/story.js). Después de editarlo, ejecuta `node build.mjs` dentro de `la-ultima-vigilia/` para regenerar el archivo que se juega.
-
-Controles, estructura del código y herramientas de prueba: [`la-ultima-vigilia/README.md`](la-ultima-vigilia/README.md).
+El texto vive en [`story.js`](la-ultima-vigilia/story.js): Amparo, sus recuerdos, los tres personajes, las habilidades y los finales. Los números de equilibrio pertenecen a [`balance.js`](la-ultima-vigilia/balance.js). Ejecuta `npm run build` después de editarlos.
 
 ![El recordatorio del amanecer](la-ultima-vigilia/docs/amanece.jpg)

@@ -1,66 +1,83 @@
 # La última vigilia
 
-Ha muerto Amparo. Según la costumbre, alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve. Esta noche te toca a ti.
+Ha muerto Amparo. Alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve.
 
-Juego de supervivencia para navegador, con ataques automáticos, hordas y mejoras, ambientado en la Noche de Difuntos en un camposanto junto al mar. Una partida dura diez minutos, de medianoche a las seis.
+Juego de supervivencia para navegador con ataques automáticos, hordas y recuerdos que mejoran tus armas. La noche va de medianoche a las seis: cien segundos de juego por hora. A las cinco llega la Guía; si el reloj se detiene, tendrás que resolver su amenaza para ver amanecer.
 
 ## Jugar
 
-- **Sin instalar nada:** abre `la-ultima-vigilia.html` con doble clic. Funciona sin conexión; con conexión carga además la tipografía Alegreya.
-- **Versión modular:** desde esta carpeta, `python3 -m http.server 8000` y abre <http://localhost:8000>.
+- Abre `la-ultima-vigilia.html` con doble clic. Funciona sin conexión; la tipografía Alegreya se carga cuando hay conexión y tiene alternativas del sistema.
+- Para trabajar con los módulos, ejecuta `npm run dev` desde la raíz del repositorio y abre <http://localhost:8000>. También puedes ejecutar `python3 -m http.server 8000` desde esta carpeta.
 
 ## Controles
 
 | Acción | Teclado | Táctil |
 |---|---|---|
-| Moverse | WASD o flechas | arrastra el dedo sobre la pantalla |
-| Esquivar | Espacio | botón «Esquivar» |
-| Elegir recuerdo | 1, 2, 3 | toca la carta |
-| Pausa | P o Esc | botón de pausa |
+| Moverse | WASD o flechas | Arrastra el dedo sobre el camposanto |
+| Esquivar | Espacio | Botón «Esquivar» |
+| Usar habilidad | E | Botón con el nombre de la habilidad |
+| Elegir recuerdo | 1, 2, 3 | Toca la carta |
+| Pausa | P o Esc | Botón de pausa |
 | Ayuda | ? | «Cómo se vela» |
 
-Las armas atacan solas a lo que tengas más cerca.
+Las armas buscan solas la amenaza más cercana. La esquiva protege durante el salto; ambas acciones muestran su recarga y están disponibles también con botones.
 
-## Qué pasa durante la noche
+## Cómo afrontar la noche
 
-- **Quién la vela.** Lucía (la nieta), Julián (el sepulturero) y Matilde (la rezadora). Cada uno empieza con otra arma, juega distinto y habla de Amparo a su manera. A veces se contradicen.
-- **Los recuerdos son las mejoras.** Catorce cosas concretas de Amparo: el pan de los jueves, el rosario al que le faltaba una cuenta, el farol del faro… Cada recuerdo toca el siguiente trozo de su nana.
-- **Las horas.** La campana da cada hora. La oscuridad y la niebla cambian con la noche. A las tres llega la hora de las ánimas. A las cinco aparece la Guía, que va directa al ataúd: si se queda junto a él, se lleva a Amparo.
-- **La luz.** Solo se ve lo que alumbra una vela. Tu luz se encoge cuando estás herido. Junto al ataúd te recuperas.
-- **El amanecer** se escribe con los recuerdos que más elegiste. Si la vela se apaga, el final dice a qué hora.
-- **Entre partidas** se guardan en el navegador las noches veladas, los recuerdos y las criaturas descubiertas (*Recuerdos* y *Las noches*).
+**Elige quién vela.** Lucía empieza con chispas, obtiene más luz para recordar y ve más lejos. Julián dispara sal y aguanta más. Matilde empieza con chispas y rosario. Sus recuerdos y sus palabras sobre Amparo también cambian.
 
-Todo el arte y el sonido se generan con código: pixel art, iluminación, viento, mar, grillos, la campana y la nana tocada con una cuerda pulsada.
+**Reserva tu habilidad para abrir espacio.** Lucía usa *Lumbre*, una ráfaga que aparta criaturas y atrae luz cercana. Julián traza un *Cerco de sal* que frena y hiere durante unos segundos. El *Responso* de Matilde cura, aparta criaturas y retrasa a la Guía si está cerca. Todas disipan proyectiles y amenazas próximas al activarse.
 
-## Archivos
+**Decide cuándo encender un farol.** Hay tres: en la cancela, el cruceiro y el camino del mar. Son opcionales. Permanece quieto a su lado durante 3,6 segundos; moverte o alejarte hace decaer el progreso y recibir daño lo interrumpe. Cada farol se recompensa una sola vez: cura, entrega luz para recordar y reduce la recarga de la habilidad. Su zona iluminada frena criaturas, pero no impide que te alcancen.
 
-| Archivo | Contenido |
+**Usa el mapa.** Señala tu posición, el ataúd de Amparo, los faroles y la Guía. Las flechas del borde ayudan a encontrar los objetivos que quedan fuera de la pantalla. Las señales direccionales anuncian embestidas y otros ataques antes de que lleguen.
+
+**Recoge recuerdos y protege a Amparo.** La luz que dejan las criaturas permite elegir una mejora entre tres. Junto al ataúd recuperas vida; cuando estás herido, tu luz se encoge. A las tres llegan más ánimas y a las cinco la Guía busca el ataúd. El final recoge lo que más recordaste de Amparo.
+
+Las noches, los recuerdos descubiertos, las criaturas y los ajustes se guardan en este navegador. El juego también puede ejecutarse si el almacenamiento está desactivado; en ese caso no conservará esos datos al cerrar.
+
+## Sonido y accesibilidad
+
+En Ajustes puedes regular volumen general, música, ambiente y efectos por separado. Cada canal controla también su reverberación. El sonido comienza después de un gesto del jugador, según las reglas del navegador.
+
+La nana de Amparo cambia con el peligro y la proximidad del refugio. El mar queda hacia el este, los pasos acompañan al movimiento y las armas, los faroles y las tres habilidades tienen señales distintas.
+
+Puedes desactivar temblor de pantalla y destellos, suavizar la oscuridad o mostrar números de daño. La preferencia de movimiento reducido del sistema inicializa temblor y destellos apagados. Al reducir efectos se mantienen las formas que identifican proyectiles, círculos de sal y avisos de peligro. La pausa y la selección de recuerdos mantienen el foco de teclado dentro de su panel.
+
+## Desarrollar y verificar
+
+Desde la raíz del repositorio, con Node.js 22 o posterior:
+
+```sh
+npm ci
+npx playwright install chromium
+npm run build
+npm test
+```
+
+| Comando | Comprobación |
 |---|---|
-| `story.js` | **Todo el texto**: Amparo, quién la vela, los recuerdos, lo que dice cada uno, las criaturas y los finales. Es el archivo que hay que reescribir para que el juego cuente tu historia. |
-| `game.js` | Reglas: horas, criaturas, procesiones, la Guía, armas, luz y alba. |
-| `art.js`, `sprites.js` | Pixel art, camposanto, velatorio, niebla y oscuridad. |
-| `combat-fx.js` | Salidas de disparo, estelas, impactos, ondas de campana, rosario y aura del farol. Comparte la paleta de luz de `art.js`. |
-| `audio.js` | Sonido procedural con Web Audio. |
-| `app.js`, `index.html`, `style.css` | Interfaz: título, HUD, cartas de recuerdo, recordatorio final, álbum y ajustes. |
-| `build.mjs` | Genera `la-ultima-vigilia.html` (`node build.mjs`). Hay que ejecutarlo tras cada cambio. |
-| `tools/smoke.mjs` | Prueba de humo: el piloto automático vela una noche entera con cada personaje. Es lo que ejecuta la verificación de GitHub en cada subida. |
-| `tools/combat-vfx.mjs` | Prueba del combate sin conexión: daño, impactos, límites de efectos en hordas y movimiento reducido. |
+| `npm run dev` | Sirve la versión modular en el puerto 8000; requiere Python 3 |
+| `npm run build` | Genera el HTML autónomo desde `app.js` y sus importaciones |
+| `npm run check` | Sintaxis de los módulos y coincidencia del HTML con sus fuentes |
+| `npm run test:gameplay` | Habilidades, faroles, interfaz, controles, guardado y móvil |
+| `npm run test:audio` | Sonido renderizado con `OfflineAudioContext`, mezcla y límite de voces |
+| `npm run test:vfx` | Daño, colisiones, efectos, horda de 240 criaturas y movimiento reducido |
+| `npm run test:night` | Una noche completa con cada personaje y piloto automático |
 
-## Herramientas de prueba
+Las pruebas de navegador usan el HTML autónomo sin conexión. Si ya tienes un Chromium compatible, puedes indicar su ruta con `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`; en caso contrario se usa el instalado por Playwright.
 
-Parámetros de la URL (versión modular):
+No edites `la-ultima-vigilia.html` directamente: cualquier cambio se perderá al reconstruir. La organización del código y los puntos de extensión están en [ARCHITECTURE.md](../ARCHITECTURE.md).
+
+## Herramientas de diagnóstico
+
+Parámetros de URL disponibles en la versión modular y en el HTML autónomo:
 
 - `?debug`: expone el juego como `window.vigilia`.
-- `&autostart=1&char=julian`: empieza directamente con un personaje (`lucia`, `julian`, `matilde`).
-- `&bot=1` juega solo con buenos reflejos; `&bot=2` imita a alguien que juega por primera vez.
-- `&god=1`: no recibe daño.
+- `&autostart=1&char=julian`: inicia con `lucia`, `julian` o `matilde`.
+- `&bot=1`: piloto con buenos reflejos; `&bot=2`: comportamiento de principiante.
+- `&god=1`: evita recibir daño.
 - `&speed=8`: acelera la simulación.
-- `&t=495`: salta a un momento de la noche, en segundos (100 = una hora).
+- `&t=495`: salta a un momento de la noche, en segundos.
 
-Por ejemplo, `index.html?debug&autostart=1&bot=2&speed=8&char=matilde` juega una noche entera en poco más de un minuto.
-
-Ajustes de accesibilidad: temblor de pantalla, destellos, penumbra suave y números de daño. Con «reducir movimiento» activado en el sistema, el temblor y los destellos empiezan apagados.
-
-Los ataques iluminan el terreno próximo: fuego ámbar para las chispas, sal fría y nácar dorado para el rosario de Matilde. La campana dibuja varios ecos y el farol marca el alcance de su calor. Al apagar «Destellos» se conservan los proyectiles y las formas de los golpes, se atenúan las estelas y se suprimen las ráfagas de luz y los flashes de pantalla. «Temblor de pantalla» también controla el retroceso visual al disparar.
-
-Después de regenerar el HTML, `node tools/combat-vfx.mjs` comprueba los ataques de los tres protagonistas, una horda de 240 criaturas con todas las armas, la limpieza de efectos y el modo móvil con movimiento reducido. Requiere Playwright y Chromium, igual que la prueba de humo.
+Por ejemplo: `index.html?debug&autostart=1&bot=2&speed=8&char=matilde`. El reloj y la simulación se aceleran; las pruebas de noches completas no sustituyen probar el equilibrio jugando a velocidad normal.

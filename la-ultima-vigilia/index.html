@@ -21,7 +21,7 @@
 <symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 12h10m-4-5 5 5-5 5M17 6v12"/></symbol>
 </defs></svg>
 
-<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar."></canvas>
+<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar y E para tu habilidad."></canvas>
 
 <!-- Pantalla de título: la escena del velatorio queda detrás, en el lienzo. -->
 <section id="title" class="screen title-screen">
@@ -30,10 +30,12 @@
     <h1>La última vigilia</h1>
     <p class="intro" id="introLine"></p>
     <p class="tagline" id="taglineLine"></p>
+    <p class="night-brief"><span>00:00 — 06:00</span> Una noche · Diez minutos</p>
     <h2 class="pick-label">¿Quién la vela esta noche?</h2>
     <div class="cast" id="cast" role="radiogroup" aria-label="Quién vela a Amparo"></div>
     <p class="cast-detail" id="castDetail"></p>
     <p class="cast-perk" id="castPerk"></p>
+    <p class="cast-ability" id="castAbility"></p>
     <div class="title-actions">
       <button class="primary" id="startButton"><svg aria-hidden="true"><use href="#i-candle"/></svg><span>Velar a Amparo</span></button>
       <nav class="links" aria-label="Más">
@@ -43,6 +45,7 @@
         <button data-open="helpDialog">Cómo se vela</button>
       </nav>
     </div>
+    <p class="title-controls"><span>WASD / flechas <b>Moverte</b></span><span>Espacio <b>Esquivar</b></span><span>E <b>Habilidad</b></span></p>
   </div>
   <p class="night-count" id="nightCount"></p>
 </section>
@@ -70,6 +73,11 @@
       <button class="icon-btn small" id="pauseButton" aria-label="Pausa" title="Pausa (P)"><svg aria-hidden="true"><use href="#i-pause"/></svg></button>
     </div>
   </div>
+  <aside class="ritual-panel" id="ritualPanel" aria-label="Faroles de la vigilia">
+    <div class="ritual-heading"><svg aria-hidden="true"><use href="#i-candle"/></svg><span>Faroles de la vigilia</span><b id="ritualCount">0 / 3</b></div>
+    <p id="ritualHint">Acércate a un farol y permanece junto a él.</p>
+    <div class="ritual-meter" id="ritualMeter" role="progressbar" aria-label="Encender el farol" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0"><i id="ritualProgress"></i></div>
+  </aside>
   <div class="boss hidden" id="bossBox">
     <div class="boss-name"><b>La Guía</b><span>Carmela Souto lleva la cruz desde 1963</span></div>
     <div class="bar boss-hp"><i id="bossBar"></i></div>
@@ -82,13 +90,16 @@
       <span class="level-text" id="levelText">Recuerdos · 1</span>
       <div class="memories" id="hudMemories" aria-label="Recuerdos"></div>
     </div>
+    <div class="action-controls">
+    <button class="dash ability" id="abilityButton"><svg aria-hidden="true"><use href="#i-candle"/></svg><span id="abilityName">Lumbre</span><kbd id="abilityKey">E</kbd><i id="abilityFill"></i></button>
     <button class="dash" id="dashButton" aria-label="Esquivar"><svg aria-hidden="true"><use href="#i-dash"/></svg><span>Esquivar</span><kbd id="dashKey">Espacio</kbd><i id="dashFill"></i></button>
+    </div>
   </div>
   <div class="memory-track" aria-hidden="true"><i id="xpBar"></i></div>
 </section>
 
 <!-- Elegir un recuerdo -->
-<section id="choice" class="screen overlay hidden" aria-labelledby="choiceTitle">
+<section id="choice" class="screen overlay hidden" role="dialog" aria-labelledby="choiceTitle">
   <div class="choice-wrap">
     <p class="eyebrow">Con la luz, vuelve algo</p>
     <h2 id="choiceTitle">Recuerdas…</h2>
@@ -97,7 +108,7 @@
   </div>
 </section>
 
-<section id="pause" class="screen overlay hidden" aria-labelledby="pauseTitle">
+<section id="pause" class="screen overlay hidden" role="dialog" aria-labelledby="pauseTitle">
   <div class="pause-card">
     <p class="eyebrow" id="pauseClock">00:00</p>
     <h2 id="pauseTitle">La vela sigue encendida.</h2>
@@ -111,7 +122,7 @@
   </div>
 </section>
 
-<section id="end" class="screen overlay hidden" aria-labelledby="endTitle">
+<section id="end" class="screen overlay hidden" role="dialog" aria-labelledby="endTitle">
   <article class="memorial" id="memorial">
     <svg class="memorial-mark" aria-hidden="true"><use href="#i-cross"/></svg>
     <p class="eyebrow" id="endEyebrow"></p>
@@ -153,9 +164,13 @@
 <dialog id="settingsDialog" class="panel narrow" aria-labelledby="settingsTitle">
   <button class="icon-btn close" data-close aria-label="Cerrar"><svg aria-hidden="true"><use href="#i-close"/></svg></button>
   <h2 id="settingsTitle">Ajustes</h2>
+  <p class="panel-intro">La mezcla y los efectos se guardan en este navegador.</p>
   <div class="settings">
     <label class="row"><span>Sonido</span><input type="checkbox" id="optSound"></label>
-    <label class="row"><span>Volumen</span><input type="range" id="optVolume" min="0" max="100" step="5"></label>
+    <label class="row"><span>Volumen general</span><span class="range-control"><input type="range" id="optVolume" min="0" max="100" step="5"><output id="optVolumeValue" for="optVolume"></output></span></label>
+    <label class="row"><span>Música</span><span class="range-control"><input type="range" id="optMusic" min="0" max="100" step="5"><output id="optMusicValue" for="optMusic"></output></span></label>
+    <label class="row"><span>Ambiente <small>Mar, viento y camposanto</small></span><span class="range-control"><input type="range" id="optAmbience" min="0" max="100" step="5"><output id="optAmbienceValue" for="optAmbience"></output></span></label>
+    <label class="row"><span>Efectos <small>Armas y avisos de peligro</small></span><span class="range-control"><input type="range" id="optEffects" min="0" max="100" step="5"><output id="optEffectsValue" for="optEffects"></output></span></label>
     <label class="row"><span>Temblor de pantalla</span><input type="checkbox" id="optShake"></label>
     <label class="row"><span>Destellos</span><input type="checkbox" id="optFlashes"></label>
     <label class="row"><span>Penumbra suave <small>más visibilidad fuera de tu luz</small></span><input type="checkbox" id="optSoftDark"></label>

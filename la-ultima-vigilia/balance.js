@@ -12,6 +12,21 @@ export const MAX_ENEMIES = 240;
 export const MAX_LEVEL = 5;
 export const COFFIN = {x: 0, y: 0};
 
+/* Acciones voluntarias: alcance y tiempo en segundos, sin valores en la UI. */
+export const ABILITY_BALANCE = {
+  lucia: {cooldown: 18, radius: 210, damage: 28, knock: 330},
+  julian: {cooldown: 20, radius: 158, damage: 34, knock: 260, wardLife: 4.5, wardDamage: 6, wardTick: 0.5},
+  matilde: {cooldown: 22, radius: 190, damage: 24, knock: 360, healing: 0.14}
+};
+export const RITUAL_RADIUS = 48;
+export const RITUAL_CHANNEL = 3.6;
+export const RITUAL_LIGHT_RADIUS = 105;
+export const RITUAL_SITES = [
+  {id: 'oeste', x: -320, y: 0},
+  {id: 'norte', x: 0, y: -320},
+  {id: 'este', x: 320, y: 0}
+];
+
 export const fmtClock = t => {
   const s = clamp(t, 0, NIGHT);
   const h = Math.floor(s / HOUR), m = Math.min(59, Math.floor((s % HOUR) * 0.6));

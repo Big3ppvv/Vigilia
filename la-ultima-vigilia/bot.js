@@ -28,6 +28,8 @@ export const botMethods = {
       const dx = p.x - h.x, dy = p.y - h.y, d = Math.hypot(dx, dy) || 1;
       if (d < h.r + 30) { fx += dx / d * 4; fy += dy / d * 4; }
     }
+    const closeEnemies = this.enemies.filter(e => e.hp > 0 && !e.dissolve && Math.hypot(e.x - p.x, e.y - p.y) < 150).length;
+    if (this.abilityCd <= 0 && (closeEnemies >= (sloppy ? 6 : 4) || (this.character === 'matilde' && p.hp < this.st.maxHp * 0.45))) this.ability();
     // Da vueltas alrededor del velatorio; cuando llega la Guía, va a por ella.
     let tx, ty;
     if (this.boss && this.boss.hp > 0) {
@@ -39,6 +41,18 @@ export const botMethods = {
       let best = null, bd = 160 * 160;
       for (const g of this.gems) { const d = (g.x - p.x) ** 2 + (g.y - p.y) ** 2; if (d < bd) { bd = d; best = g; } }
       if (best) { tx = best.x; ty = best.y; }
+      // El bot recorre los faroles sin sacrificar sus reflejos frente a la horda.
+      if (this.time > 10 && this.time < 420 && closeEnemies === 0 && !this.hazards.length && !this.enemyShots.some(s => Math.hypot(s.x - p.x, s.y - p.y) < 150)) {
+        const site = this.rituals.filter(r => !r.lit).sort((a, b) => Math.hypot(a.x - p.x, a.y - p.y) - Math.hypot(b.x - p.x, b.y - p.y))[0];
+        if (site) {
+          tx = site.x; ty = site.y;
+          if (Math.hypot(tx - p.x, ty - p.y) < 38) {
+            const mv = {x: 0, y: 0};
+            if (sloppy) this.botMemo = {at: this.clock, mv};
+            return mv;
+          }
+        }
+      }
     }
     const gx = tx - p.x, gy = ty - p.y, gd = Math.hypot(gx, gy) || 1;
     fx += gx / gd * 0.9; fy += gy / gd * 0.9;

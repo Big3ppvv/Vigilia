@@ -6,18 +6,19 @@
  *   npm install --no-save playwright && npx playwright install chromium
  *   node tools/smoke.mjs [lucia julian matilde]
  */
-import { createRequire } from 'node:module';
+import { launchBrowser } from './browser.mjs';
 
-const require = createRequire(import.meta.url);
-const { chromium } = require('playwright');
 
 const file = new URL('../la-ultima-vigilia.html', import.meta.url).href;
 const characters = process.argv.length > 2 ? process.argv.slice(2) : ['lucia', 'julian', 'matilde'];
 
-const browser = await chromium.launch();
+const browser = await launchBrowser();
 let failed = false;
 for (const character of characters) {
   const page = await browser.newPage({viewport: {width: 1280, height: 800}});
+  // La fuente remota es opcional; el recorrido verifica el juego sin depender
+  // de Google Fonts ni de los certificados/red del ejecutor de CI.
+  await page.route('https://fonts.googleapis.com/**', route => route.fulfill({contentType: 'text/css', body: ''}));
   const errors = [];
   page.on('pageerror', e => errors.push(String(e)));
   page.on('console', m => { if (m.type() === 'error') errors.push(m.text()); });
@@ -37,6 +38,7 @@ for (const character of characters) {
   });
   if (!night) errors.push('el juego no llegó a arrancar');
   else if (night.state === 'ended' && !night.endShown) errors.push('la noche terminó pero no se mostró el final');
+  else if (!night.dawn || night.clock !== '06:00') errors.push(`el piloto no alcanzó el amanecer: ${night.title}`);
   const seconds = ((Date.now() - started) / 1000).toFixed(0);
   if (errors.length) {
     failed = true;
