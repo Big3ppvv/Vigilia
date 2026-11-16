@@ -62,7 +62,7 @@ export const renderMethods = {
     const title = this.state === 'ready';
     const target = title ? this.titleFocus : p;
     if (title) { this.cam.x = target.x; this.cam.y = target.y; }
-    else { const k = 1 - Math.exp(-clamp(dt, 0, 0.05) * 12); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
+    else { const k = 1 - Math.exp(-clamp(dt, 0, 0.05) * 16); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
     this.clampCamera();
     const camX = Math.round(this.cam.x - w / 2), camY = Math.round(this.cam.y - h / 2);
     const look = this.nightLook();
@@ -109,7 +109,7 @@ export const renderMethods = {
     if (!title && this.state !== 'ended' || (this.state === 'ended' && this.lastVictory)) items.push({kind: 'player', x: p.x - camX, y: p.y - camY, sortY: p.y - camY + 10});
     items.sort((a, b) => a.sortY - b.sortY);
 
-    for (const g of this.ghosts) {
+    if (this.options.flashes) for (const g of this.ghosts) {
       ctx.globalAlpha = g.life / 0.28 * 0.35;
       drawSprite(ctx, this.character, g.x - camX, g.y - camY - 12, {scale: 2, flip: g.face < 0, layer: 'white'});
     }

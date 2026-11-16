@@ -13,11 +13,25 @@ export const MAX_ENEMIES = 240;
 export const MAX_LEVEL = 5;
 export const COFFIN = {x: 0, y: 0};
 
+/* Más decisiones por segundo sin acelerar el reloj ni los avisos de ataque. */
+export const PACE = {
+  playerSpeed: 1.22,
+  cadence: 0.72,
+  dashCooldown: 3.2,
+  projectileSpeed: 1.2,
+  spawnBatch: 5,
+  spawnDeficit: 9,
+  refillFast: 0.14,
+  refillNormal: 0.3,
+  swarmDelay: [28, 40],
+  swarmSize: [7, 11]
+};
+
 /* Acciones voluntarias: alcance y tiempo en segundos, sin valores en la UI. */
 export const ABILITY_BALANCE = {
-  lucia: {cooldown: 18, radius: 210, damage: 28, knock: 330},
-  julian: {cooldown: 20, radius: 158, damage: 34, knock: 260, wardLife: 4.5, wardDamage: 6, wardTick: 0.5},
-  matilde: {cooldown: 22, radius: 190, damage: 24, knock: 360, healing: 0.14}
+  lucia: {cooldown: 12, radius: 210, damage: 28, knock: 330},
+  julian: {cooldown: 14, radius: 158, damage: 34, knock: 260, wardLife: 4.5, wardDamage: 6, wardTick: 0.5},
+  matilde: {cooldown: 16, radius: 190, damage: 24, knock: 360, healing: 0.14}
 };
 export const RITUAL_RADIUS = 48;
 export const RITUAL_CHANNEL = 3.6;
@@ -36,13 +50,13 @@ export const fmtClock = t => {
 
 /* unlock en segundos de noche; value es la luz que dejan al irse. */
 export const ENEMIES = {
-  anima: {unlock: 0, weight: 30, hp: 12, speed: 60, r: 10, damage: 6, value: 1, scale: 2},
-  hermano: {unlock: 0, weight: 44, hp: 24, speed: 34, r: 13, damage: 9, value: 1, scale: 2},
-  urco: {unlock: 100, weight: 20, hp: 34, speed: 52, r: 14, damage: 11, value: 2, scale: 2},
-  curuxa: {unlock: 150, weight: 15, hp: 26, speed: 58, r: 12, damage: 10, value: 2, scale: 2},
-  ahogado: {unlock: 200, weight: 24, hp: 64, speed: 29, r: 15, damage: 13, value: 3, scale: 2},
-  planidera: {unlock: 250, weight: 12, hp: 38, speed: 40, r: 13, damage: 8, value: 3, scale: 2},
-  espantajo: {unlock: 400, weight: 7, hp: 200, speed: 22, r: 22, damage: 20, value: 7, scale: 2},
+  anima: {unlock: 0, weight: 30, hp: 12, speed: 72, r: 10, damage: 6, value: 1, scale: 2},
+  hermano: {unlock: 0, weight: 44, hp: 24, speed: 41, r: 13, damage: 9, value: 1, scale: 2},
+  urco: {unlock: 100, weight: 20, hp: 34, speed: 62, r: 14, damage: 11, value: 2, scale: 2},
+  curuxa: {unlock: 150, weight: 15, hp: 26, speed: 69, r: 12, damage: 10, value: 2, scale: 2},
+  ahogado: {unlock: 200, weight: 24, hp: 64, speed: 35, r: 15, damage: 13, value: 3, scale: 2},
+  planidera: {unlock: 250, weight: 12, hp: 38, speed: 48, r: 13, damage: 8, value: 3, scale: 2},
+  espantajo: {unlock: 400, weight: 7, hp: 200, speed: 26, r: 22, damage: 20, value: 7, scale: 2},
   guia: {unlock: 9999, weight: 0, hp: 9000, speed: 27, r: 30, damage: 24, value: 0, scale: 3}
 };
 
@@ -59,16 +73,16 @@ export const SCALING = {
  * el velatorio. tide, gust y dark son lo que distingue a esa hora.
  */
 export const ACTS = [
-  {pop: [10, 44]},
-  {pop: [44, 78], processions: [36, 48], roads: 1},
-  {pop: [78, 112], processions: [34, 46], roads: 1, tide: [8, 11]},
-  {pop: [112, 146], processions: [34, 46], roads: 2, gust: 2, bias: {anima: 2.2}},
-  {pop: [140, 176], processions: [32, 44], roads: 2, dark: 0.86},
-  {pop: [84, 84]}
+  {pop: [18, 56]},
+  {pop: [56, 96], processions: [29, 39], roads: 1},
+  {pop: [96, 134], processions: [28, 38], roads: 1, tide: [8, 11]},
+  {pop: [134, 172], processions: [28, 38], roads: 2, gust: 2, bias: {anima: 2.2}},
+  {pop: [172, 204], processions: [26, 36], roads: 2, dark: 0.86},
+  {pop: [96, 96]}
 ];
 
 /* La procesión: cuántos hermanos van en fila y cuánto más aguantan que los sueltos. */
-export const PROCESSION = {base: 3, perHour: 1, max: 8, hp: 1.5, speed: 40};
+export const PROCESSION = {base: 3, perHour: 1, max: 8, hp: 1.5, speed: 48};
 
 /*
  * Los difuntos con nombre: uno por hora, con más aguante y su propia manía.

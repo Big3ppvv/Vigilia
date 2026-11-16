@@ -83,6 +83,10 @@ export const inputMethods = {
     this.dashCd = this.st.dashCd;
     this.dashHit = new Set();
     this.player.inv = Math.max(this.player.inv, 0.5);
+    this.combatFx.emit('dash', this.player.x, this.player.y - 6, {
+      a: Math.atan2(this.dashDir.y, this.dashDir.x), radius: 76,
+      tone: this.character === 'julian' ? 'salt' : this.character === 'matilde' ? 'sacred' : 'ember'
+    });
     this.audio.sfx('esquiva');
     for (let i = 0; i < 8; i++) this.particle({x: this.player.x, y: this.player.y + 8, vx: rand(-60, 60), vy: rand(-30, 10), life: 0.4, size: 3, color: '#3a3f46'});
     this.emitStats();

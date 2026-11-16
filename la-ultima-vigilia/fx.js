@@ -48,6 +48,9 @@ export const fxMethods = {
   /* Cada criatura se deshace a su manera y deja su huella en el suelo. */
   deathFx(e) {
     const x = e.x, y = e.y, big = e.elite ? 2 : 1;
+    this.combatFx.emit('death', x, y - 6, {
+      radius: e.elite ? 65 : 22, tone: ['anima', 'ahogado', 'planidera'].includes(e.type) ? 'salt' : 'ember'
+    });
     const many = (n, make) => { for (let i = 0; i < n * big; i++) this.particle(make(i)); };
     switch (e.type) {
       case 'hermano':

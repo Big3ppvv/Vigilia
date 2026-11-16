@@ -5,7 +5,7 @@ import { objectBonuses } from './objects.js';
  * un rincón de Amparo y, al reunirlos, vuelve algo más.
  */
 import { TAU, rand, pick } from './util.js';
-import { MAX_LEVEL, SLOTS, VIGIL } from './balance.js';
+import { MAX_LEVEL, SLOTS, VIGIL, PACE } from './balance.js';
 import { CHARACTERS, MEMORIES, FALLBACK_CHOICES, AMPARO, ROOMS, VIGIL_TEXT } from './story.js';
 
 const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
@@ -24,14 +24,14 @@ export const memoryMethods = {
     const prevMax = this.st?.maxHp;
     this.st = {
       maxHp: ch.hp + 20 * m.caldo,
-      speed: ch.speed * (1 + 0.05 * m.mecedora),
+      speed: ch.speed * PACE.playerSpeed * (1 + 0.05 * m.mecedora),
       regen: 0.5 * m.pan,
-      cadence: Math.pow(0.9, m.radio),
+      cadence: PACE.cadence * Math.pow(0.9, m.radio),
       pickup: 72 * (1 + 0.35 * m.gafas),
       memory: ch.memory * (1 + 0.15 * m.fotos),
       crit: 0.04 + 0.07 * m.risa,
       armor: Math.min(0.6, ch.armor + 0.08 * m.manos),
-      dashCd: 5 * Math.pow(0.85, m.mecedora) * (rooms.has('alcoba') ? 0.8 : 1),
+      dashCd: PACE.dashCooldown * Math.pow(0.85, m.mecedora) * (rooms.has('alcoba') ? 0.8 : 1),
       light: 178 * ch.light * (1 + 0.1 * m.farol),
       heal: rooms.has('cocina') ? 1.5 : 1,
       lullCd: VIGIL.lullCooldown

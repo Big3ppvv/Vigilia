@@ -796,11 +796,25 @@ const MAX_ENEMIES = 240;
 const MAX_LEVEL = 5;
 const COFFIN = {x: 0, y: 0};
 
+/* Más decisiones por segundo sin acelerar el reloj ni los avisos de ataque. */
+const PACE = {
+  playerSpeed: 1.22,
+  cadence: 0.72,
+  dashCooldown: 3.2,
+  projectileSpeed: 1.2,
+  spawnBatch: 5,
+  spawnDeficit: 9,
+  refillFast: 0.14,
+  refillNormal: 0.3,
+  swarmDelay: [28, 40],
+  swarmSize: [7, 11]
+};
+
 /* Acciones voluntarias: alcance y tiempo en segundos, sin valores en la UI. */
 const ABILITY_BALANCE = {
-  lucia: {cooldown: 18, radius: 210, damage: 28, knock: 330},
-  julian: {cooldown: 20, radius: 158, damage: 34, knock: 260, wardLife: 4.5, wardDamage: 6, wardTick: 0.5},
-  matilde: {cooldown: 22, radius: 190, damage: 24, knock: 360, healing: 0.14}
+  lucia: {cooldown: 12, radius: 210, damage: 28, knock: 330},
+  julian: {cooldown: 14, radius: 158, damage: 34, knock: 260, wardLife: 4.5, wardDamage: 6, wardTick: 0.5},
+  matilde: {cooldown: 16, radius: 190, damage: 24, knock: 360, healing: 0.14}
 };
 const RITUAL_RADIUS = 48;
 const RITUAL_CHANNEL = 3.6;
@@ -819,13 +833,13 @@ const fmtClock = t => {
 
 /* unlock en segundos de noche; value es la luz que dejan al irse. */
 const ENEMIES = {
-  anima: {unlock: 0, weight: 30, hp: 12, speed: 60, r: 10, damage: 6, value: 1, scale: 2},
-  hermano: {unlock: 0, weight: 44, hp: 24, speed: 34, r: 13, damage: 9, value: 1, scale: 2},
-  urco: {unlock: 100, weight: 20, hp: 34, speed: 52, r: 14, damage: 11, value: 2, scale: 2},
-  curuxa: {unlock: 150, weight: 15, hp: 26, speed: 58, r: 12, damage: 10, value: 2, scale: 2},
-  ahogado: {unlock: 200, weight: 24, hp: 64, speed: 29, r: 15, damage: 13, value: 3, scale: 2},
-  planidera: {unlock: 250, weight: 12, hp: 38, speed: 40, r: 13, damage: 8, value: 3, scale: 2},
-  espantajo: {unlock: 400, weight: 7, hp: 200, speed: 22, r: 22, damage: 20, value: 7, scale: 2},
+  anima: {unlock: 0, weight: 30, hp: 12, speed: 72, r: 10, damage: 6, value: 1, scale: 2},
+  hermano: {unlock: 0, weight: 44, hp: 24, speed: 41, r: 13, damage: 9, value: 1, scale: 2},
+  urco: {unlock: 100, weight: 20, hp: 34, speed: 62, r: 14, damage: 11, value: 2, scale: 2},
+  curuxa: {unlock: 150, weight: 15, hp: 26, speed: 69, r: 12, damage: 10, value: 2, scale: 2},
+  ahogado: {unlock: 200, weight: 24, hp: 64, speed: 35, r: 15, damage: 13, value: 3, scale: 2},
+  planidera: {unlock: 250, weight: 12, hp: 38, speed: 48, r: 13, damage: 8, value: 3, scale: 2},
+  espantajo: {unlock: 400, weight: 7, hp: 200, speed: 26, r: 22, damage: 20, value: 7, scale: 2},
   guia: {unlock: 9999, weight: 0, hp: 9000, speed: 27, r: 30, damage: 24, value: 0, scale: 3}
 };
 
@@ -842,16 +856,16 @@ const SCALING = {
  * el velatorio. tide, gust y dark son lo que distingue a esa hora.
  */
 const ACTS = [
-  {pop: [10, 44]},
-  {pop: [44, 78], processions: [36, 48], roads: 1},
-  {pop: [78, 112], processions: [34, 46], roads: 1, tide: [8, 11]},
-  {pop: [112, 146], processions: [34, 46], roads: 2, gust: 2, bias: {anima: 2.2}},
-  {pop: [140, 176], processions: [32, 44], roads: 2, dark: 0.86},
-  {pop: [84, 84]}
+  {pop: [18, 56]},
+  {pop: [56, 96], processions: [29, 39], roads: 1},
+  {pop: [96, 134], processions: [28, 38], roads: 1, tide: [8, 11]},
+  {pop: [134, 172], processions: [28, 38], roads: 2, gust: 2, bias: {anima: 2.2}},
+  {pop: [172, 204], processions: [26, 36], roads: 2, dark: 0.86},
+  {pop: [96, 96]}
 ];
 
 /* La procesión: cuántos hermanos van en fila y cuánto más aguantan que los sueltos. */
-const PROCESSION = {base: 3, perHour: 1, max: 8, hp: 1.5, speed: 40};
+const PROCESSION = {base: 3, perHour: 1, max: 8, hp: 1.5, speed: 48};
 
 /*
  * Los difuntos con nombre: uno por hora, con más aguante y su propia manía.
@@ -902,7 +916,7 @@ const ROADS = [
   {id: 'mar', x: 1500, y: 0, dx: 1, dy: 0}
 ];
 
-return {NIGHT, HOUR, BOSS_AT, MAX_ENEMIES, MAX_LEVEL, COFFIN, ABILITY_BALANCE, RITUAL_RADIUS, RITUAL_CHANNEL, RITUAL_LIGHT_RADIUS, RITUAL_SITES, fmtClock, ENEMIES, SCALING, ACTS, PROCESSION, ELITE_PLAN, ELITE, SLOTS, VIGIL, WORLD, LIGHTHOUSE, CIRIOS, ROADS};
+return {NIGHT, HOUR, BOSS_AT, MAX_ENEMIES, MAX_LEVEL, COFFIN, PACE, ABILITY_BALANCE, RITUAL_RADIUS, RITUAL_CHANNEL, RITUAL_LIGHT_RADIUS, RITUAL_SITES, fmtClock, ENEMIES, SCALING, ACTS, PROCESSION, ELITE_PLAN, ELITE, SLOTS, VIGIL, WORLD, LIGHTHOUSE, CIRIOS, ROADS};
 })();
 /* ---- objects.js ---- */
 const __objects_js = (() => {
@@ -11345,8 +11359,8 @@ const { ATTACK_PALETTE, makeCanvas } = __art_js;
 
 const MAX_EFFECTS = 96;
 const MAX_LIGHTS = 24;
-const priority = kind => kind === 'bell' ? 3 : kind === 'cast' || kind === 'blast' ? 2 : kind === 'impact' ? 0 : 1;
-const LIFETIMES = {cast: 0.24, blast: 0.3, bell: 0.72, impact: 0.28, bead: 0.3, moth: 0.34};
+const priority = kind => kind === 'surge' || kind === 'bell' ? 3 : ['cast', 'blast', 'dash'].includes(kind) ? 2 : kind === 'impact' ? 0 : 1;
+const LIFETIMES = {cast: 0.16, blast: 0.23, bell: 0.54, impact: 0.2, bead: 0.24, moth: 0.26, dash: 0.24, death: 0.3, surge: 0.58};
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, n));
 const palette = tone => ATTACK_PALETTE[tone] || ATTACK_PALETTE.ember;
 
@@ -11354,6 +11368,17 @@ function diamond(ctx, x, y, size, color) {
   ctx.fillStyle = color;
   ctx.fillRect(Math.round(x - size / 2), Math.round(y - size), size, size * 2);
   ctx.fillRect(Math.round(x - size), Math.round(y - size / 2), size * 2, size);
+}
+
+// Fragmentos de luz, nunca partículas persistentes ni azar por fotograma.
+function rays(ctx, count, radius, length, seed, p) {
+  for (let i = 0; i < count; i++) {
+    const a = i * TAU / count + seed, r = radius * (0.7 + (i % 3) * 0.15);
+    ctx.save(); ctx.rotate(a);
+    ctx.fillStyle = i % 3 ? p.edge : p.core;
+    ctx.fillRect(Math.round(r), -1, Math.max(2, Math.round(length * (0.5 + (i % 4) * 0.2))), i % 3 ? 1 : 2);
+    ctx.restore();
+  }
 }
 
 function haloSprite(tone) {
@@ -11416,10 +11441,10 @@ class CombatEffects {
       if (impact && impactPositions.some(other => (other.x - fx.x) ** 2 + (other.y - fx.y) ** 2 < 28 ** 2)) continue;
       if (impact) impactPositions.push(fx);
       const k = fx.life / fx.total, progress = 1 - k;
-      const bell = fx.kind === 'bell', directional = fx.kind === 'blast' || fx.kind === 'cast';
-      const radius = bell ? 42 + fx.radius * progress * 0.68 : impact ? fx.radius + 10 : fx.kind === 'blast' ? 60 : 42;
-      lights.push({x: fx.x - camX, y: fx.y - camY, r: radius, i: k * (bell ? 0.55 : impact ? crowded ? 0.28 : 0.5 : 0.82),
-        c: fx.tone, g: bell ? 0.32 : impact ? 0.45 : 0.75, a: fx.a, stretch: directional ? 1.5 : 1});
+      const wave = fx.kind === 'bell' || fx.kind === 'surge', directional = ['blast', 'cast', 'dash'].includes(fx.kind);
+      const radius = wave ? 48 + fx.radius * progress * 0.72 : impact ? fx.radius + 20 : fx.kind === 'blast' ? 74 : fx.kind === 'death' ? fx.radius + 24 : 48;
+      lights.push({x: fx.x - camX, y: fx.y - camY, r: radius, i: k * (wave ? 0.72 : impact ? crowded ? 0.3 : 0.64 : 0.95),
+        c: fx.tone, g: wave ? 0.5 : impact ? 0.6 : 0.9, a: fx.a, stretch: directional ? 1.8 : 1});
       count++;
     }
   }
@@ -11442,15 +11467,52 @@ class CombatEffects {
       ctx.translate(Math.round(x), Math.round(y));
       ctx.globalAlpha *= Math.pow(k, 0.75) * (flashes ? 1 : 0.7);
       ctx.lineCap = 'round';
-      if (fx.kind === 'bell') {
+      if (fx.kind === 'dash') {
+        // La salida de la esquiva queda localizada; las siluetas marcan el trayecto.
+        if (flashes) {
+          ctx.rotate(fx.a);
+          this.halo(ctx, fx.tone, 0, 0, 40 + t * 22, k * 0.85);
+          for (let i = -3; i <= 3; i++) {
+            const length = (32 + fx.radius * 0.55) * k * (1 - Math.abs(i) * 0.12);
+            ctx.strokeStyle = i % 2 ? p.edge : p.core;
+            ctx.lineWidth = i ? 1 : 3;
+            ctx.beginPath(); ctx.moveTo(-14 - t * 26, i * 5); ctx.lineTo(-14 - t * 26 - length, i * (5 + t * 3)); ctx.stroke();
+          }
+          ctx.strokeStyle = p.core; ctx.lineWidth = 2;
+          ctx.beginPath(); ctx.arc(0, 0, 12 + t * 28, -1.1, 1.1); ctx.stroke();
+        }
+      } else if (fx.kind === 'surge' || fx.kind === 'death') {
+        const surge = fx.kind === 'surge';
+        const radius = 6 + (fx.radius - 6) * (1 - (1 - t) ** 3);
+        if (flashes) {
+          this.halo(ctx, fx.tone, 0, 0, 30 + radius * 0.8, k * (surge ? 0.75 : 0.6));
+          rays(ctx, surge ? 18 : 10, radius * 0.72, k * (surge ? 28 : 15), fx.seed * 0.1, p);
+          ctx.strokeStyle = p.core; ctx.lineWidth = 1 + k * (surge ? 3 : 1);
+          ctx.beginPath(); ctx.arc(0, 0, radius, 0, TAU); ctx.stroke();
+          if (surge) {
+            ctx.strokeStyle = p.edge; ctx.lineWidth = 1;
+            ctx.beginPath(); ctx.arc(0, 0, radius * 0.74, 0, TAU); ctx.stroke();
+            for (let i = 0; i < 4; i++) {
+              ctx.save(); ctx.rotate(i * TAU / 4 + fx.seed * 0.08);
+              ctx.fillStyle = p.core;
+              ctx.fillRect(-1, -Math.round(radius * 0.6), 2, Math.round(radius * 0.38));
+              ctx.restore();
+            }
+          }
+          if (t < 0.4) diamond(ctx, 0, 0, Math.max(2, Math.round(k * (surge ? 9 : 5))), p.core);
+        }
+      } else if (fx.kind === 'bell') {
         const radius = 12 + (fx.radius - 12) * (1 - (1 - t) ** 2);
-        if (flashes) this.halo(ctx, fx.tone, 0, 0, 40 + radius * 0.7, k * 0.28);
+        if (flashes) {
+          this.halo(ctx, fx.tone, 0, 0, 46 + radius * 0.75, k * 0.55);
+          rays(ctx, 20, radius * 0.88, 8 + k * 18, fx.seed * 0.08, p);
+        }
         // Frentes concéntricos, finos al llegar al borde del alcance real.
-        for (let ring = 0; ring < 3; ring++) {
+        for (let ring = 0; ring < (flashes ? 4 : 3); ring++) {
           const r = Math.max(3, radius - ring * (9 + t * 9));
           ctx.globalAlpha *= ring ? 0.7 : 1;
           ctx.strokeStyle = ring === 0 ? p.core : p.edge;
-          ctx.lineWidth = ring === 0 ? 1.4 + k * 1.8 : 1;
+          ctx.lineWidth = ring === 0 ? 1.4 + k * (flashes ? 3.8 : 1.8) : 1;
           ctx.beginPath(); ctx.arc(0, 0, r, 0, TAU); ctx.stroke();
         }
         ctx.globalAlpha = k * (flashes ? 0.75 : 0.45);
@@ -11469,14 +11531,15 @@ class CombatEffects {
         }
       } else if (fx.kind === 'blast') {
         ctx.rotate(fx.a);
-        if (flashes) this.halo(ctx, fx.tone, 14, 0, 42 + t * 20, k * 0.75);
-        const reach = 18 + t * 57, spread = 10 + t * 20;
+        if (flashes) this.halo(ctx, fx.tone, 14, 0, 52 + t * 24, k * 0.95);
+        const reach = 18 + t * (flashes ? 77 : 57), spread = 10 + t * 20;
         ctx.fillStyle = p.edge; ctx.globalAlpha *= 0.25;
         ctx.beginPath(); ctx.moveTo(-4, 0); ctx.lineTo(reach, -spread); ctx.lineTo(reach + 12, 0); ctx.lineTo(reach, spread); ctx.closePath(); ctx.fill();
         ctx.globalAlpha = k * (flashes ? 0.95 : 0.6);
-        for (let i = 0; i < 7; i++) {
-          const a = (i - 3) * 0.11, length = reach * (0.65 + (i % 3) * 0.15);
-          ctx.strokeStyle = i % 2 ? p.core : p.edge; ctx.lineWidth = i === 3 ? 3 : 1;
+        const fragments = flashes ? 11 : 7;
+        for (let i = 0; i < fragments; i++) {
+          const a = (i - (fragments - 1) / 2) * 0.075, length = reach * (0.65 + (i % 3) * 0.15);
+          ctx.strokeStyle = i % 2 ? p.core : p.edge; ctx.lineWidth = i === Math.floor(fragments / 2) ? 3 : 1;
           ctx.beginPath(); ctx.moveTo(Math.cos(a) * length * 0.6, Math.sin(a) * length * 0.6);
           ctx.lineTo(Math.cos(a) * length, Math.sin(a) * length); ctx.stroke();
           diamond(ctx, Math.cos(a) * length, Math.sin(a) * length, i % 2 ? 1 : 2, p.core);
@@ -11485,7 +11548,10 @@ class CombatEffects {
         ctx.beginPath(); ctx.arc(0, 0, reach * 0.75, -0.45, 0.45); ctx.stroke();
       } else if (fx.kind === 'cast') {
         ctx.rotate(fx.a);
-        if (flashes) this.halo(ctx, fx.tone, 3, 0, 32, k * 0.7);
+        if (flashes) {
+          this.halo(ctx, fx.tone, 3, 0, 42, k * 0.95);
+          rays(ctx, 6, 10 + t * 20, k * 14, 0, p);
+        }
         ctx.strokeStyle = p.edge; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.arc(0, 0, 8 + t * 14, -1.9, 1.9); ctx.stroke();
         ctx.fillStyle = p.edge;
@@ -11498,9 +11564,14 @@ class CombatEffects {
         }
       } else {
         const impact = fx.kind === 'impact', distance = 5 + t * (impact ? fx.radius : 19);
-        if (flashes && (!impact || this.effects.length <= 32)) this.halo(ctx, fx.tone, 0, 0, impact ? fx.radius + 8 : 25, k * 0.65);
+        if (flashes && (!impact || this.effects.length <= 32)) this.halo(ctx, fx.tone, 0, 0, impact ? fx.radius + 20 : 32, k * 0.85);
         ctx.rotate(fx.a);
-        const count = impact ? 7 : 5;
+        if (flashes && impact) {
+          ctx.strokeStyle = p.core; ctx.lineWidth = 2 * k + 1;
+          const cut = (8 + fx.radius * 0.7) * k;
+          ctx.beginPath(); ctx.moveTo(-cut, -cut); ctx.lineTo(cut, cut); ctx.moveTo(-cut * 0.6, cut * 0.6); ctx.lineTo(cut * 0.6, -cut * 0.6); ctx.stroke();
+        }
+        const count = impact ? flashes ? 10 : 7 : 5;
         for (let i = 0; i < count; i++) {
           const a = i * TAU / count + fx.seed * 0.12;
           const r = distance * (0.6 + (i % 3) * 0.2);
@@ -11524,7 +11595,7 @@ class CombatEffects {
     const fade = clamp(s.life / 0.12, 0, 1);
     ctx.save();
     ctx.globalAlpha *= fade * (flashes ? 1 : 0.85);
-    if (flashes) this.halo(ctx, tone, x, y, salt ? 20 : 29, salt ? 0.26 : 0.6);
+    if (flashes) this.halo(ctx, tone, x, y, salt ? 25 : 38, salt ? 0.4 : 0.85);
     const tail = s.trail || [];
     // La estela sigue las posiciones reales: no atraviesa esquinas ni salta al lanzar.
     if (tail.length) {
@@ -11532,9 +11603,20 @@ class CombatEffects {
       for (let i = 0; i < tail.length; i++) {
         const from = tail[i], to = tail[i + 1] || s;
         const k = (i + 1) / tail.length;
-        ctx.strokeStyle = `rgba(${p.rgb},${k * (salt ? 0.4 : 0.6)})`;
-        ctx.lineWidth = salt ? 1 : 1 + k * 4;
+        ctx.strokeStyle = `rgba(${p.rgb},${k * (salt ? 0.4 : flashes ? 0.8 : 0.6)})`;
+        ctx.lineWidth = salt ? 1 : 1 + k * (flashes ? 6 : 4);
         ctx.beginPath(); ctx.moveTo(from.x - camX, from.y - camY); ctx.lineTo(to.x - camX, to.y - camY); ctx.stroke();
+        if (flashes) {
+          ctx.strokeStyle = p.core; ctx.lineWidth = salt ? 1 : 2;
+          ctx.globalAlpha = fade * k * 0.85;
+          ctx.beginPath(); ctx.moveTo(from.x - camX, from.y - camY); ctx.lineTo(to.x - camX, to.y - camY); ctx.stroke();
+          ctx.globalAlpha = fade;
+          if (!salt && i % 2 === 0) {
+            const offset = Math.sin(s.life * 18 + i) * 4;
+            ctx.fillStyle = p.edge;
+            ctx.fillRect(Math.round(from.x - camX - Math.sin(s.a) * offset), Math.round(from.y - camY + Math.cos(s.a) * offset), 2, 2);
+          }
+        }
       }
     }
     ctx.translate(Math.round(x), Math.round(y));
@@ -11548,6 +11630,10 @@ class CombatEffects {
       // Silueta de llama escalonada con una punta blanca y un pie de brasa.
       ctx.fillRect(-16, -1, 7, 2); ctx.fillRect(-11, -2, 9, 4); ctx.fillRect(-6, -3, 8, 6);
       ctx.fillStyle = p.core; ctx.fillRect(-4, -1, 8, 2); ctx.fillRect(-1, -2, 4, 4);
+      if (flashes) {
+        ctx.fillStyle = p.edge; ctx.fillRect(-20, -1, 6, 2);
+        ctx.fillStyle = p.core; ctx.fillRect(4, -1, 4, 2);
+      }
     }
     ctx.restore();
   }
@@ -11559,8 +11645,8 @@ class CombatEffects {
     ctx.translate(Math.round(x), Math.round(y));
     ctx.strokeStyle = `rgba(${ember.rgb},.13)`; ctx.lineWidth = 1;
     ctx.beginPath(); ctx.arc(0, 0, radius, 0, TAU); ctx.stroke();
-    // Hitos de brasa sobre el alcance exacto; se mueven despacio, sin pulsos.
-    const turn = flashes ? clock * 0.09 : 0;
+    // Brasas que corren por el alcance real, sin tapar las amenazas del interior.
+    const turn = flashes ? clock * 0.7 : 0;
     for (let i = 0; i < 16; i++) {
       const a = i * TAU / 16 + turn, bx = Math.cos(a) * radius, by = Math.sin(a) * radius;
       ctx.fillStyle = i % 3 ? ember.edge : ember.core;
@@ -11568,6 +11654,12 @@ class CombatEffects {
       ctx.fillRect(Math.round(bx), Math.round(by), 2, 2);
       ctx.strokeStyle = `rgba(${ember.rgb},.18)`;
       ctx.beginPath(); ctx.arc(0, 0, radius, a + 0.04, a + 0.12); ctx.stroke();
+      if (flashes && i % 4 === 0) {
+        ctx.globalAlpha = 0.6;
+        ctx.strokeStyle = ember.core; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(0, 0, radius, a - 0.13, a); ctx.stroke();
+        diamond(ctx, bx, by, 2, ember.core);
+      }
     }
     ctx.restore();
   }
@@ -11585,11 +11677,15 @@ class CombatEffects {
       const a = clock * 2.3 + i * TAU / count, bx = Math.cos(a) * radius, by = Math.sin(a) * radius;
       // El recorrido breve da peso al giro sin convertirlo en un escudo opaco.
       for (let trail = 2; trail >= 0; trail--) {
-        ctx.strokeStyle = `rgba(${pearl.rgb},${(3 - trail) * (flashes ? 0.12 : 0.065)})`;
-        ctx.lineWidth = trail === 0 ? 2 : 1;
-        ctx.beginPath(); ctx.arc(0, 0, radius, a - 0.37 + trail * 0.09, a - 0.035); ctx.stroke();
+        ctx.strokeStyle = `rgba(${pearl.rgb},${(3 - trail) * (flashes ? 0.19 : 0.065)})`;
+        ctx.lineWidth = trail === 0 ? flashes ? 3 : 2 : 1;
+        ctx.beginPath(); ctx.arc(0, 0, radius, a - (flashes ? 0.65 : 0.37) + trail * 0.09, a - 0.035); ctx.stroke();
       }
-      if (flashes) this.halo(ctx, 'sacred', bx, by, 17, 0.35);
+      if (flashes) {
+        this.halo(ctx, 'sacred', bx, by, 23, 0.55);
+        ctx.strokeStyle = pearl.core; ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(0, 0, radius, a - 0.23, a - 0.035); ctx.stroke();
+      }
       diamond(ctx, bx, by, 4, '#25202e');
       diamond(ctx, bx, by, 3, pearl.edge);
       ctx.fillStyle = pearl.core; ctx.fillRect(Math.round(bx - 2), Math.round(by - 2), 3, 3);
@@ -12206,6 +12302,10 @@ const inputMethods = {
     this.dashCd = this.st.dashCd;
     this.dashHit = new Set();
     this.player.inv = Math.max(this.player.inv, 0.5);
+    this.combatFx.emit('dash', this.player.x, this.player.y - 6, {
+      a: Math.atan2(this.dashDir.y, this.dashDir.x), radius: 76,
+      tone: this.character === 'julian' ? 'salt' : this.character === 'matilde' ? 'sacred' : 'ember'
+    });
     this.audio.sfx('esquiva');
     for (let i = 0; i < 8; i++) this.particle({x: this.player.x, y: this.player.y + 8, vx: rand(-60, 60), vy: rand(-30, 10), life: 0.4, size: 3, color: '#3a3f46'});
     this.emitStats();
@@ -12224,7 +12324,7 @@ const __director_js = (() => {
  * ánimas y a las cuatro la luz alcanza menos.
  */
 const { TAU, rand, lerp, pick, clamp } = __util_js;
-const { NIGHT, HOUR, MAX_ENEMIES, ACTS, ELITE_PLAN, ELITE, ENEMIES, ROADS, COFFIN, WORLD, SCALING, PROCESSION } = __balance_js;
+const { NIGHT, HOUR, MAX_ENEMIES, ACTS, ELITE_PLAN, ELITE, ENEMIES, ROADS, COFFIN, WORLD, SCALING, PROCESSION, PACE } = __balance_js;
 const { HOURS, ELITES, VIGIL_TEXT } = __story_js;
 
 const directorMethods = {
@@ -12293,9 +12393,9 @@ const directorMethods = {
       for (const e of this.enemies) if (!e.dissolve && !e.summoned && !e.proc) alive++;
       const deficit = this.targetPopulation() - alive;
       if (deficit > 0) {
-        const count = Math.min(4, Math.ceil(deficit / 12));
+        const count = Math.min(PACE.spawnBatch, Math.ceil(deficit / PACE.spawnDeficit));
         for (let i = 0; i < count; i++) if (!this.spawn()) break;
-        this.t.spawn = deficit > 30 ? 0.18 : 0.42;
+        this.t.spawn = deficit > 30 ? PACE.refillFast : PACE.refillNormal;
       } else this.t.spawn = 0.5;
     }
     if (act.processions && !boss) {
@@ -12308,7 +12408,11 @@ const directorMethods = {
       }
     }
     this.t.swarm -= dt;
-    if (this.t.swarm <= 0 && !boss) { this.t.swarm = rand(45, 65); this.spawnSwarm(5 + Math.floor(Math.random() * 4)); }
+    if (this.t.swarm <= 0 && !boss) {
+      this.t.swarm = rand(...PACE.swarmDelay);
+      const [min, max] = PACE.swarmSize;
+      this.spawnSwarm(min + Math.floor(Math.random() * (max - min + 1)));
+    }
     const plan = ELITE_PLAN[this.elitesDone];
     if (plan && this.time >= plan.at && !boss) { this.elitesDone++; this.spawnElite(plan); }
     if (act.tide && !boss) {
@@ -12365,7 +12469,7 @@ const directorMethods = {
     e.hp = e.maxHp = e.maxHp * ELITE.hp;
     e.damage *= ELITE.damage; e.speed *= ELITE.speed;
     e.r = ENEMIES[plan.type].r * 1.35; e.size = ELITE.size; e.value = ELITE.light;
-    if (road) { e.proc = true; e.heading = Math.atan2(-road.dy, -road.dx); e.speed = 46 * SCALING.speed(this.time); }
+    if (road) { e.proc = true; e.heading = Math.atan2(-road.dy, -road.dx); e.speed = PROCESSION.speed * 1.15 * SCALING.speed(this.time); }
     if (plan.id === 'peto') {
       // El ánima del peto no viene sola.
       for (let i = 0; i < 6; i++) this.spawn('anima', {x: e.x + Math.cos(i / 6 * TAU) * 46, y: e.y + Math.sin(i / 6 * TAU) * 46});
@@ -12439,7 +12543,7 @@ const __weapons_js = (() => {
  * y lo que añade cada rincón de Amparo cuando se reúnen sus recuerdos.
  */
 const { TAU, clamp, rand, pick, lerp } = __util_js;
-const { ENEMIES, ACTS, HOUR, VIGIL, LIGHTHOUSE } = __balance_js;
+const { ENEMIES, ACTS, HOUR, VIGIL, LIGHTHOUSE, PACE } = __balance_js;
 const { ATTACK_PALETTE } = __art_js;
 const { AMPARO, BARKS, VIGIL_TEXT } = __story_js;
 
@@ -12480,7 +12584,7 @@ const weaponMethods = {
           this.combatFx.emit('cast', origin.x, origin.y, {a: aim, tone, level: m.chispas});
           for (let i = 0; i < count; i++) {
             const a = aim + (i - (count - 1) / 2) * 0.13;
-            this.shots.push({kind: 'chispa', ...origin, vx: Math.cos(a) * 400, vy: Math.sin(a) * 400, a, life: 1.3, total: 1.3, trail: [], tone, r: 5, dmg, pierce: m.chispas >= 3 ? 2 : 1, knock: 70, hit: new Set()});
+            this.shots.push({kind: 'chispa', ...origin, vx: Math.cos(a) * 400 * PACE.projectileSpeed, vy: Math.sin(a) * 400 * PACE.projectileSpeed, a, life: 1.3, total: 1.3, trail: [], tone, r: 5, dmg, pierce: m.chispas >= 3 ? 2 : 1, knock: 70, hit: new Set()});
           }
           this.audio.sfx('chispa', {pan: (target.x - p.x) / this.width});
         } else this.t.chispas = 0.1;
@@ -12499,7 +12603,7 @@ const weaponMethods = {
           this.combatFx.emit('blast', origin.x, origin.y, {a: aim, tone: 'salt', level: m.sal});
           for (let i = 0; i < count; i++) {
             const a = aim + (i - (count - 1) / 2) * (0.62 / Math.max(1, count - 1)) + rand(-0.04, 0.04);
-            const sp = rand(400, 470);
+            const sp = rand(400, 470) * PACE.projectileSpeed;
             const life = rand(0.44, 0.54);
             this.shots.push({kind: 'sal', ...origin, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, a, life, total: life, trail: [], tone: 'salt', r: 4, dmg, pierce: m.sal >= 4 ? 2 : 1, knock: 260, hit: new Set()});
           }
@@ -12529,7 +12633,7 @@ const weaponMethods = {
           const sparks = 8, sdmg = 20 * (1 + 0.15 * Math.max(0, m.chispas - 1)), tone = this.character === 'matilde' ? 'sacred' : 'ember';
           for (let i = 0; i < sparks; i++) {
             const a = i / sparks * TAU + this.clock;
-            this.shots.push({kind: 'chispa', x: p.x, y: p.y - 8, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340, a, life: 0.9, total: 0.9, trail: [], tone, r: 5, dmg: sdmg, pierce: 2, knock: 70, hit: new Set()});
+            this.shots.push({kind: 'chispa', x: p.x, y: p.y - 8, vx: Math.cos(a) * 340 * PACE.projectileSpeed, vy: Math.sin(a) * 340 * PACE.projectileSpeed, a, life: 0.9, total: 0.9, trail: [], tone, r: 5, dmg: sdmg, pierce: 2, knock: 70, hit: new Set()});
           }
         }
       }
@@ -12582,15 +12686,15 @@ const weaponMethods = {
         const t = moth.target;
         if (!t || t.hp <= 0 || t.dissolve) { moth.state = 'back'; continue; }
         const dx = t.x - moth.x, dy = t.y - moth.y, d = Math.hypot(dx, dy) || 1;
-        moth.x += dx / d * 330 * dt; moth.y += dy / d * 330 * dt;
+        moth.x += dx / d * 330 * PACE.projectileSpeed * dt; moth.y += dy / d * 330 * PACE.projectileSpeed * dt;
         if (d < t.r + 5) {
           this.hurt(t, 9 + 4 * m.polillas, {knock: 40, from: moth, fx: 'sacred'});
           this.combatFx.emit('moth', moth.x, moth.y, {a: Math.atan2(dy, dx), tone: 'sacred'});
-          moth.state = 'back'; moth.cd = 0.75;
+          moth.state = 'back'; moth.cd = 0.75 * st.cadence;
         }
       } else {
         const dx = p.x - moth.x, dy = p.y - 18 - moth.y, d = Math.hypot(dx, dy) || 1;
-        moth.x += dx / d * 300 * dt; moth.y += dy / d * 300 * dt;
+        moth.x += dx / d * 300 * PACE.projectileSpeed * dt; moth.y += dy / d * 300 * PACE.projectileSpeed * dt;
         if (d < 24) moth.state = 'orbit';
       }
     }
@@ -12656,7 +12760,8 @@ const weaponMethods = {
     }
     if (crit) this.particle({x: e.x, y: e.y - e.r, vx: 0, vy: -30, life: 0.35, size: 4, color: '#fff1bd', glow: true});
     if (this.options.numbers && !silent) this.numbers.push({x: e.x, y: e.y - e.r - 6, text: String(Math.round(dmg)), color: crit ? '#ffe2a0' : '#d8d2c4', life: 0.7});
-    if (crit && !silent) this.freeze = Math.max(this.freeze, 0.018);
+    // El crítico se lee en su estrella y su núcleo luminoso. Congelar cada
+    // contacto frenaría las ráfagas y los rosarios con muchas mejoras.
     if (e.type === 'guia') this.bossHit(e);
     if (e.hp <= 0) this.kill(e);
   },
@@ -12728,6 +12833,7 @@ const weaponMethods = {
 
   updateShots(dt) {
     for (const s of this.shots) {
+      if (s.life <= 0) continue;
       // Muestreo a 60 Hz y caducidad real, también en pantallas de alta frecuencia.
       s.trail ??= [];
       for (const point of s.trail) point.age = (point.age || 0) + dt;
@@ -12737,21 +12843,32 @@ const weaponMethods = {
         s.trailCd = Math.max(0, s.trailCd + 1 / 60);
       }
       s.trail = s.trail.filter(point => point.age < 0.12).slice(-8);
-      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      const startX = s.x, startY = s.y, activeDt = Math.min(dt, s.life);
+      const dx = s.vx * activeDt, dy = s.vy * activeDt, length2 = dx * dx + dy * dy;
+      s.x += dx; s.y += dy; s.life -= dt;
       s.emberCd = (s.emberCd || 0) - dt;
       if (s.kind === 'chispa' && s.emberCd <= 0) {
         s.emberCd = 0.035;
         this.particle({x: s.x, y: s.y, vx: -s.vx * 0.06 + rand(-12, 12), vy: -s.vy * 0.06 + rand(-12, 12), life: 0.22, size: 2, color: (ATTACK_PALETTE[s.tone] || ATTACK_PALETTE.ember).edge, glow: true});
       }
-      for (const e of this.queryGrid(s.x, s.y, 36)) {
+      // Se barre todo el recorrido: una chispa rápida no salta sobre una criatura
+      // a pocos FPS. Los contactos se resuelven en el orden real del disparo.
+      const contacts = [];
+      for (const e of this.queryGrid(startX + dx / 2, startY + dy / 2, 48 + Math.sqrt(length2) / 2)) {
         if (e.hp <= 0 || e.dissolve || s.hit.has(e.id)) continue;
-        const rr = e.r + s.r;
-        if ((e.x - s.x) ** 2 + (e.y - 4 - s.y) ** 2 < rr * rr) {
-          s.hit.add(e.id);
-          this.hurt(e, s.dmg, {knock: s.knock, from: {x: s.x - s.vx * 0.05, y: s.y - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
-          if (s.kind === 'chispa' && Math.random() < 0.3) this.ambient.decal('scorch', e.x, e.y + e.r * 0.6 + 4, 8);
-          if (--s.pierce <= 0) { s.life = 0; break; }
-        }
+        const ox = startX - e.x, oy = startY - (e.y - 4), rr = e.r + s.r;
+        const c = ox * ox + oy * oy - rr * rr, b = ox * dx + oy * dy;
+        const discriminant = b * b - length2 * c;
+        const at = c <= 0 ? 0 : length2 > 0 && discriminant >= 0 ? (-b - Math.sqrt(discriminant)) / length2 : -1;
+        if (at >= 0 && at <= 1) contacts.push({e, at});
+      }
+      contacts.sort((a, b) => a.at - b.at);
+      for (const {e, at} of contacts) {
+        if (e.hp <= 0 || e.dissolve) continue;
+        s.hit.add(e.id);
+        this.hurt(e, s.dmg, {knock: s.knock, from: {x: startX + dx * at - s.vx * 0.05, y: startY + dy * at - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
+        if (s.kind === 'chispa' && Math.random() < 0.3) this.ambient.decal('scorch', e.x, e.y + e.r * 0.6 + 4, 8);
+        if (--s.pierce <= 0) { s.life = 0; break; }
       }
     }
     this.shots = this.shots.filter(s => s.life > 0);
@@ -12777,7 +12894,7 @@ const { objectBonuses } = __objects_js;
  * un rincón de Amparo y, al reunirlos, vuelve algo más.
  */
 const { TAU, rand, pick } = __util_js;
-const { MAX_LEVEL, SLOTS, VIGIL } = __balance_js;
+const { MAX_LEVEL, SLOTS, VIGIL, PACE } = __balance_js;
 const { CHARACTERS, MEMORIES, FALLBACK_CHOICES, AMPARO, ROOMS, VIGIL_TEXT } = __story_js;
 
 const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
@@ -12796,14 +12913,14 @@ const memoryMethods = {
     const prevMax = this.st?.maxHp;
     this.st = {
       maxHp: ch.hp + 20 * m.caldo,
-      speed: ch.speed * (1 + 0.05 * m.mecedora),
+      speed: ch.speed * PACE.playerSpeed * (1 + 0.05 * m.mecedora),
       regen: 0.5 * m.pan,
-      cadence: Math.pow(0.9, m.radio),
+      cadence: PACE.cadence * Math.pow(0.9, m.radio),
       pickup: 72 * (1 + 0.35 * m.gafas),
       memory: ch.memory * (1 + 0.15 * m.fotos),
       crit: 0.04 + 0.07 * m.risa,
       armor: Math.min(0.6, ch.armor + 0.08 * m.manos),
-      dashCd: 5 * Math.pow(0.85, m.mecedora) * (rooms.has('alcoba') ? 0.8 : 1),
+      dashCd: PACE.dashCooldown * Math.pow(0.85, m.mecedora) * (rooms.has('alcoba') ? 0.8 : 1),
       light: 178 * ch.light * (1 + 0.1 * m.farol),
       heal: rooms.has('cocina') ? 1.5 : 1,
       lullCd: VIGIL.lullCooldown
@@ -13678,6 +13795,9 @@ const fxMethods = {
   /* Cada criatura se deshace a su manera y deja su huella en el suelo. */
   deathFx(e) {
     const x = e.x, y = e.y, big = e.elite ? 2 : 1;
+    this.combatFx.emit('death', x, y - 6, {
+      radius: e.elite ? 65 : 22, tone: ['anima', 'ahogado', 'planidera'].includes(e.type) ? 'salt' : 'ember'
+    });
     const many = (n, make) => { for (let i = 0; i < n * big; i++) this.particle(make(i)); };
     switch (e.type) {
       case 'hermano':
@@ -14112,7 +14232,7 @@ const renderMethods = {
     const title = this.state === 'ready';
     const target = title ? this.titleFocus : p;
     if (title) { this.cam.x = target.x; this.cam.y = target.y; }
-    else { const k = 1 - Math.exp(-clamp(dt, 0, 0.05) * 12); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
+    else { const k = 1 - Math.exp(-clamp(dt, 0, 0.05) * 16); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
     this.clampCamera();
     const camX = Math.round(this.cam.x - w / 2), camY = Math.round(this.cam.y - h / 2);
     const look = this.nightLook();
@@ -14159,7 +14279,7 @@ const renderMethods = {
     if (!title && this.state !== 'ended' || (this.state === 'ended' && this.lastVictory)) items.push({kind: 'player', x: p.x - camX, y: p.y - camY, sortY: p.y - camY + 10});
     items.sort((a, b) => a.sortY - b.sortY);
 
-    for (const g of this.ghosts) {
+    if (this.options.flashes) for (const g of this.ghosts) {
       ctx.globalAlpha = g.life / 0.28 * 0.35;
       drawSprite(ctx, this.character, g.x - camX, g.y - camY - 12, {scale: 2, flip: g.face < 0, layer: 'white'});
     }
@@ -14721,6 +14841,9 @@ const ritualMethods = {
       this.wards.push({x: p.x, y: p.y, r: config.radius, life: config.wardLife, total: config.wardLife, tick: config.wardTick});
     } else p.hp = Math.min(this.st.maxHp, p.hp + this.st.maxHp * config.healing);
     this.rings.push({x: p.x, y: p.y - 4, r: 12, max: config.radius, life: 0.65, total: 0.65, color, width: 3, light: config.radius});
+    this.combatFx.emit('surge', p.x, p.y - 4, {
+      radius: config.radius, tone: this.character === 'julian' ? 'salt' : this.character === 'lucia' ? 'ember' : 'sacred'
+    });
     for (let i = 0; i < 24; i++) {
       const angle = i / 24 * TAU;
       this.particle({x: p.x, y: p.y - 8, vx: Math.cos(angle) * rand(110, 220), vy: Math.sin(angle) * rand(110, 220), life: rand(0.3, 0.65), size: 2, color, glow: true});
@@ -14783,6 +14906,7 @@ const ritualMethods = {
     this.player.hp = Math.min(this.st.maxHp, this.player.hp + this.st.maxHp * 0.16);
     this.xp += Math.ceil(this.xpNext * 0.65);
     this.abilityCd *= this.abilityMax() / oldMax;
+    this.combatFx.emit('surge', site.x, site.y - 12, {radius: 155, tone: 'ember'});
     this.rings.push({x: site.x, y: site.y, r: 8, max: 155, life: 1, total: 1, color: '#ffb04a', width: 3, light: 190});
     for (let i = 0; i < 20; i++) this.particle({x: site.x + rand(-10, 10), y: site.y - 20, vx: rand(-65, 65), vy: rand(-100, -30), life: rand(0.5, 1), size: 2, color: '#ffe2a0', glow: true});
     this.audio.sfx('ritual');

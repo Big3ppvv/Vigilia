@@ -3,7 +3,7 @@
  * y lo que añade cada rincón de Amparo cuando se reúnen sus recuerdos.
  */
 import { TAU, clamp, rand, pick, lerp } from './util.js';
-import { ENEMIES, ACTS, HOUR, VIGIL, LIGHTHOUSE } from './balance.js';
+import { ENEMIES, ACTS, HOUR, VIGIL, LIGHTHOUSE, PACE } from './balance.js';
 import { ATTACK_PALETTE } from './art.js';
 import { AMPARO, BARKS, VIGIL_TEXT } from './story.js';
 
@@ -44,7 +44,7 @@ export const weaponMethods = {
           this.combatFx.emit('cast', origin.x, origin.y, {a: aim, tone, level: m.chispas});
           for (let i = 0; i < count; i++) {
             const a = aim + (i - (count - 1) / 2) * 0.13;
-            this.shots.push({kind: 'chispa', ...origin, vx: Math.cos(a) * 400, vy: Math.sin(a) * 400, a, life: 1.3, total: 1.3, trail: [], tone, r: 5, dmg, pierce: m.chispas >= 3 ? 2 : 1, knock: 70, hit: new Set()});
+            this.shots.push({kind: 'chispa', ...origin, vx: Math.cos(a) * 400 * PACE.projectileSpeed, vy: Math.sin(a) * 400 * PACE.projectileSpeed, a, life: 1.3, total: 1.3, trail: [], tone, r: 5, dmg, pierce: m.chispas >= 3 ? 2 : 1, knock: 70, hit: new Set()});
           }
           this.audio.sfx('chispa', {pan: (target.x - p.x) / this.width});
         } else this.t.chispas = 0.1;
@@ -63,7 +63,7 @@ export const weaponMethods = {
           this.combatFx.emit('blast', origin.x, origin.y, {a: aim, tone: 'salt', level: m.sal});
           for (let i = 0; i < count; i++) {
             const a = aim + (i - (count - 1) / 2) * (0.62 / Math.max(1, count - 1)) + rand(-0.04, 0.04);
-            const sp = rand(400, 470);
+            const sp = rand(400, 470) * PACE.projectileSpeed;
             const life = rand(0.44, 0.54);
             this.shots.push({kind: 'sal', ...origin, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, a, life, total: life, trail: [], tone: 'salt', r: 4, dmg, pierce: m.sal >= 4 ? 2 : 1, knock: 260, hit: new Set()});
           }
@@ -93,7 +93,7 @@ export const weaponMethods = {
           const sparks = 8, sdmg = 20 * (1 + 0.15 * Math.max(0, m.chispas - 1)), tone = this.character === 'matilde' ? 'sacred' : 'ember';
           for (let i = 0; i < sparks; i++) {
             const a = i / sparks * TAU + this.clock;
-            this.shots.push({kind: 'chispa', x: p.x, y: p.y - 8, vx: Math.cos(a) * 340, vy: Math.sin(a) * 340, a, life: 0.9, total: 0.9, trail: [], tone, r: 5, dmg: sdmg, pierce: 2, knock: 70, hit: new Set()});
+            this.shots.push({kind: 'chispa', x: p.x, y: p.y - 8, vx: Math.cos(a) * 340 * PACE.projectileSpeed, vy: Math.sin(a) * 340 * PACE.projectileSpeed, a, life: 0.9, total: 0.9, trail: [], tone, r: 5, dmg: sdmg, pierce: 2, knock: 70, hit: new Set()});
           }
         }
       }
@@ -146,15 +146,15 @@ export const weaponMethods = {
         const t = moth.target;
         if (!t || t.hp <= 0 || t.dissolve) { moth.state = 'back'; continue; }
         const dx = t.x - moth.x, dy = t.y - moth.y, d = Math.hypot(dx, dy) || 1;
-        moth.x += dx / d * 330 * dt; moth.y += dy / d * 330 * dt;
+        moth.x += dx / d * 330 * PACE.projectileSpeed * dt; moth.y += dy / d * 330 * PACE.projectileSpeed * dt;
         if (d < t.r + 5) {
           this.hurt(t, 9 + 4 * m.polillas, {knock: 40, from: moth, fx: 'sacred'});
           this.combatFx.emit('moth', moth.x, moth.y, {a: Math.atan2(dy, dx), tone: 'sacred'});
-          moth.state = 'back'; moth.cd = 0.75;
+          moth.state = 'back'; moth.cd = 0.75 * st.cadence;
         }
       } else {
         const dx = p.x - moth.x, dy = p.y - 18 - moth.y, d = Math.hypot(dx, dy) || 1;
-        moth.x += dx / d * 300 * dt; moth.y += dy / d * 300 * dt;
+        moth.x += dx / d * 300 * PACE.projectileSpeed * dt; moth.y += dy / d * 300 * PACE.projectileSpeed * dt;
         if (d < 24) moth.state = 'orbit';
       }
     }
@@ -220,7 +220,8 @@ export const weaponMethods = {
     }
     if (crit) this.particle({x: e.x, y: e.y - e.r, vx: 0, vy: -30, life: 0.35, size: 4, color: '#fff1bd', glow: true});
     if (this.options.numbers && !silent) this.numbers.push({x: e.x, y: e.y - e.r - 6, text: String(Math.round(dmg)), color: crit ? '#ffe2a0' : '#d8d2c4', life: 0.7});
-    if (crit && !silent) this.freeze = Math.max(this.freeze, 0.018);
+    // El crítico se lee en su estrella y su núcleo luminoso. Congelar cada
+    // contacto frenaría las ráfagas y los rosarios con muchas mejoras.
     if (e.type === 'guia') this.bossHit(e);
     if (e.hp <= 0) this.kill(e);
   },
@@ -292,6 +293,7 @@ export const weaponMethods = {
 
   updateShots(dt) {
     for (const s of this.shots) {
+      if (s.life <= 0) continue;
       // Muestreo a 60 Hz y caducidad real, también en pantallas de alta frecuencia.
       s.trail ??= [];
       for (const point of s.trail) point.age = (point.age || 0) + dt;
@@ -301,21 +303,32 @@ export const weaponMethods = {
         s.trailCd = Math.max(0, s.trailCd + 1 / 60);
       }
       s.trail = s.trail.filter(point => point.age < 0.12).slice(-8);
-      s.x += s.vx * dt; s.y += s.vy * dt; s.life -= dt;
+      const startX = s.x, startY = s.y, activeDt = Math.min(dt, s.life);
+      const dx = s.vx * activeDt, dy = s.vy * activeDt, length2 = dx * dx + dy * dy;
+      s.x += dx; s.y += dy; s.life -= dt;
       s.emberCd = (s.emberCd || 0) - dt;
       if (s.kind === 'chispa' && s.emberCd <= 0) {
         s.emberCd = 0.035;
         this.particle({x: s.x, y: s.y, vx: -s.vx * 0.06 + rand(-12, 12), vy: -s.vy * 0.06 + rand(-12, 12), life: 0.22, size: 2, color: (ATTACK_PALETTE[s.tone] || ATTACK_PALETTE.ember).edge, glow: true});
       }
-      for (const e of this.queryGrid(s.x, s.y, 36)) {
+      // Se barre todo el recorrido: una chispa rápida no salta sobre una criatura
+      // a pocos FPS. Los contactos se resuelven en el orden real del disparo.
+      const contacts = [];
+      for (const e of this.queryGrid(startX + dx / 2, startY + dy / 2, 48 + Math.sqrt(length2) / 2)) {
         if (e.hp <= 0 || e.dissolve || s.hit.has(e.id)) continue;
-        const rr = e.r + s.r;
-        if ((e.x - s.x) ** 2 + (e.y - 4 - s.y) ** 2 < rr * rr) {
-          s.hit.add(e.id);
-          this.hurt(e, s.dmg, {knock: s.knock, from: {x: s.x - s.vx * 0.05, y: s.y - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
-          if (s.kind === 'chispa' && Math.random() < 0.3) this.ambient.decal('scorch', e.x, e.y + e.r * 0.6 + 4, 8);
-          if (--s.pierce <= 0) { s.life = 0; break; }
-        }
+        const ox = startX - e.x, oy = startY - (e.y - 4), rr = e.r + s.r;
+        const c = ox * ox + oy * oy - rr * rr, b = ox * dx + oy * dy;
+        const discriminant = b * b - length2 * c;
+        const at = c <= 0 ? 0 : length2 > 0 && discriminant >= 0 ? (-b - Math.sqrt(discriminant)) / length2 : -1;
+        if (at >= 0 && at <= 1) contacts.push({e, at});
+      }
+      contacts.sort((a, b) => a.at - b.at);
+      for (const {e, at} of contacts) {
+        if (e.hp <= 0 || e.dissolve) continue;
+        s.hit.add(e.id);
+        this.hurt(e, s.dmg, {knock: s.knock, from: {x: startX + dx * at - s.vx * 0.05, y: startY + dy * at - s.vy * 0.05}, fx: s.tone || (s.kind === 'sal' ? 'salt' : 'ember')});
+        if (s.kind === 'chispa' && Math.random() < 0.3) this.ambient.decal('scorch', e.x, e.y + e.r * 0.6 + 4, 8);
+        if (--s.pierce <= 0) { s.life = 0; break; }
       }
     }
     this.shots = this.shots.filter(s => s.life > 0);

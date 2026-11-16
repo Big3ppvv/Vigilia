@@ -5,7 +5,7 @@
  * ánimas y a las cuatro la luz alcanza menos.
  */
 import { TAU, rand, lerp, pick, clamp } from './util.js';
-import { NIGHT, HOUR, MAX_ENEMIES, ACTS, ELITE_PLAN, ELITE, ENEMIES, ROADS, COFFIN, WORLD, SCALING, PROCESSION } from './balance.js';
+import { NIGHT, HOUR, MAX_ENEMIES, ACTS, ELITE_PLAN, ELITE, ENEMIES, ROADS, COFFIN, WORLD, SCALING, PROCESSION, PACE } from './balance.js';
 import { HOURS, ELITES, VIGIL_TEXT } from './story.js';
 
 export const directorMethods = {
@@ -74,9 +74,9 @@ export const directorMethods = {
       for (const e of this.enemies) if (!e.dissolve && !e.summoned && !e.proc) alive++;
       const deficit = this.targetPopulation() - alive;
       if (deficit > 0) {
-        const count = Math.min(4, Math.ceil(deficit / 12));
+        const count = Math.min(PACE.spawnBatch, Math.ceil(deficit / PACE.spawnDeficit));
         for (let i = 0; i < count; i++) if (!this.spawn()) break;
-        this.t.spawn = deficit > 30 ? 0.18 : 0.42;
+        this.t.spawn = deficit > 30 ? PACE.refillFast : PACE.refillNormal;
       } else this.t.spawn = 0.5;
     }
     if (act.processions && !boss) {
@@ -89,7 +89,11 @@ export const directorMethods = {
       }
     }
     this.t.swarm -= dt;
-    if (this.t.swarm <= 0 && !boss) { this.t.swarm = rand(45, 65); this.spawnSwarm(5 + Math.floor(Math.random() * 4)); }
+    if (this.t.swarm <= 0 && !boss) {
+      this.t.swarm = rand(...PACE.swarmDelay);
+      const [min, max] = PACE.swarmSize;
+      this.spawnSwarm(min + Math.floor(Math.random() * (max - min + 1)));
+    }
     const plan = ELITE_PLAN[this.elitesDone];
     if (plan && this.time >= plan.at && !boss) { this.elitesDone++; this.spawnElite(plan); }
     if (act.tide && !boss) {
@@ -146,7 +150,7 @@ export const directorMethods = {
     e.hp = e.maxHp = e.maxHp * ELITE.hp;
     e.damage *= ELITE.damage; e.speed *= ELITE.speed;
     e.r = ENEMIES[plan.type].r * 1.35; e.size = ELITE.size; e.value = ELITE.light;
-    if (road) { e.proc = true; e.heading = Math.atan2(-road.dy, -road.dx); e.speed = 46 * SCALING.speed(this.time); }
+    if (road) { e.proc = true; e.heading = Math.atan2(-road.dy, -road.dx); e.speed = PROCESSION.speed * 1.15 * SCALING.speed(this.time); }
     if (plan.id === 'peto') {
       // El ánima del peto no viene sola.
       for (let i = 0; i < 6; i++) this.spawn('anima', {x: e.x + Math.cos(i / 6 * TAU) * 46, y: e.y + Math.sin(i / 6 * TAU) * 46});
