@@ -60,6 +60,9 @@ export const ritualMethods = {
       this.wards.push({x: p.x, y: p.y, r: config.radius, life: config.wardLife, total: config.wardLife, tick: config.wardTick});
     } else p.hp = Math.min(this.st.maxHp, p.hp + this.st.maxHp * config.healing);
     this.rings.push({x: p.x, y: p.y - 4, r: 12, max: config.radius, life: 0.65, total: 0.65, color, width: 3, light: config.radius});
+    this.combatFx.emit('surge', p.x, p.y - 4, {
+      radius: config.radius, tone: this.character === 'julian' ? 'salt' : this.character === 'lucia' ? 'ember' : 'sacred'
+    });
     for (let i = 0; i < 24; i++) {
       const angle = i / 24 * TAU;
       this.particle({x: p.x, y: p.y - 8, vx: Math.cos(angle) * rand(110, 220), vy: Math.sin(angle) * rand(110, 220), life: rand(0.3, 0.65), size: 2, color, glow: true});
@@ -122,6 +125,7 @@ export const ritualMethods = {
     this.player.hp = Math.min(this.st.maxHp, this.player.hp + this.st.maxHp * 0.16);
     this.xp += Math.ceil(this.xpNext * 0.65);
     this.abilityCd *= this.abilityMax() / oldMax;
+    this.combatFx.emit('surge', site.x, site.y - 12, {radius: 155, tone: 'ember'});
     this.rings.push({x: site.x, y: site.y, r: 8, max: 155, life: 1, total: 1, color: '#ffb04a', width: 3, light: 190});
     for (let i = 0; i < 20; i++) this.particle({x: site.x + rand(-10, 10), y: site.y - 20, vx: rand(-65, 65), vy: rand(-100, -30), life: rand(0.5, 1), size: 2, color: '#ffe2a0', glow: true});
     this.audio.sfx('ritual');

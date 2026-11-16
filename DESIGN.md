@@ -38,6 +38,8 @@ components:
 
 Una vela en un camposanto junto al mar durante la Noche de Difuntos. El fuego, la sal gruesa, el nácar del rosario y el bronce de la campana son materiales concretos; la magia nace de ellos. Los protagonistas y las criaturas conservan su silueta de pixel art.
 
+El combate tiene un pulso frenético: ráfagas de fuego y sal, estrellas de contacto, ondas concéntricas y estelas de esquiva. Los fogonazos se concentran donde ocurre la acción y caducan deprisa para poder leer la siguiente amenaza.
+
 ### Product context and register
 
 Juego de supervivencia de diez minutos para navegador, sin dependencias ni recursos externos necesarios para jugar. El contenido y los controles están en español; la ambientación no implica un mercado exclusivo. La fuente de producto es `README.md`, `la-ultima-vigilia/README.md` y `la-ultima-vigilia/story.js`.
@@ -82,6 +84,8 @@ Los sprites, las partículas, las huellas y el suelo mantienen bordes de píxel.
 
 Un ataque comunica salida, recorrido y contacto con su propia forma y una duración breve. Las luces y partículas tienen límites de cantidad y se eliminan al terminar. Los efectos visuales no crean daño ni alteran colisiones. `ritual.js` es el único responsable del daño de las habilidades y del progreso de los faroles; `scene-fx.js` solo los representa.
 
+`combat-fx.js` comparte los fogonazos de armas, bajas, esquivas y habilidades: como máximo 96 efectos y 24 luces transitorias. Usa la misma `ATTACK_PALETTE` y halos preparados una vez. El modo sin destellos suprime las ráfagas decorativas nuevas y conserva las señales necesarias para jugar. `PACE` en `balance.js` gobierna velocidad, cadencia, recarga de esquiva, proyectiles y reposición de hordas; `memories.js`, `weapons.js` y `director.js` consumen esos valores. El reloj sigue durando diez minutos y los avisos de ataques mantienen su tiempo de reacción.
+
 ### Lighting
 
 `Lighting` comparte perfil y transformación entre la apertura en la oscuridad y el halo aditivo. Los perfiles de color se construyen una vez; los fotogramas reutilizan esos lienzos. Las luces fuera de cámara se omiten.
@@ -100,7 +104,7 @@ El orballo, las hojas, las polillas de los cirios y las huellas del suelo (sal, 
 
 ### Motion and accessibility
 
-Se respetan los ajustes de temblor, destellos y orballo, y la preferencia de movimiento reducido que los inicializa desactivados. El combate conserva núcleos y recorridos legibles cuando se reduce su énfasis luminoso. Las criaturas se animan con pocos fotogramas y sin parpadeos de pantalla. Evitar grandes blancos de pantalla o halos persistentes que oculten criaturas.
+Se respetan los ajustes de temblor, destellos y orballo, y la preferencia de movimiento reducido que los inicializa desactivados. El combate conserva núcleos y recorridos legibles cuando se reduce su énfasis luminoso; las siluetas múltiples de esquiva solo aparecen con destellos activados. Las criaturas se animan con pocos fotogramas y sin parpadeos de pantalla. Las ráfagas de combate son locales: evitar grandes blancos de pantalla o halos persistentes que oculten criaturas.
 
 ## Do's and Don'ts
 

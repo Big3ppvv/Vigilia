@@ -28,6 +28,8 @@ Tres faroles opcionales abren otra forma de afrontar la noche. Detente junto a u
 
 Las señales de ataque, los reflejos del suelo mojado, las huellas y las luces conservan el dibujo de píxel del camposanto. La mezcla permite ajustar por separado música, ambiente y efectos; la nana responde al peligro y cada habilidad tiene su propio sonido.
 
+El combate acelera el paso: movimiento un 22 % más rápido, ataques un 39 % más frecuentes, esquivas cada 3,2 segundos y hordas más densas. Los disparos, las bajas y las habilidades dejan fogonazos locales, chispas y ondas de luz. Los ajustes de destellos y movimiento reducido permiten atenuarlos.
+
 ![Cerco de sal, faroles y minimapa durante la vigilia](la-ultima-vigilia/docs/rituales.jpg)
 
 ## Desarrollar

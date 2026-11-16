@@ -47,7 +47,9 @@ try {
       const damage = weapon === 'sal' ? 12 : 20;
       check(count === (weapon === 'sal' ? 3 : 1), 'Cambió la cantidad de proyectiles iniciales');
       check(g.shots.every(shot => shot.dmg === damage), 'Cambió el daño del arma');
-      check(g.t[weapon] === (weapon === 'sal' ? 0.95 : 0.62), 'Cambió la cadencia inicial');
+      const oldCooldown = weapon === 'sal' ? 0.95 : 0.62;
+      check(g.t[weapon] === oldCooldown * g.st.cadence, 'La cadencia del arma no respeta las estadísticas');
+      check(g.t[weapon] < oldCooldown, 'El combate no dispara más deprisa que la cadencia anterior');
       check(g.combatFx.effects.length > 0, 'El disparo no genera efecto de salida');
       if (weapon === 'chispas') {
         check(g.shots.every(shot => shot.tone === (character === 'matilde' ? 'sacred' : 'ember')), 'Se perdió la identidad de la chispa');
@@ -70,6 +72,45 @@ try {
       g.weapons(0);
       for (let frame = 0; frame < 40; frame++) g.updateShots(1 / 120);
       check(quietTarget.maxHp - quietTarget.hp === dealt, 'Desactivar efectos cambia el daño de combate');
+
+      // Un fotograma largo no puede hacer que una chispa rápida atraviese una
+      // criatura. La primera colisión se decide por recorrido, no por el orden
+      // de inserción ni por el sentido en que se recorren las celdas del índice.
+      const sweep = (flashes, pierce) => {
+        g.reset(); g.state = 'running';
+        g.setOptions({flashes, shake: false});
+        g.st.crit = 0; g.st.damage = 1;
+        const at = (x, y = 104) => {
+          const enemy = g.spawn('hermano', {x, y});
+          enemy.hp = enemy.maxHp = 10000;
+          return enemy;
+        };
+        const far = at(154), middle = at(172), near = at(190), miss = at(220, 164);
+        const shot = {kind: 'chispa', x: 300, y: 100, vx: -6000, vy: 0, a: Math.PI,
+          life: 1, total: 1, trail: [], tone: 'ember', r: 2, dmg: 20,
+          pierce, knock: 0, hit: new Set()};
+        g.shots = [shot]; g.buildGrid();
+        g.updateShots(0.05);
+        const hits = [near, middle, far, miss].map(enemy => enemy.maxHp - enemy.hp);
+        check(hits[0] === 20, 'Un proyectil rápido salta la primera criatura del recorrido');
+        check(hits[1] === (pierce > 1 ? 20 : 0) && hits[2] === 0,
+          'La perforación no consume los contactos del más cercano al más lejano');
+        check(hits[3] === 0, 'El barrido alcanza a una criatura fuera de su trayectoria');
+        check(shot.hit.size === pierce && g.shots.length === 0, 'La perforación no termina al agotar sus contactos');
+        return hits;
+      };
+      for (const pierce of [1, 2]) {
+        const bright = sweep(true, pierce), quiet = sweep(false, pierce);
+        check(JSON.stringify(bright) === JSON.stringify(quiet), 'Los destellos alteran la colisión de un proyectil rápido');
+      }
+
+      const criticalTarget = prepare(weapon);
+      g.st.crit = 1;
+      g.hurt(criticalTarget, 10, {knock: 0, fx: 'ember'});
+      check(g.freeze === 0 && criticalTarget.maxHp - criticalTarget.hp === 20,
+        'Un crítico ordinario vuelve a detener el combate o pierde su daño doble');
+      check(g.combatFx.effects.some(effect => effect.kind === 'impact' && effect.radius === 28),
+        'El crítico pierde su respuesta visual al quitar la pausa');
 
       // Todas las mejoras juntas: el coste debe seguir acotado en una horda.
       prepare('chispas');
@@ -103,6 +144,25 @@ try {
         check(g.shots.every(shot => Number.isFinite(shot.x + shot.y) && shot.trail.length <= 8), 'Proyectil o estela inválidos');
         if (frame % 120 === 0) g.render();
       }
+
+      // Esquivas, bajas y habilidades comparten presupuesto y ciclo de vida.
+      g.combatFx.clear();
+      const newKinds = ['dash', 'death', 'surge'];
+      for (const kind of newKinds) g.combatFx.emit(kind, g.player.x, g.player.y, {radius: 70, tone: 'ember'});
+      for (const kind of newKinds) check(g.combatFx.effects.some(effect => effect.kind === kind), `Falta el efecto ${kind}`);
+      const quietLights = [];
+      g.combatFx.addLights(quietLights, 0, 0, false);
+      check(quietLights.length === 0, 'Los nuevos efectos iluminan con destellos desactivados');
+      for (let i = 0; i < 600; i++) g.combatFx.emit(newKinds[i % newKinds.length], g.player.x + i % 20, g.player.y, {radius: 70, tone: 'sacred'});
+      const surgeLights = [];
+      g.combatFx.addLights(surgeLights, 0, 0, true);
+      check(g.combatFx.effects.length <= 96 && surgeLights.length <= 24, 'Las nuevas ráfagas superan el presupuesto');
+      g.render();
+      g.updateFx(10);
+      check(g.combatFx.effects.length === 0, 'Las nuevas ráfagas no caducan');
+      for (const kind of newKinds) g.combatFx.emit(kind, g.player.x, g.player.y);
+      g.reset();
+      check(g.combatFx.effects.length === 0, 'La esquiva, la baja o la habilidad pasan a otra noche');
 
       // Desactivar destellos quita luces transitorias, conservando geometría.
       g.combatFx.clear();
