@@ -61,3 +61,9 @@ jobs:
 
       - name: Comprobar combate, efectos y movimiento reducido sin conexión
         run: node la-ultima-vigilia/tools/combat-vfx.mjs
+
+      - name: Comprobar las reglas del velatorio
+        run: node la-ultima-vigilia/tools/vigil-check.mjs
+
+      - name: Comprobar que el sonido no falla ni satura
+        run: node la-ultima-vigilia/tools/audio-check.mjs
