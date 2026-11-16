@@ -49,8 +49,8 @@ La interfaz recibe `getSnapshot()` mediante `onStats` y eventos como `onState`, 
 - **Reloj y pausa:** las recargas, la canalización y los efectos de reglas avanzan con la simulación. La pausa no permite completar un farol ni recargar una habilidad.
 - **Reinicio:** `reset()` limpia entidades, proyectiles, efectos de combate, índice espacial, estado del bot, habilidades y faroles. Los efectos de escena reconocen el nuevo jugador y descartan sus huellas anteriores.
 - **Interfaz:** `getSnapshot()` publica `ability` y `ritual`. Los estados de disponibilidad y progreso proceden de ese snapshot; los textos de las habilidades pertenecen a `story.js`.
-- **Sonido:** `setVolume()` controla el nivel general; `setMix({music, ambience, effects})` usa valores entre 0 y 1. Cada bus incluye su reverberación, por lo que silenciarlo elimina también su cola acústica.
-- **Persistencia:** se conserva el prefijo `vigilia2.` para mantener las noches anteriores. `storage.js` tolera almacenamiento inaccesible y valida los ajustes antes de aplicarlos.
+- **Sonido:** `setVolume()` controla el nivel general; `setMix({music, amb, sfx})` usa valores entre 0 y 1. La integración conserva el mezclador reciente de main y su limitador de salida.
+- **Persistencia:** se conserva el prefijo `vigilia2.` para mantener las noches anteriores. `app.js` tolera almacenamiento inaccesible y conserva los ajustes y registros existentes.
 - **Accesibilidad:** los controles son botones nativos; las capas de partida aíslan el fondo y contienen el foco. Las opciones de destellos y temblor reducen efectos sin cambiar daño ni colisiones.
 
 La paleta de interfaz reside en `style.css`, la de ataques en `ATTACK_PALETTE` de `art.js` y la ambiental en `SCENE_PALETTE` de `scene-fx.js`. [DESIGN.md](DESIGN.md) documenta esa identidad y su correspondencia con el código.
@@ -68,19 +68,18 @@ Los límites controlan acumulación y limpieza; no son una promesa de rendimient
 | Huellas | 48, con caducidad | `scene-fx.js` |
 | Hojas dibujadas | 36 por fotograma | `scene-fx.js` |
 | Reflejos de charcos | 28 por fotograma | `scene-fx.js` |
-| Grupos transitorios de audio | 128 | `audio.js`, limpieza en `audio-synth.js` |
 
 Los gradientes de combate se reutilizan. El escenario obtiene hojas y charcos a partir de coordenadas y semillas, y omite elementos fuera de vista. Las fuentes sonoras terminadas se desconectan.
 
 ## Ampliar sin concentrar todo en un archivo
 
-**Otra criatura:** añade sus números a `ENEMIES` en `balance.js`, su texto a `CREATURES` en `story.js` y su silueta en `sprites.js`. Implementa su comportamiento en `enemies.js`; cualquier ataque nuevo debe tener un aviso visible previo y respetar los límites de población. Si necesita sonido, emite un evento que resuelva `audio-cues.js`.
+**Otra criatura:** añade sus números a `ENEMIES` en `balance.js`, su texto a `CREATURES` en `story.js` y su silueta en `sprites.js`. Implementa su comportamiento en `enemies.js`; cualquier ataque nuevo debe tener un aviso visible previo y respetar los límites de población. Si necesita sonido, añade su receta a `sfx.js`.
 
 **Una habilidad o un farol:** separa texto (`story.js`), números y posiciones (`balance.js`), reglas (`ritual.js`) y dibujo (`scene-fx.js`). La interfaz consume el snapshot existente. Comprueba estados inválidos, recarga, reinicio y que una recompensa no pueda concederse dos veces.
 
 **Un efecto:** usa `combat-fx.js` para salida, recorrido o contacto de armas; usa `scene-fx.js` para elementos del escenario y señales de objetivos. Dale una caducidad o un límite explícito. Suprimir destellos debe conservar la información necesaria para jugar.
 
-**Un sonido:** añade la señal en `audio-cues.js` y reutiliza las primitivas de `audio-synth.js`. Elige el bus por su función: música, ambiente o efectos. Evita crear nodos continuos por fotograma y comprueba mezcla, amplitud y limpieza con `tools/audio.mjs`.
+**Un sonido:** añade la señal en `sfx.js` y reutiliza las primitivas de `audio.js`. Las recetas de habilidades y faroles se resuelven en `audio-cues.js`. Elige el bus por su función: música, ambiente o efectos. Evita crear nodos continuos por fotograma y comprueba mezcla, amplitud y limpieza con `tools/audio.mjs`.
 
 El empaquetador admite importaciones nombradas locales en una línea y exportaciones de `const`, `let`, `function` o `class`; no resuelve importaciones circulares, paquetes externos ni alias. Conserva ese formato al añadir módulos o amplía el empaquetador con una comprobación equivalente.
 

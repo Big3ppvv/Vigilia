@@ -34,6 +34,6 @@ La disponibilidad de habilidad y esquiva se comunica con texto de recarga y boto
 
 ## Sonido, persistencia y movimiento
 
-La mezcla conserva volumen general, música, ambiente y efectos en el navegador. Silenciar una categoría incluye su reverberación. El juego continúa sin Web Audio, sin red o sin almacenamiento disponible. Los datos `vigilia2.` siguen siendo compatibles.
+La mezcla conserva volumen general, música, ambiente y efectos en el navegador. La integración mantiene el mezclador y el limitador de audio recientes de main. El juego continúa sin Web Audio, sin red o sin almacenamiento disponible. Los datos `vigilia2.` siguen siendo compatibles.
 
 La preferencia de movimiento reducido desactiva por defecto temblor y destellos. Reducir efectos conserva daño, colisiones, información de ataques, controles y progreso. Los paneles pueden desplazarse y los controles respetan las áreas seguras del dispositivo.
