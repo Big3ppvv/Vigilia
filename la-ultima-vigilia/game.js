@@ -10,7 +10,7 @@ import { Cemetery } from './world.js';
 import { AudioEngine } from './audio.js';
 import { CombatEffects } from './combat-fx.js';
 import { Ambient } from './ambient.js';
-import { CHARACTERS, MEMORIES, BARKS, AMPARO, HOURS } from './story.js';
+import { CHARACTERS, MEMORIES, BARKS, AMPARO, HOURS, VIGIL_TEXT } from './story.js';
 import { inputMethods } from './input.js';
 import { directorMethods } from './director.js';
 import { weaponMethods } from './weapons.js';
@@ -160,7 +160,7 @@ export class VigilGame {
     // Un fallo en un fotograma no puede dejar la noche congelada: se anota y se sigue.
     try { for (let i = 0; i < steps; i++) this.step(dt); } catch (err) { console.error(err); }
     try { this.render(dt); } catch (err) { console.error(err); }
-    this.audio.update(dt, this.audioState());
+    try { this.audio.update(dt, this.audioState()); } catch (err) { console.error(err); }
     this.raf = requestAnimationFrame(this.frame);
   }
 
@@ -196,7 +196,7 @@ export class VigilGame {
     if (!this.boss && this.time >= BOSS_AT) this.spawnBoss();
     if (this.phase === 'stopped' && this.stoppedFor > 75 && !this.dawnBreaks) {
       this.dawnBreaks = true;
-      this.banner('La luz se abre paso', 'La Guía se debilita');
+      this.banner(VIGIL_TEXT.dawnBreaks[0], VIGIL_TEXT.dawnBreaks[1]);
     }
 
     // Quien vela
@@ -276,7 +276,10 @@ export class VigilGame {
     this.phase = 'dawn';
     this.dawnT = 0;
     for (const e of this.enemies) if (e.hp > 0 && !e.dissolve) { e.dissolve = true; e.dissolveT = rand(0.3, 1.8); }
-    this.enemyShots = []; this.hazards = []; this.marks = [];
+    this.enemyShots = []; this.hazards = []; this.marks = []; this.pools = [];
+    // Amanece con los cuatro cirios ardiendo.
+    for (const c of this.cirios) this.lightCirio(c, true, false);
+    this.soul = 0;
     this.audio.sfx('hora', {count: 6, gap: 1.6});
     this.audio.sfx('alba');
     this.banner(HOURS[6].name, HOURS[6].mood, 'dawn');
@@ -368,7 +371,7 @@ export class VigilGame {
     const hourIdx = Math.min(6, Math.floor(this.time / HOUR));
     return {
       state: this.state, phase: this.phase, time: this.time, clock: fmtClock(this.time), hour: hourIdx,
-      mood: this.phase === 'stopped' ? 'El reloj se ha parado' : this.phase === 'rush' ? 'Clarea' : HOURS[hourIdx].mood,
+      mood: this.phase === 'stopped' ? VIGIL_TEXT.stoppedMood : this.phase === 'rush' ? VIGIL_TEXT.rushMood : HOURS[hourIdx].mood,
       kills: this.kills, level: this.level, xp: this.xp, xpNext: this.xpNext,
       hp: this.player.hp, maxHp: this.st.maxHp, dashCd: this.dashCd, dashMax: this.st.dashCd,
       character: this.character, mem: {...this.mem}, order: [...this.order],

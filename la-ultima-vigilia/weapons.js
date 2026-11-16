@@ -5,7 +5,7 @@
 import { TAU, clamp, rand, pick, lerp } from './util.js';
 import { ENEMIES, ACTS, HOUR, VIGIL, LIGHTHOUSE } from './balance.js';
 import { ATTACK_PALETTE } from './art.js';
-import { AMPARO, BARKS } from './story.js';
+import { AMPARO, BARKS, VIGIL_TEXT } from './story.js';
 
 export const weaponMethods = {
   attackPose(kind, a) {
@@ -243,6 +243,7 @@ export const weaponMethods = {
       this.freeze = Math.max(this.freeze, 0.09);
       if (this.options.shake) this.shake = Math.max(this.shake, 6);
       this.audio.sfx('difuntoCae');
+      this.banner(VIGIL_TEXT.card[0], VIGIL_TEXT.card[1], 'room');
     } else if (!e.summoned || Math.random() < 0.5) this.dropGem(e.x, e.y, e.value);
     const cafe = 0.028 * (this.rooms.has('cocina') ? 2 : 1);
     if (Math.random() < cafe && this.player.hp < this.st.maxHp * 0.85) this.gems.push({x: e.x + 8, y: e.y - 4, cafe: true, v: 0, magnet: false, bob: Math.random() * 6});

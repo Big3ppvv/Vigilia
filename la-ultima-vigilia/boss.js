@@ -40,7 +40,7 @@ export const bossMethods = {
     if (cirio && !e.lulled) {
       e.snuffing = cirio;
       cirio.snuffing = true;
-      cirio.snuff += dt / (e.hp < e.maxHp * 0.5 ? VIGIL.bossSnuffRage : VIGIL.bossSnuff);
+      cirio.snuff += dt / this.snuffTime(e.hp < e.maxHp * 0.5 ? VIGIL.bossSnuffRage : VIGIL.bossSnuff);
       if (Math.random() < dt * 20) {
         const k = Math.random();
         this.particle({x: e.x + (cirio.x - e.x) * k, y: e.y - 30 + (cirio.y - 58 - e.y + 30) * k, vx: rand(-10, 10), vy: rand(-20, 0), life: 0.4, size: 2, color: '#9fb4d8', glow: true});
@@ -118,7 +118,7 @@ export const bossMethods = {
     this.soul = 0;
     for (const o of this.enemies) if (o !== e && o.hp > 0) { o.dissolve = true; o.dissolveT = rand(0.6, 2.4); }
     // Con la Guía libre, los cirios vuelven a arder solos.
-    this.cirios.forEach((c, i) => this.later(0.4 + i * 0.35, () => this.lightCirio(c)));
+    this.cirios.forEach((c, i) => this.later(0.4 + i * 0.35, () => this.lightCirio(c, false, false)));
     this.pools = [];
     this.marks = [];
     this.enemyShots = [];

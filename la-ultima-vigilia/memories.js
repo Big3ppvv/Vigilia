@@ -72,7 +72,7 @@ export const memoryMethods = {
   },
 
   dropGem(x, y, v) {
-    if (this.gems.length > 360) {
+    if (this.gems.length > 240) {
       const g = this.gems[Math.floor(Math.random() * this.gems.length)];
       if (!g.cafe && !g.card) { g.v += v; return; }
     }

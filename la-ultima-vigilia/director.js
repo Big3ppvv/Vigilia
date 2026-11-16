@@ -54,7 +54,7 @@ export const directorMethods = {
     this.time = NIGHT - 1;
     this.stoppedFor = 0;
     this.audio.sfx('reloj');
-    this.banner('05:59', 'El reloj de la torre se ha parado');
+    this.banner(VIGIL_TEXT.stopped[0], VIGIL_TEXT.stopped[1]);
     this.bark('stopped', {priority: 3, delay: 0.8});
   },
 

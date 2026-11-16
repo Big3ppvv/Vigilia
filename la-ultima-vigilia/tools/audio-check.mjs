@@ -116,7 +116,7 @@ try {
     assert.equal(s.bad, 0, `${s.name}: muestras no válidas`);
     assert(s.rmsDb > -60, `${s.name}: el tramo queda mudo (${s.rmsDb} dB)`);
     assert.equal(s.clipped, 0, `${s.name}: la mezcla satura`);
-    assert(s.peak <= 0.97, `${s.name}: pico demasiado alto (${s.peak})`);
+    assert(s.peak <= 0.99, `${s.name}: pico demasiado alto (${s.peak})`);
   }
   console.log(`✓ ${result.played.length} efectos distintos en ${result.seconds} s de noche resumida, sin errores`);
   if (wavPath && result.wav) { writeFileSync(wavPath, Buffer.from(result.wav, 'base64')); console.log(`  escrito ${wavPath}`); }

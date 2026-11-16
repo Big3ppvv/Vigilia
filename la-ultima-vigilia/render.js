@@ -5,7 +5,7 @@ import { TAU, clamp, rand, lerp } from './util.js';
 import { NIGHT, COFFIN, ENEMIES, WORLD, LIGHTHOUSE } from './balance.js';
 import { drawSprite, drawShadow, sprite } from './art.js';
 import { drawFlames, drawFog } from './world.js';
-import { ELITES, VIGIL_TEXT } from './story.js';
+import { ELITES, VIGIL_TEXT, BOSS } from './story.js';
 
 const STEPS = [undefined, 'step1', undefined, 'step2'];
 const RUN = ['run1', undefined, 'run2', undefined];
@@ -453,7 +453,8 @@ export const renderMethods = {
     for (const e of this.enemies) {
       if (!e.elite || e.hp <= 0 || e.dissolve) continue;
       const x = clamp(Math.round(e.x - camX), 70, this.width - 70), y = Math.max(34, Math.round(e.y - camY - e.r * 2.6 - 26)), k = clamp(e.hp / e.maxHp, 0, 1);
-      if (e.x - camX < -60 || e.x - camX > this.width + 60 || e.y - camY < -60 || e.y - camY > this.height + 80) continue;
+      // Fuera de la vista ya lo señala su flecha.
+      if (e.x - camX < 30 || e.x - camX > this.width - 30 || e.y - camY < 30 || e.y - camY > this.height - 30) continue;
       ctx.font = `600 ${Math.round(13 / (this.zoom || 1) + 2)}px Alegreya, Georgia, serif`; ctx.textAlign = 'center';
       ctx.fillStyle = 'rgba(7,8,12,.85)'; ctx.fillText(ELITES[e.elite].name, x + 1, y + 1);
       ctx.fillStyle = '#ffe2c8'; ctx.fillText(ELITES[e.elite].name, x, y);
@@ -517,8 +518,8 @@ export const renderMethods = {
       ctx.restore();
     };
     const lit = this.litCount(), blink = 0.75 + 0.25 * Math.sin(this.clock * 9);
-    arrow(COFFIN.x, COFFIN.y, lit === 4 ? 'rgba(255,213,154,.85)' : lit > 0 ? 'rgba(255,170,110,.95)' : `rgba(255,96,80,${blink})`, lit === 0 ? 'Amparo, a oscuras' : 'Amparo');
-    if (this.boss && this.boss.hp > 0) arrow(this.boss.x, this.boss.y, 'rgba(255,120,90,.95)', 'La Guía');
+    arrow(COFFIN.x, COFFIN.y, lit === 4 ? 'rgba(255,213,154,.85)' : lit > 0 ? 'rgba(255,170,110,.95)' : `rgba(255,96,80,${blink})`, lit === 0 ? VIGIL_TEXT.wakeDark : VIGIL_TEXT.wake);
+    if (this.boss && this.boss.hp > 0) arrow(this.boss.x, this.boss.y, 'rgba(255,120,90,.95)', BOSS.name);
     const head = this.boss ? null : this.processionHead();
     if (head && Math.hypot(head.x - COFFIN.x, head.y - COFFIN.y) < 1100) arrow(head.x, head.y, 'rgba(232,214,255,.9)', VIGIL_TEXT.procession);
     const elite = this.eliteAlive;

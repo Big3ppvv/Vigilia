@@ -133,7 +133,7 @@ export const enemyMethods = {
       e.blowing = c; e.flip = c.x < e.x;
       if (!e.lulled) {
         c.snuffing = true;
-        c.snuff += dt / (e.elite ? VIGIL.snuff * 0.5 : VIGIL.snuff);
+        c.snuff += dt / this.snuffTime(e.elite ? VIGIL.snuff * 0.5 : VIGIL.snuff);
         if (c.snuff >= 1) {
           this.snuffCirio(c);
           if (!e.elite) {

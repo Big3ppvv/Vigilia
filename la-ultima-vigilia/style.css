@@ -155,7 +155,7 @@ h1 {
 .wake i.half { animation: pulse .35s ease-in-out infinite alternate; background: var(--paper-dim); }
 .wake i.half::before { background: rgba(255, 176, 74, .55); }
 .wake.dark i { background: rgba(255, 110, 90, .55); animation: pulse .45s ease-in-out infinite alternate; }
-.night .soul { margin-top: 6px; }
+.night .soul { margin-top: 6px; white-space: nowrap; }
 .night .soul.danger { animation: pulse .5s ease-in-out infinite alternate; }
 .tally { justify-self: end; display: flex; align-items: center; gap: 14px; }
 .tally b { display: block; text-align: right; font-family: var(--serif); font-weight: 500; font-size: 26px; line-height: 1; font-variant-numeric: tabular-nums; }
@@ -438,6 +438,9 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
   .actions { gap: 8px; }
   .dash.lull span { display: none; }
   .wake { margin-top: 8px; gap: 7px; }
+  .night { min-width: 0; }
+  .night .soul { flex-direction: column; gap: 3px; font-size: 11px; }
+  .night .soul .bar { width: 104px; }
   .memories { max-width: 46vw; }
   .card .room small { font-size: 13px; }
   .hint { display: block; }
@@ -445,7 +448,8 @@ dialog::backdrop { background: rgba(3, 4, 6, .82); backdrop-filter: blur(3px); }
 
   .cards { grid-template-columns: 1fr; gap: 10px; }
   .card { display: grid; grid-template-columns: 48px 1fr; column-gap: 14px; text-align: left; align-items: start; padding: 16px 18px; outline-offset: -6px; }
-  .card canvas { grid-row: span 4; width: 48px; height: 48px; padding: 4px; margin: 2px 0 0; }
+  .card canvas { grid-row: span 5; width: 48px; height: 48px; padding: 4px; margin: 2px 0 0; }
+  .card > :not(canvas):not(kbd) { grid-column: 2; }
   .card h3 { font-size: 21px; margin: 2px 0 6px; }
   .card .memory { font-size: 15px; margin-bottom: 8px; }
   .card .effect { font-size: 14px; padding-top: 6px; }

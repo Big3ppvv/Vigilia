@@ -30,10 +30,10 @@ export const CHARACTERS = {
     role: 'La nieta',
     age: '34 años',
     blurb: 'Diez años sin volver al pueblo. Llegó en el último autobús, con la maleta y una culpa que no le cabe en ella.',
-    perk: 'Recuerda un 25 % más · Su luz llega más lejos: la linterna del móvil',
+    perk: 'Recuerda un 25 % más · Su luz y su arrullo llegan más lejos: la linterna del móvil',
     weapon: 'chispas',
     start: {chispas: 1},
-    hp: 100, speed: 128, light: 1.22, memory: 1.25, armor: 0, relight: 1,
+    hp: 100, speed: 128, light: 1.22, memory: 1.25, armor: 0, relight: 1, snuff: 1,
     victory: 'Lucía apagó el cirio con dos dedos, como le había enseñado ella. Esta vez no se fue en el primer autobús.',
     defeat: 'Lucía despertó con la cabeza apoyada en el ataúd y el móvil sin batería. No recordaba el final de la noche. Eso fue lo peor.'
   },
@@ -42,10 +42,10 @@ export const CHARACTERS = {
     role: 'El sepulturero',
     age: '79 años',
     blurb: 'Esta tarde cavó la fosa de Amparo y no dejó que nadie le ayudara. La sacó a bailar en las fiestas del cincuenta y cuatro.',
-    perk: 'Escopeta cargada con sal gruesa · Más aguante, menos prisa',
+    perk: 'Escopeta cargada con sal gruesa · Más aguante, menos prisa · Los cirios le duran el doble',
     weapon: 'sal',
     start: {sal: 1},
-    hp: 125, speed: 112, light: 1, memory: 1, armor: 0.1, relight: 1,
+    hp: 125, speed: 112, light: 1, memory: 1, armor: 0.1, relight: 1, snuff: 2,
     victory: 'Julián se sentó en el murete y encendió un cigarro. «Ya puedes regañarme», dijo. Nadie le regañó, y aun así lo apagó a la mitad.',
     defeat: 'Julián despertó en la silla, con el cigarro apagado entre los dedos. «Mañana otra vez», dijo. Y era verdad.'
   },
@@ -57,7 +57,7 @@ export const CHARACTERS = {
     perk: 'Empieza con el rosario de nácar · Enciende un cirio en la mitad de tiempo',
     weapon: 'chispas',
     start: {chispas: 1, rosario: 1},
-    hp: 90, speed: 116, light: 1, memory: 1, armor: 0, relight: 0.5,
+    hp: 90, speed: 116, light: 1, memory: 1, armor: 0, relight: 0.5, snuff: 1,
     victory: 'Matilde terminó el último misterio. Luego, por primera vez en sesenta años de velatorios, se quedó callada.',
     defeat: 'Matilde despertó con el rosario enredado en los dedos y la boca seca de rezar. Juró que la noche siguiente no se dormiría.'
   }
@@ -133,7 +133,7 @@ export const FALLBACK_CHOICES = [
     effect: 'Recuperas 35 de vida.',
     line: 'En los velatorios siempre hay un termo de café. Y alguien que pregunta si está recién hecho.'},
   {id: 'silencio', kind: 'consuelo', name: 'Un rato en silencio',
-    effect: 'Tu esquiva se recarga al instante.',
+    effect: 'Tu esquiva se recarga al instante y el arrullo vuelve antes.',
     line: 'Hay cosas que no hace falta decir en voz alta.'}
 ];
 
@@ -167,12 +167,33 @@ export const VIGIL_TEXT = {
   gust: ['Una racha de viento', 'Se apagan los cirios'],
   procession: 'La Compaña',
   firstProcession: ['La Compaña', 'Viene en procesión a apagar los cirios'],
-  card: ['Un recordatorio', 'Lo llevaba encima'],
+  card: ['Un recordatorio', 'Lo llevaba encima. Recógelo'],
   cardEyebrow: 'En el recordatorio, por detrás',
   levelEyebrow: 'Con la luz, vuelve algo',
   room: 'Vuelve entera',
   lullHint: 'Tararea la nana',
-  slots: 'En una noche caben cuatro armas y cinco recuerdos'
+  stopped: ['05:59', 'El reloj de la torre se ha parado'],
+  stoppedMood: 'El reloj se ha parado',
+  dawnBreaks: ['La luz se abre paso', 'La Guía se debilita'],
+  rushMood: 'Clarea',
+  wake: 'Amparo',
+  wakeDark: 'Amparo, a oscuras'
+};
+
+/*
+ * Lo que se lee al acabar la noche. {quien}, {difunta}, {recuerdos} y {hora}
+ * se rellenan solos.
+ */
+export const ENDINGS = {
+  dawnTitle: 'Amanece.',
+  dawn: '{difunta} se fue con la primera luz. Se llevó {recuerdos}.',
+  firstDawn: '{quien} ha visto amanecer. Carmela Souto, por fin, volvió a casa.',
+  laterDawn: 'Carmela Souto volvió a casa.',
+  tookTitle: 'Se la llevaron a las {hora}.',
+  outTitle: 'La vela se apagó a las {hora}.',
+  out: 'La Compaña pasó por delante del velatorio con una luz más.',
+  remembered: 'Esa noche recordó {recuerdos}.',
+  recordDawn: 'Amaneció'
 };
 
 export const CREATURES = {

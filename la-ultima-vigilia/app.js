@@ -1,6 +1,6 @@
 import { VigilGame } from './game.js';
 import { drawPortrait, drawSprite, sprite } from './art.js';
-import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP, ROOMS, ELITES, VIGIL_TEXT } from './story.js';
+import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP, ROOMS, ELITES, VIGIL_TEXT, ENDINGS } from './story.js';
 
 const $ = id => document.getElementById(id);
 const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
@@ -316,6 +316,9 @@ function list(items) {
   return `${items.slice(0, -1).join(', ')} y ${items.at(-1)}`;
 }
 
+/* Rellena {quien}, {hora}… en una frase de story.js. */
+const fill = (text, values) => text.replace(/\{(\w+)\}/g, (_, key) => values[key] ?? '');
+
 function remembered(result) {
   const owned = result.order.filter(id => MEMORY[id] && result.memories[id] > 0);
   return [...owned]
@@ -333,19 +336,19 @@ function onEnd(result) {
   memorial.classList.toggle('out', !result.victory);
   if (result.victory) {
     $('endEyebrow').textContent = `Noche ${n} · ${ch.name}`;
-    $('endTitle').textContent = 'Amanece.';
-    $('endText').textContent = `${WORLD.deceased} se fue con la primera luz. Se llevó ${list(frags)}. ${ch.victory}`;
+    $('endTitle').textContent = ENDINGS.dawnTitle;
+    $('endText').textContent = `${fill(ENDINGS.dawn, {difunta: WORLD.deceased, recuerdos: list(frags)})} ${ch.victory}`;
     $('endWords').textContent = AMPARO.dawn;
     const first = !found.dawns[result.character];
     found.dawns[result.character] = (found.dawns[result.character] || 0) + 1;
     if (result.freed) found.freed = (found.freed || 0) + 1;
-    $('loopLine').textContent = first ? `${ch.name} ha visto amanecer. Carmela Souto, por fin, volvió a casa.` : 'Carmela Souto volvió a casa.';
+    $('loopLine').textContent = first ? fill(ENDINGS.firstDawn, {quien: ch.name}) : ENDINGS.laterDawn;
   } else {
     $('endEyebrow').textContent = `Noche ${n} · ${ch.name}`;
-    $('endTitle').textContent = result.cause === 'took' ? `Se la llevaron a las ${result.clock}.` : `La vela se apagó a las ${result.clock}.`;
-    const opening = result.cause === 'took' ? BOSS.took : 'La Compaña pasó por delante del velatorio con una luz más.';
+    $('endTitle').textContent = fill(result.cause === 'took' ? ENDINGS.tookTitle : ENDINGS.outTitle, {hora: result.clock});
+    const opening = result.cause === 'took' ? BOSS.took : ENDINGS.out;
     $('endText').textContent = `${opening} ${ch.defeat}`;
-    $('endWords').textContent = frags.length ? `Esa noche recordó ${list(frags)}.` : '';
+    $('endWords').textContent = frags.length ? fill(ENDINGS.remembered, {recuerdos: list(frags)}) : '';
     $('loopLine').textContent = WORLD.loop;
   }
   $('endStats').innerHTML = '';
@@ -467,7 +470,7 @@ function renderRecords() {
     const n = document.createElement('b'); n.textContent = `Noche ${r.n}`;
     const who = document.createElement('span'); who.textContent = CHARACTERS[r.character]?.name || '—';
     const what = document.createElement('span');
-    what.textContent = r.victory ? 'Amaneció' : r.cause === 'took' ? `Se la llevaron a las ${r.clock}` : `La vela se apagó a las ${r.clock}`;
+    what.textContent = r.victory ? ENDINGS.recordDawn : fill(r.cause === 'took' ? ENDINGS.tookTitle : ENDINGS.outTitle, {hora: r.clock}).replace(/\.$/, '');
     if (r.victory) what.className = 'won';
     const meta = document.createElement('small');
     meta.textContent = `${r.kills} ahuyentados · ${r.memories} recuerdos${r.rooms?.length ? ` · ${r.rooms.length} ${r.rooms.length === 1 ? 'rincón' : 'rincones'}` : ''}`;

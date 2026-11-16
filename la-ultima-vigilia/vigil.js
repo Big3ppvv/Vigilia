@@ -15,6 +15,9 @@ export const vigilMethods = {
     this.flameDim = 1; this.relighting = null;
   },
 
+  /* Lo que tarda en apagarse un cirio: el sepulturero sabe despabilarlos para que aguanten. */
+  snuffTime(base) { return base * (CHARACTERS[this.character].snuff || 1); },
+
   litCount() {
     let n = 0;
     for (const c of this.cirios) if (c.lit) n++;
@@ -50,10 +53,11 @@ export const vigilMethods = {
     this.emitStats();
   },
 
-  lightCirio(c, quiet = false) {
+  /* quiet: sin sonido. byHand: lo enciende quien vela (cuenta para el recordatorio final). */
+  lightCirio(c, quiet = false, byHand = true) {
     if (c.lit) return;
     c.lit = true; c.relight = 0; c.snuff = 0; c.flare = 1;
-    this.relit++;
+    if (byHand) this.relit++;
     for (let i = 0; i < 10; i++) {
       const a = rand(0, TAU);
       this.particle({x: c.x, y: c.y - 60, vx: Math.cos(a) * rand(20, 80), vy: Math.sin(a) * rand(20, 80) - 30, life: rand(0.3, 0.6), size: 2, color: i % 3 ? '#ffd59a' : '#fff1bd', glow: true});
