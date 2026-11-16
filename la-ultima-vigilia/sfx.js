@@ -284,7 +284,7 @@ export const SFX = {
     a.tone(a.sfxBus, {f0: 220, f1: 55, dur: 1.6, vol: 0.18, attack: 0.02});
     a.noiseShot(a.out(a.sfxBus, 0, 0.6), {dur: 1.2, type: 'lowpass', f0: 800, f1: 90, vol: 0.12, attack: 0.01, when: t});
   },
-  alba(a) { a.nana({vol: 0.22, tempo: 0.95, dawn: true}); },
+  alba(a) { if (!a.soundtrack?.enabled) a.nana({vol: 0.22, tempo: 0.95, dawn: true}); },
 
   /* ---------- voces e interfaz ---------- */
   voz(a, o) {

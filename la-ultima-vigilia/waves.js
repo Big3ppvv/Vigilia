@@ -166,7 +166,7 @@ export const waveMethods = {
       const at = this.spawnPoint(300);
       this.addMark('elite', at.x, at.y, {delay: 1.6, id});
     }
-    this.banner(ELITES[id].name, ELITES[id].epitaph, 'elite');
+    this.banner(ELITES[id].name, ELITES[id].epitaph, 'elite', 'carta:e:' + id);
     this.audio.sfx('difunto');
     this.hooks.onDiscover?.({kind: 'elite', id});
   },
@@ -194,7 +194,7 @@ export const waveMethods = {
   spawnBoss() {
     const at = {x: 0, y: ARENA.top + 120};
     this.addMark('guia', at.x, at.y, {delay: 1.8});
-    this.banner(BOSS.name, BOSS.title, 'boss');
+    this.banner(BOSS.name, BOSS.title, 'boss', 'carta:c:guia');
     this.audio.sfx('guia');
   },
 

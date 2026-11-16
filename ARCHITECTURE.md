@@ -44,6 +44,7 @@ La interfaz recibe snapshots por hooks: `onStats` (HUD), `onLevelUp`, `onCrate`,
 | Efectos | `fx.js`, `combat-fx.js`, `ambient.js` | Partículas, números, fogonazos, estelas, golpes, orballo y huellas |
 | Sonido | `audio.js`, `sfx.js`, `sfx-rondas.js`, `music.js` | Mezcla, ambiente, efectos por nombre y la nana convertida en muiñeira durante las rondas |
 | Interfaz | `app.js`, `index.html`, `style.css`, `interface.js`, `storage.js` | Título, HUD, recuerdos, ofrendas, tienda, pausa, final, álbum, ajustes y progreso guardado |
+| Edición completa | `assets.js`, `soundtrack.js`, `tools/edicion/` | Cartas y banda sonora incrustadas: carga perezosa, música por escena con fundidos; sin recursos no hacen nada |
 
 ## Contratos que conviene conservar
 

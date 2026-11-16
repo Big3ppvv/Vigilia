@@ -65,6 +65,7 @@
     <p class="title-controls"><span>WASD / flechas <b>Moverte</b></span><span>Espacio <b>Esquivar</b></span><span>R <b>Habilidad</b></span><span>P <b>Pausa</b></span></p>
   </div>
   <p class="night-count" id="nightCount"></p>
+  <img class="cast-art hidden" id="castArt" alt="">
 </section>
 
 <div class="corner-tools">
@@ -106,7 +107,7 @@
     <div class="boss-name"><b id="bossName">La Guía</b><span id="bossTitle">Carmela Souto lleva la cruz desde 1963</span></div>
     <div class="meter boss-hp"><i class="ghost" id="bossGhost"></i><i class="fill" id="bossBar"></i></div>
   </div>
-  <div class="banner" id="banner" aria-live="polite"><b id="bannerTitle"></b><span id="bannerSub"></span></div>
+  <div class="banner" id="banner" aria-live="polite"><img class="banner-art hidden" id="bannerArt" alt=""><b id="bannerTitle"></b><span id="bannerSub"></span></div>
   <div class="subtitle" id="subtitle" aria-live="polite"><span class="speaker" id="subSpeaker"></span><span class="line" id="subLine"></span></div>
   <div class="hud-bottom">
     <div class="loadout" id="hudWeapons" aria-label="Armas"></div>
@@ -204,6 +205,7 @@
 
 <section id="end" class="screen overlay hidden" role="dialog" aria-labelledby="endTitle">
   <article class="memorial" id="memorial">
+    <img class="end-art hidden" id="endArt" alt="">
     <svg class="memorial-mark" aria-hidden="true"><use href="#i-cross"/></svg>
     <p class="eyebrow" id="endEyebrow"></p>
     <h2 id="endTitle"></h2>

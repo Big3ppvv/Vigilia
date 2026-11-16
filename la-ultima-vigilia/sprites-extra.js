@@ -259,7 +259,7 @@ export const EXTRA_SPRITES = {
     '..o00hhhhhh00o..',
     '..o0hhohhohh0o..',
     '..o0hhhhhhhh0o..',
-    '..o0Hhh^^hhH0o..',
+    '..o0HhhRRhhH0o..',
     '...o0hhhhhh0o...',
     '..o000000000vo..',
     '.o0000000000vvo.',

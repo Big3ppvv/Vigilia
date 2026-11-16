@@ -98,3 +98,16 @@ Parámetros de la URL:
 - `&round=9`: empieza en esa ronda.
 
 Por ejemplo, `la-ultima-vigilia.html?debug&autostart=1&bot=1&god=1&speed=12&char=matilde` vela una noche entera en poco más de un minuto.
+
+## Edición completa (local, no se sube)
+
+Una versión de unos 500 MB con 116 ilustraciones en PNG y 16 minutos de banda sonora en WAV sin pérdida, todo generado por código. Se construye en `edicion-completa/` (en `.gitignore`):
+
+| Herramienta | Qué hace |
+|---|---|
+| `tools/edicion/cartas.js`, `render-cartas.mjs` | Pinta las cartas (armas, objetos, criaturas, difuntos, personajes, Remedios) y tres escenas |
+| `tools/edicion/banda.js`, `render-banda.mjs` | Compone y renderiza sin conexión la música: título, una muiñeira por hora, la Guía, la tienda, el alba y el apagón |
+| `tools/edicion/build-edicion.mjs` | Incrusta todo en el HTML autónomo, por partes |
+| `tools/edicion/check-edicion.mjs` | Comprueba que abre, cuánta memoria usa, que cada escena suena con su pieza y que las cartas aparecen |
+
+En el juego, `assets.js` descodifica los recursos cuando hacen falta y `soundtrack.js` toca la pieza de cada escena con fundidos. Sin recursos incrustados no hacen nada: la edición normal sigue igual.

@@ -716,6 +716,21 @@ body[data-state="paused"] .subtitle, body[data-state="levelup"] .subtitle, body[
 #end.overlay { padding-top: 18px; }
 #end .memorial { padding-top: 24px; }
 #end .memorial h2 { margin-bottom: 10px; }
+
+/* ---------- edición completa: cartas ilustradas ---------- */
+.cast-art { position: fixed; right: 6vw; bottom: 9vh; width: min(290px, 22vw); border-radius: 6px; transform: rotate(2.5deg); box-shadow: 0 30px 80px rgba(0, 0, 0, .75), 0 0 0 1px rgba(255, 213, 154, .25); pointer-events: none; transition: transform .3s, opacity .3s; }
+.cast-art.locked { filter: grayscale(1) brightness(.45); }
+@media (max-width: 1000px) { .cast-art { display: none; } }
+.card .card-art { width: min(240px, 60vw); height: auto; aspect-ratio: 3 / 4; padding: 0; margin: 0 0 10px; border-radius: 4px; background: #07080c; box-shadow: 0 10px 26px rgba(0, 0, 0, .45), 0 0 0 2px var(--tier); }
+.offer-head .offer-art { width: 72px; height: 96px; object-fit: cover; border-radius: 4px; border: 1px solid var(--tier); background: #0b0b10; }
+.offer-head:has(.offer-art) { grid-template-columns: 72px 1fr; }
+img.keeper { width: 72px; height: 96px; object-fit: cover; border: 1px solid var(--line); border-radius: 4px; }
+.banner .banner-art { display: block; width: 132px; margin: 0 auto 12px; border-radius: 5px; box-shadow: 0 16px 40px rgba(0, 0, 0, .7); }
+.memorial .end-art { display: block; width: calc(100% + 40px); margin: -14px -20px 14px; border-radius: 2px; aspect-ratio: 16 / 7; object-fit: cover; }
+.album .item img.thumb { width: 40px; height: 54px; object-fit: cover; grid-row: span 2; border-radius: 3px; padding: 0; background: #07080c; }
+.bestiary img.thumb.wide, .elites img.thumb.wide { display: block; width: 100%; height: 150px; object-fit: cover; object-position: center 35%; border-radius: 3px; margin-bottom: 8px; }
+.watcher img.thumb { width: 56px; height: 75px; object-fit: cover; border-radius: 3px; }
+#cargaEdicion { position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; background: #07080c; color: #efe6d4; font: italic 20px Georgia, serif; }
 </style>
 </head>
 <body>
@@ -774,6 +789,7 @@ body[data-state="paused"] .subtitle, body[data-state="levelup"] .subtitle, body[
     <p class="title-controls"><span>WASD / flechas <b>Moverte</b></span><span>Espacio <b>Esquivar</b></span><span>R <b>Habilidad</b></span><span>P <b>Pausa</b></span></p>
   </div>
   <p class="night-count" id="nightCount"></p>
+  <img class="cast-art hidden" id="castArt" alt="">
 </section>
 
 <div class="corner-tools">
@@ -815,7 +831,7 @@ body[data-state="paused"] .subtitle, body[data-state="levelup"] .subtitle, body[
     <div class="boss-name"><b id="bossName">La Guía</b><span id="bossTitle">Carmela Souto lleva la cruz desde 1963</span></div>
     <div class="meter boss-hp"><i class="ghost" id="bossGhost"></i><i class="fill" id="bossBar"></i></div>
   </div>
-  <div class="banner" id="banner" aria-live="polite"><b id="bannerTitle"></b><span id="bannerSub"></span></div>
+  <div class="banner" id="banner" aria-live="polite"><img class="banner-art hidden" id="bannerArt" alt=""><b id="bannerTitle"></b><span id="bannerSub"></span></div>
   <div class="subtitle" id="subtitle" aria-live="polite"><span class="speaker" id="subSpeaker"></span><span class="line" id="subLine"></span></div>
   <div class="hud-bottom">
     <div class="loadout" id="hudWeapons" aria-label="Armas"></div>
@@ -913,6 +929,7 @@ body[data-state="paused"] .subtitle, body[data-state="levelup"] .subtitle, body[
 
 <section id="end" class="screen overlay hidden" role="dialog" aria-labelledby="endTitle">
   <article class="memorial" id="memorial">
+    <img class="end-art hidden" id="endArt" alt="">
     <svg class="memorial-mark" aria-hidden="true"><use href="#i-cross"/></svg>
     <p class="eyebrow" id="endEyebrow"></p>
     <h2 id="endTitle"></h2>
@@ -1966,7 +1983,7 @@ const EXTRA_SPRITES = {
     '..o00hhhhhh00o..',
     '..o0hhohhohh0o..',
     '..o0hhhhhhhh0o..',
-    '..o0Hhh^^hhH0o..',
+    '..o0HhhRRhhH0o..',
     '...o0hhhhhh0o...',
     '..o000000000vo..',
     '.o0000000000vvo.',
@@ -4745,7 +4762,7 @@ const SFX = {
     a.tone(a.sfxBus, {f0: 220, f1: 55, dur: 1.6, vol: 0.18, attack: 0.02});
     a.noiseShot(a.out(a.sfxBus, 0, 0.6), {dur: 1.2, type: 'lowpass', f0: 800, f1: 90, vol: 0.12, attack: 0.01, when: t});
   },
-  alba(a) { a.nana({vol: 0.22, tempo: 0.95, dawn: true}); },
+  alba(a) { if (!a.soundtrack?.enabled) a.nana({vol: 0.22, tempo: 0.95, dawn: true}); },
 
   /* ---------- voces e interfaz ---------- */
   voz(a, o) {
@@ -5016,6 +5033,147 @@ const ROUND_SFX = {
 
 return {ROUND_SFX};
 })();
+/* ---- assets.js ---- */
+const __assets_js = (() => {
+/*
+ * Recursos de la edición completa. Si el HTML trae cartas ilustradas y música
+ * incrustadas (en base64, dentro de <script type="text/plain">), se
+ * descodifican cuando hacen falta y se guardan en caché. En la edición normal
+ * no hay ninguno: has() devuelve false y el juego sigue igual.
+ */
+let manifest = null;
+try { manifest = JSON.parse(document.getElementById('vigilia-recursos')?.textContent || 'null'); } catch { manifest = null; }
+
+const images = new Map();
+const buffers = new Map();
+const pending = new Map();
+const MAX_BUFFERS = 4;
+
+function text(entry) { return document.getElementById(entry.id)?.textContent || ''; }
+
+function bytesOf(b64) {
+  const bin = atob(b64), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+const Assets = {
+  get available() { return !!manifest; },
+  get info() { return manifest ? {count: Object.keys(manifest.items).length, bytes: manifest.bytes} : null; },
+  has(key) { return !!manifest?.items?.[key]; },
+  meta(key) { return manifest?.items?.[key] || null; },
+
+  /* Imagen lista para un <img>: URL de blob creada la primera vez. */
+  image(key) {
+    if (images.has(key)) return images.get(key);
+    const entry = manifest?.items?.[key];
+    if (!entry) return null;
+    try {
+      const url = URL.createObjectURL(new Blob([bytesOf(text(entry))], {type: entry.mime}));
+      images.set(key, url);
+      // La imagen ya vive en el blob: el texto base64 deja de hacer falta.
+      document.getElementById(entry.id)?.remove();
+      return url;
+    } catch {
+      return null;
+    }
+  },
+
+  /* Audio descodificado para un contexto; se guardan los últimos usados. */
+  async buffer(ctx, key) {
+    if (buffers.has(key)) { const b = buffers.get(key); buffers.delete(key); buffers.set(key, b); return b; }
+    if (pending.has(key)) return pending.get(key);
+    const entry = manifest?.items?.[key];
+    if (!entry || !ctx) return null;
+    const job = (async () => {
+      const data = bytesOf(text(entry)).buffer;
+      const decoded = await ctx.decodeAudioData(data);
+      buffers.set(key, decoded);
+      while (buffers.size > MAX_BUFFERS) buffers.delete(buffers.keys().next().value);
+      return decoded;
+    })().catch(() => null).finally(() => pending.delete(key));
+    pending.set(key, job);
+    return job;
+  }
+};
+
+return {Assets};
+})();
+/* ---- soundtrack.js ---- */
+const __soundtrack_js = (() => {
+/*
+ * La banda sonora grabada de la edición completa: una pieza por momento de la
+ * noche (título, cada hora, la Guía, la tienda, el alba y el apagón) que suena
+ * en bucle y se funde con la siguiente. Si no hay grabaciones, update()
+ * devuelve false y suena la música que se escribe en tiempo real.
+ */
+const { Assets } = __assets_js;
+
+const FADE = 1.6;
+const LEVEL = 0.55;
+
+class Soundtrack {
+  constructor(engine) {
+    this.a = engine;
+    this.want = null;
+    this.current = null;
+  }
+
+  get enabled() { return Assets.has('musica:titulo'); }
+
+  /* Qué pieza toca según la escena. */
+  pick(s) {
+    switch (s.scene) {
+      case 'title': return 'musica:titulo';
+      case 'shop': return 'musica:tienda';
+      case 'dawn': return 'musica:alba';
+      case 'end': return 'musica:apagon';
+      default: return s.boss ? 'musica:guia' : `musica:hora-${Math.max(0, Math.min(4, Math.floor(s.hour || 0)))}`;
+    }
+  }
+
+  update(s) {
+    if (!this.enabled || !this.a.ready) return false;
+    const key = this.pick(s);
+    if (!Assets.has(key)) return true;
+    if (key !== this.want) {
+      this.want = key;
+      Assets.buffer(this.a.ctx, key).then(buffer => { if (buffer && this.want === key) this.play(key, buffer); });
+    }
+    return true;
+  }
+
+  play(key, buffer) {
+    const a = this.a, c = a.ctx, now = c.currentTime;
+    if (this.current?.key === key) return;
+    const meta = Assets.meta(key) || {};
+    const src = c.createBufferSource();
+    src.buffer = buffer;
+    src.loop = !!meta.loop;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(LEVEL, now + FADE);
+    src.connect(g); g.connect(a.musicBus);
+    src.start(now + 0.02);
+    const old = this.current;
+    if (old) {
+      old.gain.gain.cancelScheduledValues(now);
+      old.gain.gain.setValueAtTime(Math.max(0.0001, old.gain.gain.value), now);
+      old.gain.gain.exponentialRampToValueAtTime(0.0001, now + FADE);
+      old.src.stop(now + FADE + 0.05);
+    }
+    this.current = {key, src, gain: g};
+  }
+
+  stop() {
+    if (!this.current || !this.a.ctx) return;
+    try { this.current.src.stop(); } catch { /* ya parada */ }
+    this.current = null; this.want = null;
+  }
+}
+
+return {Soundtrack};
+})();
 /* ---- audio.js ---- */
 const __audio_js = (() => {
 /*
@@ -5028,6 +5186,7 @@ const { cueMethods } = __audio_cues_js;
 const { SFX } = __sfx_js;
 const { ROUND_SFX } = __sfx_rondas_js;
 const { Score, NANA, NANA_BASS } = __music_js;
+const { Soundtrack } = __soundtrack_js;
 
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -5054,6 +5213,7 @@ class AudioEngine {
     this.scene = 'title';
     this.timers = {cricket: 0.5, owl: 14, bird: 1, heart: 0, sea: 0, nana: 2.5, ctl: 0, soul: 0, drip: 3};
     this.score = new Score(this);
+    this.soundtrack = new Soundtrack(this);
   }
 
   /* custom: un OfflineAudioContext para medir niveles en pruebas. */
@@ -5407,6 +5567,8 @@ class AudioEngine {
       T.soul -= dt;
       if (T.soul <= 0) { T.soul = 1.35 - s.soul * 0.85; this.sfx('alma', {level: s.soul}); }
     } else T.soul = 0.3;
+    // Con la banda sonora grabada de la edición completa, la música en vivo calla.
+    if (this.soundtrack.update(s)) return;
     // En la pantalla de título y en el puesto de Remedios suena la nana, sin prisa.
     if (scene === 'title' || scene === 'shop') {
       T.nana -= dt;
@@ -5515,6 +5677,7 @@ class AudioEngine {
 
   destroy() {
     clearTimeout(this.muteTimer);
+    this.soundtrack?.stop();
     if (this.ctx && !this.offline) this.ctx.close?.().catch(() => {});
     this.ready = false; this.ctx = null; this.plucks.clear();
   }
@@ -6869,7 +7032,7 @@ const waveMethods = {
       const at = this.spawnPoint(300);
       this.addMark('elite', at.x, at.y, {delay: 1.6, id});
     }
-    this.banner(ELITES[id].name, ELITES[id].epitaph, 'elite');
+    this.banner(ELITES[id].name, ELITES[id].epitaph, 'elite', 'carta:e:' + id);
     this.audio.sfx('difunto');
     this.hooks.onDiscover?.({kind: 'elite', id});
   },
@@ -6897,7 +7060,7 @@ const waveMethods = {
   spawnBoss() {
     const at = {x: 0, y: ARENA.top + 120};
     this.addMark('guia', at.x, at.y, {delay: 1.8});
-    this.banner(BOSS.name, BOSS.title, 'boss');
+    this.banner(BOSS.name, BOSS.title, 'boss', 'carta:c:guia');
     this.audio.sfx('guia');
   },
 
@@ -10001,7 +10164,7 @@ class VigilGame {
     }
   }
 
-  banner(title, sub, tone = 'round') { this.hooks.onBanner?.({title, sub, tone}); }
+  banner(title, sub, tone = 'round', art = null) { this.hooks.onBanner?.({title, sub, tone, art}); }
 
   /* ---------- estado para la interfaz ---------- */
 
@@ -10099,6 +10262,7 @@ const { ITEMS, ITEM } = __items_js;
 const { STATS, STAT } = __stats_js;
 const { DANGER, ROUNDS } = __balance_js;
 const { store, loadSettings, loadProgress } = __storage_js;
+const { Assets } = __assets_js;
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -10163,6 +10327,16 @@ function icon(key, size = 48, alt = '') {
   return img;
 }
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+/* Ilustración de la edición completa, si la hay: carta, retrato o escena. */
+function art(key, cls = 'art', alt = '') {
+  const url = Assets.image(key);
+  if (!url) return null;
+  const img = el('img', cls);
+  img.src = url; img.alt = alt; img.decoding = 'async'; img.loading = 'lazy';
+  return img;
+}
+const cardKey = (kind, id) => `carta:${kind}:${id}`;
+document.getElementById('cargaEdicion')?.remove();
 const fmt = v => (Math.round(v * 10) / 10).toLocaleString('es-ES');
 
 /* ---------- título ---------- */
@@ -10221,6 +10395,9 @@ function selectCharacter(id) {
   $('castDetail').textContent = open ? `${ch.age}. ${ch.blurb}` : `Bloqueado. ${ch.unlock.text}`;
   $('castPerk').textContent = open ? ch.perk : '';
   $('castAbility').textContent = open ? `${ABILITIES[id].name} (R) · ${ABILITIES[id].description}` : '';
+  const portrait = Assets.image(cardKey('p', id));
+  $('castArt').classList.toggle('hidden', !portrait);
+  if (portrait) { $('castArt').src = portrait; $('castArt').classList.toggle('locked', !open); }
   if (!ch.weapons.includes(selectedWeapon)) selectedWeapon = ch.weapons[0];
   renderStartWeapons();
   $('startButton').disabled = !open;
@@ -10268,7 +10445,8 @@ function saveSelection() { store.set('selected', {character: selected, weapon: s
 function updateNightCount() {
   const wins = Object.values(progress.wins).reduce((a, b) => a + b, 0);
   const n = progress.nights.length;
-  $('nightCount').textContent = n === 0 ? 'Primera noche' : `Noche ${n + 1}${wins ? ` · ${wins} ${wins === 1 ? 'amanecer' : 'amaneceres'}` : ''} · récord: ronda ${progress.maxRound}`;
+  $('nightCount').textContent = (n === 0 ? 'Primera noche' : `Noche ${n + 1}${wins ? ` · ${wins} ${wins === 1 ? 'amanecer' : 'amaneceres'}` : ''} · récord: ronda ${progress.maxRound}`)
+    + (Assets.available ? ` · Edición completa: ${Assets.info.count} recursos, ${Math.round(Assets.info.bytes / 1048576)} MB` : '');
   const save = store.get('run', null);
   const valid = save && save.v === 3 && CHARACTERS[save.run?.character];
   $('continueButton').classList.toggle('hidden', !valid);
@@ -10463,7 +10641,7 @@ $('levelReroll').addEventListener('click', () => game.rerollUpgrades());
 function itemCard(id, cls = 'card') {
   const it = ITEM[id];
   const b = el('div', `${cls} tier-${it.rarity}`);
-  b.append(icon(it.icon, 56, ''), el('span', 'kind', `Objeto · ${TIER_LABEL[it.rarity]}`), el('h3', '', it.name));
+  b.append(art(cardKey('i', id), 'card-art', it.name) || icon(it.icon, 56, ''), el('span', 'kind', `Objeto · ${TIER_LABEL[it.rarity]}`), el('h3', '', it.name));
   const ul = el('ul', 'effects');
   for (const [k, v] of Object.entries(it.stats)) ul.append(el('li', v > 0 ? 'good' : 'bad', statLine(k, v)));
   b.append(ul, el('p', 'memory', it.line));
@@ -10486,6 +10664,8 @@ $('crateSell').addEventListener('click', () => game.sellCrate());
 {
   const kc = $('keeperPortrait').getContext('2d');
   drawPortrait(kc, 'remedios', 72, 80);
+  const keeper = art(cardKey('p', 'remedios'), 'keeper', 'Remedios');
+  if (keeper) $('keeperPortrait').replaceWith(keeper);
 }
 
 function weaponEffects(id, tier, live) {
@@ -10497,7 +10677,7 @@ function weaponEffects(id, tier, live) {
   const crit = live ? Math.round(live.crit * 100) : Math.round(w.crit * 100);
   ul.append(el('li', '', `Crítico ${crit} % (×${fmt(w.critMul)})`));
   const extra = [];
-  if (w.count && w.act !== 'orbit') extra.push(`${tierValue(w.count, tier)} ${w.act === 'spread' ? 'perdigones' : 'proyectiles'}`);
+  if (w.count && w.act !== 'orbit') { const n = tierValue(w.count, tier); extra.push(`${n} ${w.act === 'spread' ? (n === 1 ? 'perdigón' : 'perdigones') : (n === 1 ? 'proyectil' : 'proyectiles')}`); }
   if (w.act === 'orbit') extra.push(`${tierValue(w.count, tier)} cuentas`);
   if (w.pierce) extra.push(`atraviesa ${tierValue(w.pierce, tier)}`);
   if (w.bounces) extra.push(`rebota ${tierValue(w.bounces, tier)}`);
@@ -10527,7 +10707,7 @@ function onShop(s) {
     if (o.sold) { card.append(el('p', 'sold-note', 'Vendido')); offers.append(card); return; }
     const head = el('div', 'offer-head');
     const isW = o.kind === 'weapon';
-    head.append(icon(isW ? 'w:' + o.id : ITEM[o.id].icon, 56, ''));
+    head.append(art(cardKey(isW ? 'w' : 'i', o.id), 'offer-art') || icon(isW ? 'w:' + o.id : ITEM[o.id].icon, 56, ''));
     const title = el('div', 'offer-title');
     title.append(el('span', 'kind', isW ? `Arma ${TIER_NAMES[o.tier]} · ${WEAPON[o.id].classes.map(c => CLASSES[c].name).join(' · ')}` : `Objeto · ${TIER_LABEL[o.tier]}`),
       el('h3', '', isW ? WEAPON[o.id].name : ITEM[o.id].name));
@@ -10700,13 +10880,16 @@ function onSubtitle(item) {
   }, 28);
 }
 
-function onBanner({title, sub, tone}) {
+function onBanner({title, sub, tone, art: key}) {
   const b = $('banner');
   b.className = 'banner';
   void b.offsetWidth;
   $('bannerTitle').textContent = title;
   $('bannerSub').textContent = sub || '';
-  b.className = `banner show ${tone || ''}`;
+  const picture = key ? Assets.image(key) : null;
+  $('bannerArt').classList.toggle('hidden', !picture);
+  if (picture) $('bannerArt').src = picture;
+  b.className = `banner show ${tone || ''}${picture ? ' with-art' : ''}`;
 }
 
 function onDiscover({kind, id}) {
@@ -10725,6 +10908,9 @@ function onEnd(result) {
   const n = progress.nights.length + 1;
   const memorial = $('memorial');
   memorial.classList.toggle('out', !result.victory);
+  const scene = Assets.image(result.victory ? 'escena:alba' : 'escena:apagon');
+  $('endArt').classList.toggle('hidden', !scene);
+  if (scene) $('endArt').src = scene;
   const before = {chars: Object.keys(CHARACTERS).filter(unlockedChar), dangers: DANGER.filter(d => unlockedDanger(d.id)).map(d => d.id)};
   $('endEyebrow').textContent = `Noche ${n} · ${ch.name} · ${DANGER[result.danger].name}`;
   if (result.victory) {
@@ -10787,7 +10973,7 @@ function renderAlbum() {
   for (const w of WEAPONS) {
     const known = f.weapons.includes(w.id);
     const d = el('div', 'item' + (known ? '' : ' unknown'));
-    if (known) d.append(icon('w:' + w.id, 36, ''), el('b', '', w.name), el('small', '', w.classes.map(c => CLASSES[c].name).join(' · ')), el('p', '', w.line));
+    if (known) d.append(art(cardKey('w', w.id), 'thumb') || icon('w:' + w.id, 36, ''), el('b', '', w.name), el('small', '', w.classes.map(c => CLASSES[c].name).join(' · ')), el('p', '', w.line));
     else d.append(el('p', '', 'Todavía no la has tenido en las manos.'));
     weapons.append(d);
   }
@@ -10797,7 +10983,7 @@ function renderAlbum() {
   for (const it of ITEMS) {
     const known = f.items.includes(it.id);
     const d = el('div', `item tier-${it.rarity}` + (known ? '' : ' unknown'));
-    if (known) d.append(icon(it.icon, 36, ''), el('b', '', it.name), el('small', '', TIER_LABEL[it.rarity]), el('p', '', it.line));
+    if (known) d.append(art(cardKey('i', it.id), 'thumb') || icon(it.icon, 36, ''), el('b', '', it.name), el('small', '', TIER_LABEL[it.rarity]), el('p', '', it.line));
     else d.append(el('p', '', 'Remedios aún no te lo ha enseñado.'));
     items.append(d);
   }
@@ -10806,6 +10992,8 @@ function renderAlbum() {
   for (const [id, elite] of Object.entries(ELITES)) {
     const known = f.elites.includes(id);
     const d = el('div', 'elite' + (known ? '' : ' unknown'));
+    const picture = known ? art(cardKey('e', id), 'thumb wide') : null;
+    if (picture) d.append(picture);
     d.append(el('b', '', known ? elite.name : 'Alguien que aún no ha venido'), el('p', '', known ? elite.epitaph : 'Cada hora viene uno. Todos tienen nombre.'));
     eliteGrid.append(d);
   }
@@ -10820,7 +11008,7 @@ function renderAlbum() {
     const s = sprite(id), scale = Math.min(3, Math.floor(84 / s.h)) || 1;
     if (known) { drawSprite(g, id, 130, 46, {scale}); drawSprite(g, id, 130, 46, {scale, layer: 'glow'}); }
     else { g.globalAlpha = 0.5; drawSprite(g, id, 130, 46, {scale, layer: 'glow'}); }
-    d.append(canvas, el('b', '', known ? c.name : 'Algo que aún no has visto'), el('small', '', known ? c.tag : ' '), el('p', '', known ? c.lore : 'Solo se le ven los ojos.'));
+    d.append((known && art(cardKey('c', id), 'thumb wide')) || canvas, el('b', '', known ? c.name : 'Algo que aún no has visto'), el('small', '', known ? c.tag : ' '), el('p', '', known ? c.lore : 'Solo se le ven los ojos.'));
     best.append(d);
   }
   const watch = $('watchersGrid');
@@ -10833,7 +11021,7 @@ function renderAlbum() {
     const box = el('div');
     box.append(el('b', '', ch.name), el('small', '', `${ch.role} · ${dawns ? `${dawns} ${dawns === 1 ? 'amanecer' : 'amaneceres'}` : bestRound ? `hasta la ronda ${bestRound}` : 'sin velar'}`),
       el('p', '', unlockedChar(id) ? (dawns ? ch.victory : ch.blurb) : ch.unlock.text));
-    d.append(c, box);
+    d.append((unlockedChar(id) && art(cardKey('p', id), 'thumb')) || c, box);
     watch.append(d);
   }
 }
@@ -10917,6 +11105,12 @@ $('fullscreenButton').addEventListener('click', () => {
 for (const b of document.querySelectorAll('button')) b.addEventListener('focus', () => { if (game.state !== 'running') game.audio.sfx('ui-foco'); });
 
 bindOverlayKeyboard();
+/* El navegador pide un gesto antes de sonar: el primero, en el título, ya despierta la música. */
+const wakeAudio = () => {
+  removeEventListener('pointerdown', wakeAudio); removeEventListener('keydown', wakeAudio);
+  game.audio.init(); game.setMuted(settings.muted);
+};
+addEventListener('pointerdown', wakeAudio); addEventListener('keydown', wakeAudio);
 selectCharacter(selected);
 renderDangers();
 updateNightCount();

@@ -2,3 +2,6 @@ node_modules/
 premium-audit.json
 test-results/
 playwright-report/
+
+# La edición completa de 500 MB se genera en local y no se sube.
+edicion-completa/

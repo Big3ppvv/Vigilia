@@ -12,6 +12,7 @@ import { ITEMS, ITEM } from './items.js';
 import { STATS, STAT } from './stats.js';
 import { DANGER, ROUNDS } from './balance.js';
 import { store, loadSettings, loadProgress } from './storage.js';
+import { Assets } from './assets.js';
 
 const $ = id => document.getElementById(id);
 const params = new URLSearchParams(location.search);
@@ -76,6 +77,16 @@ function icon(key, size = 48, alt = '') {
   return img;
 }
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text !== undefined) e.textContent = text; return e; };
+/* Ilustración de la edición completa, si la hay: carta, retrato o escena. */
+function art(key, cls = 'art', alt = '') {
+  const url = Assets.image(key);
+  if (!url) return null;
+  const img = el('img', cls);
+  img.src = url; img.alt = alt; img.decoding = 'async'; img.loading = 'lazy';
+  return img;
+}
+const cardKey = (kind, id) => `carta:${kind}:${id}`;
+document.getElementById('cargaEdicion')?.remove();
 const fmt = v => (Math.round(v * 10) / 10).toLocaleString('es-ES');
 
 /* ---------- título ---------- */
@@ -134,6 +145,9 @@ function selectCharacter(id) {
   $('castDetail').textContent = open ? `${ch.age}. ${ch.blurb}` : `Bloqueado. ${ch.unlock.text}`;
   $('castPerk').textContent = open ? ch.perk : '';
   $('castAbility').textContent = open ? `${ABILITIES[id].name} (R) · ${ABILITIES[id].description}` : '';
+  const portrait = Assets.image(cardKey('p', id));
+  $('castArt').classList.toggle('hidden', !portrait);
+  if (portrait) { $('castArt').src = portrait; $('castArt').classList.toggle('locked', !open); }
   if (!ch.weapons.includes(selectedWeapon)) selectedWeapon = ch.weapons[0];
   renderStartWeapons();
   $('startButton').disabled = !open;
@@ -181,7 +195,8 @@ function saveSelection() { store.set('selected', {character: selected, weapon: s
 function updateNightCount() {
   const wins = Object.values(progress.wins).reduce((a, b) => a + b, 0);
   const n = progress.nights.length;
-  $('nightCount').textContent = n === 0 ? 'Primera noche' : `Noche ${n + 1}${wins ? ` · ${wins} ${wins === 1 ? 'amanecer' : 'amaneceres'}` : ''} · récord: ronda ${progress.maxRound}`;
+  $('nightCount').textContent = (n === 0 ? 'Primera noche' : `Noche ${n + 1}${wins ? ` · ${wins} ${wins === 1 ? 'amanecer' : 'amaneceres'}` : ''} · récord: ronda ${progress.maxRound}`)
+    + (Assets.available ? ` · Edición completa: ${Assets.info.count} recursos, ${Math.round(Assets.info.bytes / 1048576)} MB` : '');
   const save = store.get('run', null);
   const valid = save && save.v === 3 && CHARACTERS[save.run?.character];
   $('continueButton').classList.toggle('hidden', !valid);
@@ -376,7 +391,7 @@ $('levelReroll').addEventListener('click', () => game.rerollUpgrades());
 function itemCard(id, cls = 'card') {
   const it = ITEM[id];
   const b = el('div', `${cls} tier-${it.rarity}`);
-  b.append(icon(it.icon, 56, ''), el('span', 'kind', `Objeto · ${TIER_LABEL[it.rarity]}`), el('h3', '', it.name));
+  b.append(art(cardKey('i', id), 'card-art', it.name) || icon(it.icon, 56, ''), el('span', 'kind', `Objeto · ${TIER_LABEL[it.rarity]}`), el('h3', '', it.name));
   const ul = el('ul', 'effects');
   for (const [k, v] of Object.entries(it.stats)) ul.append(el('li', v > 0 ? 'good' : 'bad', statLine(k, v)));
   b.append(ul, el('p', 'memory', it.line));
@@ -399,6 +414,8 @@ $('crateSell').addEventListener('click', () => game.sellCrate());
 {
   const kc = $('keeperPortrait').getContext('2d');
   drawPortrait(kc, 'remedios', 72, 80);
+  const keeper = art(cardKey('p', 'remedios'), 'keeper', 'Remedios');
+  if (keeper) $('keeperPortrait').replaceWith(keeper);
 }
 
 function weaponEffects(id, tier, live) {
@@ -410,7 +427,7 @@ function weaponEffects(id, tier, live) {
   const crit = live ? Math.round(live.crit * 100) : Math.round(w.crit * 100);
   ul.append(el('li', '', `Crítico ${crit} % (×${fmt(w.critMul)})`));
   const extra = [];
-  if (w.count && w.act !== 'orbit') extra.push(`${tierValue(w.count, tier)} ${w.act === 'spread' ? 'perdigones' : 'proyectiles'}`);
+  if (w.count && w.act !== 'orbit') { const n = tierValue(w.count, tier); extra.push(`${n} ${w.act === 'spread' ? (n === 1 ? 'perdigón' : 'perdigones') : (n === 1 ? 'proyectil' : 'proyectiles')}`); }
   if (w.act === 'orbit') extra.push(`${tierValue(w.count, tier)} cuentas`);
   if (w.pierce) extra.push(`atraviesa ${tierValue(w.pierce, tier)}`);
   if (w.bounces) extra.push(`rebota ${tierValue(w.bounces, tier)}`);
@@ -440,7 +457,7 @@ function onShop(s) {
     if (o.sold) { card.append(el('p', 'sold-note', 'Vendido')); offers.append(card); return; }
     const head = el('div', 'offer-head');
     const isW = o.kind === 'weapon';
-    head.append(icon(isW ? 'w:' + o.id : ITEM[o.id].icon, 56, ''));
+    head.append(art(cardKey(isW ? 'w' : 'i', o.id), 'offer-art') || icon(isW ? 'w:' + o.id : ITEM[o.id].icon, 56, ''));
     const title = el('div', 'offer-title');
     title.append(el('span', 'kind', isW ? `Arma ${TIER_NAMES[o.tier]} · ${WEAPON[o.id].classes.map(c => CLASSES[c].name).join(' · ')}` : `Objeto · ${TIER_LABEL[o.tier]}`),
       el('h3', '', isW ? WEAPON[o.id].name : ITEM[o.id].name));
@@ -613,13 +630,16 @@ function onSubtitle(item) {
   }, 28);
 }
 
-function onBanner({title, sub, tone}) {
+function onBanner({title, sub, tone, art: key}) {
   const b = $('banner');
   b.className = 'banner';
   void b.offsetWidth;
   $('bannerTitle').textContent = title;
   $('bannerSub').textContent = sub || '';
-  b.className = `banner show ${tone || ''}`;
+  const picture = key ? Assets.image(key) : null;
+  $('bannerArt').classList.toggle('hidden', !picture);
+  if (picture) $('bannerArt').src = picture;
+  b.className = `banner show ${tone || ''}${picture ? ' with-art' : ''}`;
 }
 
 function onDiscover({kind, id}) {
@@ -638,6 +658,9 @@ function onEnd(result) {
   const n = progress.nights.length + 1;
   const memorial = $('memorial');
   memorial.classList.toggle('out', !result.victory);
+  const scene = Assets.image(result.victory ? 'escena:alba' : 'escena:apagon');
+  $('endArt').classList.toggle('hidden', !scene);
+  if (scene) $('endArt').src = scene;
   const before = {chars: Object.keys(CHARACTERS).filter(unlockedChar), dangers: DANGER.filter(d => unlockedDanger(d.id)).map(d => d.id)};
   $('endEyebrow').textContent = `Noche ${n} · ${ch.name} · ${DANGER[result.danger].name}`;
   if (result.victory) {
@@ -700,7 +723,7 @@ function renderAlbum() {
   for (const w of WEAPONS) {
     const known = f.weapons.includes(w.id);
     const d = el('div', 'item' + (known ? '' : ' unknown'));
-    if (known) d.append(icon('w:' + w.id, 36, ''), el('b', '', w.name), el('small', '', w.classes.map(c => CLASSES[c].name).join(' · ')), el('p', '', w.line));
+    if (known) d.append(art(cardKey('w', w.id), 'thumb') || icon('w:' + w.id, 36, ''), el('b', '', w.name), el('small', '', w.classes.map(c => CLASSES[c].name).join(' · ')), el('p', '', w.line));
     else d.append(el('p', '', 'Todavía no la has tenido en las manos.'));
     weapons.append(d);
   }
@@ -710,7 +733,7 @@ function renderAlbum() {
   for (const it of ITEMS) {
     const known = f.items.includes(it.id);
     const d = el('div', `item tier-${it.rarity}` + (known ? '' : ' unknown'));
-    if (known) d.append(icon(it.icon, 36, ''), el('b', '', it.name), el('small', '', TIER_LABEL[it.rarity]), el('p', '', it.line));
+    if (known) d.append(art(cardKey('i', it.id), 'thumb') || icon(it.icon, 36, ''), el('b', '', it.name), el('small', '', TIER_LABEL[it.rarity]), el('p', '', it.line));
     else d.append(el('p', '', 'Remedios aún no te lo ha enseñado.'));
     items.append(d);
   }
@@ -719,6 +742,8 @@ function renderAlbum() {
   for (const [id, elite] of Object.entries(ELITES)) {
     const known = f.elites.includes(id);
     const d = el('div', 'elite' + (known ? '' : ' unknown'));
+    const picture = known ? art(cardKey('e', id), 'thumb wide') : null;
+    if (picture) d.append(picture);
     d.append(el('b', '', known ? elite.name : 'Alguien que aún no ha venido'), el('p', '', known ? elite.epitaph : 'Cada hora viene uno. Todos tienen nombre.'));
     eliteGrid.append(d);
   }
@@ -733,7 +758,7 @@ function renderAlbum() {
     const s = sprite(id), scale = Math.min(3, Math.floor(84 / s.h)) || 1;
     if (known) { drawSprite(g, id, 130, 46, {scale}); drawSprite(g, id, 130, 46, {scale, layer: 'glow'}); }
     else { g.globalAlpha = 0.5; drawSprite(g, id, 130, 46, {scale, layer: 'glow'}); }
-    d.append(canvas, el('b', '', known ? c.name : 'Algo que aún no has visto'), el('small', '', known ? c.tag : ' '), el('p', '', known ? c.lore : 'Solo se le ven los ojos.'));
+    d.append((known && art(cardKey('c', id), 'thumb wide')) || canvas, el('b', '', known ? c.name : 'Algo que aún no has visto'), el('small', '', known ? c.tag : ' '), el('p', '', known ? c.lore : 'Solo se le ven los ojos.'));
     best.append(d);
   }
   const watch = $('watchersGrid');
@@ -746,7 +771,7 @@ function renderAlbum() {
     const box = el('div');
     box.append(el('b', '', ch.name), el('small', '', `${ch.role} · ${dawns ? `${dawns} ${dawns === 1 ? 'amanecer' : 'amaneceres'}` : bestRound ? `hasta la ronda ${bestRound}` : 'sin velar'}`),
       el('p', '', unlockedChar(id) ? (dawns ? ch.victory : ch.blurb) : ch.unlock.text));
-    d.append(c, box);
+    d.append((unlockedChar(id) && art(cardKey('p', id), 'thumb')) || c, box);
     watch.append(d);
   }
 }
@@ -830,6 +855,12 @@ $('fullscreenButton').addEventListener('click', () => {
 for (const b of document.querySelectorAll('button')) b.addEventListener('focus', () => { if (game.state !== 'running') game.audio.sfx('ui-foco'); });
 
 bindOverlayKeyboard();
+/* El navegador pide un gesto antes de sonar: el primero, en el título, ya despierta la música. */
+const wakeAudio = () => {
+  removeEventListener('pointerdown', wakeAudio); removeEventListener('keydown', wakeAudio);
+  game.audio.init(); game.setMuted(settings.muted);
+};
+addEventListener('pointerdown', wakeAudio); addEventListener('keydown', wakeAudio);
 selectCharacter(selected);
 renderDangers();
 updateNightCount();

@@ -624,7 +624,7 @@ export class VigilGame {
     }
   }
 
-  banner(title, sub, tone = 'round') { this.hooks.onBanner?.({title, sub, tone}); }
+  banner(title, sub, tone = 'round', art = null) { this.hooks.onBanner?.({title, sub, tone, art}); }
 
   /* ---------- estado para la interfaz ---------- */
 

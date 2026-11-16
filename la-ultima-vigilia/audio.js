@@ -8,6 +8,7 @@ import { cueMethods } from './audio-cues.js';
 import { SFX } from './sfx.js';
 import { ROUND_SFX } from './sfx-rondas.js';
 import { Score, NANA, NANA_BASS } from './music.js';
+import { Soundtrack } from './soundtrack.js';
 
 const midiHz = m => 440 * Math.pow(2, (m - 69) / 12);
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -34,6 +35,7 @@ export class AudioEngine {
     this.scene = 'title';
     this.timers = {cricket: 0.5, owl: 14, bird: 1, heart: 0, sea: 0, nana: 2.5, ctl: 0, soul: 0, drip: 3};
     this.score = new Score(this);
+    this.soundtrack = new Soundtrack(this);
   }
 
   /* custom: un OfflineAudioContext para medir niveles en pruebas. */
@@ -387,6 +389,8 @@ export class AudioEngine {
       T.soul -= dt;
       if (T.soul <= 0) { T.soul = 1.35 - s.soul * 0.85; this.sfx('alma', {level: s.soul}); }
     } else T.soul = 0.3;
+    // Con la banda sonora grabada de la edición completa, la música en vivo calla.
+    if (this.soundtrack.update(s)) return;
     // En la pantalla de título y en el puesto de Remedios suena la nana, sin prisa.
     if (scene === 'title' || scene === 'shop') {
       T.nana -= dt;
@@ -495,6 +499,7 @@ export class AudioEngine {
 
   destroy() {
     clearTimeout(this.muteTimer);
+    this.soundtrack?.stop();
     if (this.ctx && !this.offline) this.ctx.close?.().catch(() => {});
     this.ready = false; this.ctx = null; this.plucks.clear();
   }
