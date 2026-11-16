@@ -31,6 +31,9 @@ jobs:
       - name: Comprobar la sintaxis
         run: for f in *.js build.mjs tools/*.mjs; do node --check "$f"; done
 
+      - name: Comprobar objetos y sinergias
+        run: node tools/objects-check.mjs
+
       - name: Comprobar que la-ultima-vigilia.html está al día
         run: |
           node build.mjs

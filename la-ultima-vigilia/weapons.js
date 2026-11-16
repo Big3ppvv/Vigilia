@@ -199,7 +199,7 @@ export const weaponMethods = {
   hurt(e, amount, {knock = 80, from = this.player, silent = false, fx = null} = {}) {
     if (e.hp <= 0 || e.dissolve) return;
     const crit = Math.random() < this.st.crit;
-    let dmg = amount * (crit ? 2 : 1);
+    let dmg = amount * (this.st.damage || 1) * (crit ? 2 : 1);
     if (e.type === 'guia' && this.dawnBreaks) dmg *= 2;
     if (e.lulled) dmg *= VIGIL.lullHurt;
     e.hp -= dmg;

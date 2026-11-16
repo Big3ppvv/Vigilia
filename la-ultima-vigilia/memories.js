@@ -1,3 +1,4 @@
+import { objectBonuses } from './objects.js';
 /*
  * Los recuerdos son las mejoras: la luz que se recoge y lo que vuelve con ella.
  * En una noche caben cuatro armas y cinco recuerdos; los que van juntos forman
@@ -35,6 +36,15 @@ export const memoryMethods = {
       heal: rooms.has('cocina') ? 1.5 : 1,
       lullCd: VIGIL.lullCooldown
     };
+    const bonus = objectBonuses(m, rooms);
+    this.st.damage = 1 + (bonus.damage || 0);
+    for (const [stat, value] of Object.entries(bonus)) {
+      if (stat !== 'damage') this.st[stat] += value;
+    }
+    this.st.armor = Math.min(0.6, this.st.armor);
+    this.st.crit = Math.min(0.8, this.st.crit);
+    this.st.cadence = Math.max(0.2, this.st.cadence);
+    this.st.lullCd = Math.max(8, this.st.lullCd);
     if (prevMax && this.player) this.player.hp = Math.min(this.st.maxHp, this.player.hp + Math.max(0, this.st.maxHp - prevMax));
   },
 
@@ -51,14 +61,14 @@ export const memoryMethods = {
     const room = ROOM_OF[id];
     if (!room) return null;
     const have = room.members.filter(k => this.mem[k] > 0).length;
-    return {id: room.id, name: room.name, have, total: room.members.length, completes: !this.mem[id] && have === room.members.length - 1, effect: room.effect};
+    return {id: room.id, name: room.name, have: Math.min(have, room.required || room.members.length), total: room.required || room.members.length, completes: !this.mem[id] && have === (room.required || room.members.length) - 1, effect: room.effect};
   },
 
   /* Si se acaba de reunir un rincón, vuelve entero. */
   checkRooms(announce = true) {
     let changed = false;
     for (const room of ROOMS) {
-      if (this.rooms.has(room.id) || !room.members.every(k => this.mem[k] > 0)) continue;
+      if (this.rooms.has(room.id) || room.members.filter(k => this.mem[k] > 0).length < (room.required || room.members.length)) continue;
       this.rooms.add(room.id);
       changed = true;
       this.hooks.onDiscover?.({kind: 'room', id: room.id});
@@ -117,13 +127,18 @@ export const memoryMethods = {
     const full = {arma: this.slotsUsed('arma') >= SLOTS.arma, recuerdo: this.slotsUsed('recuerdo') >= SLOTS.recuerdo};
     const owned = MEMORIES.filter(m => this.mem[m.id] > 0 && this.mem[m.id] < MAX_LEVEL);
     const fresh = MEMORIES.filter(m => this.mem[m.id] === 0 && !full[m.kind]);
+    // Reservar una carta clásica evita que 500 objetos oculten todas las armas.
+    const classic = fresh.filter(m => !m.collection);
+    const objects = fresh.filter(m => m.collection);
     let picks = shuffled([...owned, ...fresh]).slice(0, 3);
+    if (classic.length) picks[0] = pick(classic);
+    if (objects.length) picks[1] = pick(objects);
     // Que siempre haya algo nuevo y algo conocido, si se puede.
     if (owned.length && !picks.some(c => this.mem[c.id] > 0)) picks[2] = pick(owned);
     if (fresh.length && !picks.some(c => this.mem[c.id] === 0)) picks[1] = pick(fresh);
     // Si a un rincón le falta un solo recuerdo, a veces vuelve justo ese.
     const closing = fresh.filter(m => this.roomTag(m.id)?.completes);
-    if (closing.length && !picks.some(c => closing.includes(c)) && Math.random() < 0.45) picks[0] = pick(closing);
+    if (closing.length && !picks.some(c => closing.includes(c)) && Math.random() < 0.45) picks[1] = pick(closing);
     picks = [...new Set(picks)].filter(Boolean);
     for (const f of FALLBACK_CHOICES) if (picks.length < 3) picks.push(f);
     this.choices = picks.map(c => ({...c, level: (this.mem[c.id] || 0) + 1, isNew: !this.mem[c.id] && MEMORY[c.id] !== undefined, room: this.roomTag(c.id)}));

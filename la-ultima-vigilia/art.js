@@ -1,3 +1,4 @@
+import { OBJECTS } from './objects.js';
 /*
  * Sprites y luz: el pixel art se construye desde sprites.js y la oscuridad
  * solo se abre donde hay una vela. El camposanto está en world.js.
@@ -46,7 +47,10 @@ function build(rows, mode) {
 }
 
 /* frame: nombre de un fotograma de FRAMES; sin él, el sprite base. */
+const OBJECT_ICONS = Object.fromEntries(OBJECTS.map(item => [item.id, item.icon]));
+
 export function sprite(key, frame) {
+  key = OBJECT_ICONS[key] || key;
   const id = frame ? `${key}@${frame}` : key;
   if (cache.has(id)) return cache.get(id);
   let rows = SPRITES[key] || ICONS[key] || SPRITES.hermano;
