@@ -3,7 +3,7 @@
  * solo se abre donde hay una vela. El camposanto está en world.js.
  */
 import { TAU } from './util.js';
-import { PALETTE, EMISSIVE, SPRITES, ICONS } from './sprites.js';
+import { PALETTE, EMISSIVE, SPRITES, ICONS, FRAMES } from './sprites.js';
 
 // Una misma paleta para el trazo del arma y la luz que deja en el camposanto.
 export const ATTACK_PALETTE = Object.freeze({
@@ -45,20 +45,25 @@ function build(rows, mode) {
   return any ? c : null;
 }
 
-export function sprite(key) {
-  if (cache.has(key)) return cache.get(key);
-  const rows = SPRITES[key] || ICONS[key] || SPRITES.hermano;
+/* frame: nombre de un fotograma de FRAMES; sin él, el sprite base. */
+export function sprite(key, frame) {
+  const id = frame ? `${key}@${frame}` : key;
+  if (cache.has(id)) return cache.get(id);
+  let rows = SPRITES[key] || ICONS[key] || SPRITES.hermano;
+  const patch = frame && FRAMES[key]?.[frame];
+  if (patch) { rows = [...rows]; for (const [at, row] of patch) rows[at] = row; }
+  else if (frame) { const base = sprite(key); cache.set(id, base); return base; }
   const s = {base: build(rows, 'base'), glow: build(rows, 'glow'), white: build(rows, 'white'), w: Math.max(...rows.map(r => r.length)), h: rows.length};
-  cache.set(key, s);
+  cache.set(id, s);
   return s;
 }
 
 /*
- * opts: scale, flip, bob, rot, sx, sy (estiramiento), alpha, layer ('base' | 'glow' | 'white').
+ * opts: scale, flip, bob, rot, sx, sy (estiramiento), alpha, frame, layer ('base' | 'glow' | 'white').
  * El punto (x, y) es el centro del sprite.
  */
 export function drawSprite(ctx, key, x, y, opts = {}) {
-  const s = sprite(key);
+  const s = sprite(key, opts.frame);
   const img = s[opts.layer || 'base'];
   if (!img) return;
   const scale = opts.scale || 2;

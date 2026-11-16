@@ -19,9 +19,10 @@
 <symbol id="i-cross" viewBox="0 0 24 24"><path d="M12 3v18M7 8h10"/></symbol>
 <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
 <symbol id="i-dash" viewBox="0 0 24 24"><path d="M4 12h10m-4-5 5 5-5 5M17 6v12"/></symbol>
+<symbol id="i-lull" viewBox="0 0 24 24"><path d="M9 17V6l9-2v11M9 17a2 2 0 1 1-4 0 2 2 0 0 1 4 0Zm9-2a2 2 0 1 1-4 0 2 2 0 0 1 4 0Z"/></symbol>
 </defs></svg>
 
-<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar."></canvas>
+<canvas id="game" tabindex="0" aria-label="El camposanto. Muévete con WASD o las flechas; espacio para esquivar y E para arrullar."></canvas>
 
 <!-- Pantalla de título: la escena del velatorio queda detrás, en el lienzo. -->
 <section id="title" class="screen title-screen">
@@ -64,6 +65,8 @@
       <b id="clock">00:00</b>
       <span id="mood">Noche de Difuntos</span>
       <div class="night-track" aria-hidden="true"><i id="nightBar"></i><span class="moon"></span><span class="sun"></span></div>
+      <div class="wake" id="wake" role="img" aria-label="Cirios encendidos: 4 de 4"><i></i><i></i><i></i><i></i></div>
+      <div class="soul hidden" id="soulBox"><span>Se la llevan</span><div class="bar soul-bar"><i id="soulBar"></i></div></div>
     </div>
     <div class="tally">
       <div><b id="kills">0</b><span>ahuyentados</span></div>
@@ -73,7 +76,6 @@
   <div class="boss hidden" id="bossBox">
     <div class="boss-name"><b>La Guía</b><span>Carmela Souto lleva la cruz desde 1963</span></div>
     <div class="bar boss-hp"><i id="bossBar"></i></div>
-    <div class="soul"><span>Se lleva a Amparo</span><div class="bar soul-bar"><i id="soulBar"></i></div></div>
   </div>
   <div class="banner" id="banner" aria-live="polite"><b id="bannerTitle"></b><span id="bannerSub"></span></div>
   <div class="subtitle" id="subtitle" aria-live="polite"><span class="speaker" id="subSpeaker"></span><span class="line" id="subLine"></span></div>
@@ -82,7 +84,10 @@
       <span class="level-text" id="levelText">Recuerdos · 1</span>
       <div class="memories" id="hudMemories" aria-label="Recuerdos"></div>
     </div>
-    <button class="dash" id="dashButton" aria-label="Esquivar"><svg aria-hidden="true"><use href="#i-dash"/></svg><span>Esquivar</span><kbd id="dashKey">Espacio</kbd><i id="dashFill"></i></button>
+    <div class="actions">
+      <button class="dash lull" id="lullButton" aria-label="Arrullar"><svg aria-hidden="true"><use href="#i-lull"/></svg><span>Arrullar</span><kbd id="lullKey">E</kbd><i id="lullFill"></i></button>
+      <button class="dash" id="dashButton" aria-label="Esquivar"><svg aria-hidden="true"><use href="#i-dash"/></svg><span>Esquivar</span><kbd id="dashKey">Espacio</kbd><i id="dashFill"></i></button>
+    </div>
   </div>
   <div class="memory-track" aria-hidden="true"><i id="xpBar"></i></div>
 </section>
@@ -90,10 +95,10 @@
 <!-- Elegir un recuerdo -->
 <section id="choice" class="screen overlay hidden" aria-labelledby="choiceTitle">
   <div class="choice-wrap">
-    <p class="eyebrow">Con la luz, vuelve algo</p>
+    <p class="eyebrow" id="choiceEyebrow">Con la luz, vuelve algo</p>
     <h2 id="choiceTitle">Recuerdas…</h2>
     <div class="cards" id="choiceCards"></div>
-    <p class="hint">Pulsa 1, 2 o 3</p>
+    <p class="hint"><span class="keys">Pulsa 1, 2 o 3 · </span><span id="choiceSlots"></span></p>
   </div>
 </section>
 
@@ -102,6 +107,7 @@
     <p class="eyebrow" id="pauseClock">00:00</p>
     <h2 id="pauseTitle">La vela sigue encendida.</h2>
     <p>Amparo puede esperar un momento. La noche, también.</p>
+    <div class="pause-build" id="pauseBuild"></div>
     <button class="primary" id="resumeButton"><span>Seguir velando</span></button>
     <nav class="links">
       <button data-open="settingsDialog">Ajustes</button>
@@ -136,8 +142,12 @@
   <p class="panel-intro">Lo que se recuerda de alguien depende de quién lo recuerde. Cada noche vuelve algo distinto.</p>
   <h3>Lo que se llevó <span id="albumCount"></span></h3>
   <div class="album" id="albumGrid"></div>
+  <h3>Sus rincones <span id="roomCount"></span></h3>
+  <div class="rooms" id="roomGrid"></div>
   <h3>Lo que viene de noche</h3>
   <div class="bestiary" id="bestiaryGrid"></div>
+  <h3>Difuntos con nombre</h3>
+  <div class="elites" id="eliteGrid"></div>
   <h3>Quienes la velaron</h3>
   <div class="watchers" id="watchersGrid"></div>
 </dialog>
@@ -156,8 +166,12 @@
   <div class="settings">
     <label class="row"><span>Sonido</span><input type="checkbox" id="optSound"></label>
     <label class="row"><span>Volumen</span><input type="range" id="optVolume" min="0" max="100" step="5"></label>
+    <label class="row sub"><span>Música</span><input type="range" id="optMusic" min="0" max="100" step="5"></label>
+    <label class="row sub"><span>Efectos <small>armas, criaturas y voces</small></span><input type="range" id="optSfx" min="0" max="100" step="5"></label>
+    <label class="row sub"><span>Ambiente <small>viento, mar y orballo</small></span><input type="range" id="optAmb" min="0" max="100" step="5"></label>
     <label class="row"><span>Temblor de pantalla</span><input type="checkbox" id="optShake"></label>
     <label class="row"><span>Destellos</span><input type="checkbox" id="optFlashes"></label>
+    <label class="row"><span>Orballo y hojas <small>lluvia fina, viento y polillas</small></span><input type="checkbox" id="optWeather"></label>
     <label class="row"><span>Penumbra suave <small>más visibilidad fuera de tu luz</small></span><input type="checkbox" id="optSoftDark"></label>
     <label class="row"><span>Números de daño</span><input type="checkbox" id="optNumbers"></label>
   </div>

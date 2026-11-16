@@ -30,10 +30,10 @@ export const CHARACTERS = {
     role: 'La nieta',
     age: '34 años',
     blurb: 'Diez años sin volver al pueblo. Llegó en el último autobús, con la maleta y una culpa que no le cabe en ella.',
-    perk: 'Recuerda un 25 % más · Su luz llega más lejos: la linterna del móvil',
+    perk: 'Recuerda un 25 % más · Su luz y su arrullo llegan más lejos: la linterna del móvil',
     weapon: 'chispas',
     start: {chispas: 1},
-    hp: 100, speed: 128, light: 1.22, memory: 1.25, armor: 0,
+    hp: 100, speed: 128, light: 1.22, memory: 1.25, armor: 0, relight: 1, snuff: 1,
     victory: 'Lucía apagó el cirio con dos dedos, como le había enseñado ella. Esta vez no se fue en el primer autobús.',
     defeat: 'Lucía despertó con la cabeza apoyada en el ataúd y el móvil sin batería. No recordaba el final de la noche. Eso fue lo peor.'
   },
@@ -42,10 +42,10 @@ export const CHARACTERS = {
     role: 'El sepulturero',
     age: '79 años',
     blurb: 'Esta tarde cavó la fosa de Amparo y no dejó que nadie le ayudara. La sacó a bailar en las fiestas del cincuenta y cuatro.',
-    perk: 'Escopeta cargada con sal gruesa · Más aguante, menos prisa',
+    perk: 'Escopeta cargada con sal gruesa · Más aguante, menos prisa · Los cirios le duran el doble',
     weapon: 'sal',
     start: {sal: 1},
-    hp: 125, speed: 112, light: 1, memory: 1, armor: 0.1,
+    hp: 125, speed: 112, light: 1, memory: 1, armor: 0.1, relight: 1, snuff: 2,
     victory: 'Julián se sentó en el murete y encendió un cigarro. «Ya puedes regañarme», dijo. Nadie le regañó, y aun así lo apagó a la mitad.',
     defeat: 'Julián despertó en la silla, con el cigarro apagado entre los dedos. «Mañana otra vez», dijo. Y era verdad.'
   },
@@ -54,10 +54,10 @@ export const CHARACTERS = {
     role: 'La rezadora',
     age: '81 años',
     blurb: 'Ha rezado en todos los velatorios del pueblo desde 1961. Amparo le hacía trampas al tute. Es el primero en el que le tiembla la voz.',
-    perk: 'Empieza con el rosario de nácar · Reza más rápido de lo que anda',
+    perk: 'Empieza con el rosario de nácar · Enciende un cirio en la mitad de tiempo',
     weapon: 'chispas',
     start: {chispas: 1, rosario: 1},
-    hp: 90, speed: 116, light: 1, memory: 1, armor: 0,
+    hp: 90, speed: 116, light: 1, memory: 1, armor: 0, relight: 0.5, snuff: 1,
     victory: 'Matilde terminó el último misterio. Luego, por primera vez en sesenta años de velatorios, se quedó callada.',
     defeat: 'Matilde despertó con el rosario enredado en los dedos y la boca seca de rezar. Juró que la noche siguiente no se dormiría.'
   }
@@ -133,14 +133,73 @@ export const FALLBACK_CHOICES = [
     effect: 'Recuperas 35 de vida.',
     line: 'En los velatorios siempre hay un termo de café. Y alguien que pregunta si está recién hecho.'},
   {id: 'silencio', kind: 'consuelo', name: 'Un rato en silencio',
-    effect: 'Tu esquiva se recarga al instante.',
+    effect: 'Tu esquiva se recarga al instante y el arrullo vuelve antes.',
     line: 'Hay cosas que no hace falta decir en voz alta.'}
 ];
+
+/*
+ * Los rincones de Amparo: recuerdos que van juntos. Al reunir los de un rincón
+ * vuelve algo más. En una noche no caben todos: hay que elegir.
+ */
+export const ROOMS = [
+  {id: 'cocina', name: 'La cocina', members: ['pan', 'radio', 'caldo'],
+    effect: 'Todo lo que te cura, cura la mitad más. Aparece el doble de café.',
+    line: '—Siéntate, que la mesa ya está puesta.'},
+  {id: 'alcoba', name: 'La alcoba', members: ['mecedora', 'fotos', 'polillas'],
+    effect: 'Al esquivar atraviesas a las criaturas y las hieres. Esquivas más a menudo.',
+    line: '—No me deshagas la cama, que la acabo de hacer.'},
+  {id: 'iglesia', name: 'Su banco en la iglesia', members: ['chispas', 'rosario', 'campana'],
+    effect: 'Cada tañido de la campana suelta una corona de chispas.',
+    line: '—Chsss. Que estamos en misa.'},
+  {id: 'faro', name: 'El faro de su padre', members: ['farol', 'sal', 'gafas'],
+    effect: 'El haz del faro quema a las criaturas que barre.',
+    line: '—Mira: desde aquí arriba se ve todo.'},
+  {id: 'ella', name: 'Ella', members: ['risa', 'manos'],
+    effect: 'Cuando te hieren, su risa aparta y hiere a lo que te rodea.',
+    line: '—¿Y tú de qué te ríes ahora?'}
+];
+
+/* Lo que dicen los letreros de la noche. */
+export const VIGIL_TEXT = {
+  allOut: ['A oscuras', 'Enciende un cirio antes de que se la lleven'],
+  revive: ['Un cirio te ha levantado', 'Vuelve a encenderlo cuando puedas'],
+  firstOut: ['Se ha apagado un cirio', 'Quédate a su lado un momento para encenderlo'],
+  gust: ['Una racha de viento', 'Se apagan los cirios'],
+  procession: 'La Compaña',
+  firstProcession: ['La Compaña', 'Viene en procesión a apagar los cirios'],
+  card: ['Un recordatorio', 'Lo llevaba encima. Recógelo'],
+  cardEyebrow: 'En el recordatorio, por detrás',
+  levelEyebrow: 'Con la luz, vuelve algo',
+  room: 'Vuelve entera',
+  lullHint: 'Tararea la nana',
+  stopped: ['05:59', 'El reloj de la torre se ha parado'],
+  stoppedMood: 'El reloj se ha parado',
+  dawnBreaks: ['La luz se abre paso', 'La Guía se debilita'],
+  rushMood: 'Clarea',
+  wake: 'Amparo',
+  wakeDark: 'Amparo, a oscuras'
+};
+
+/*
+ * Lo que se lee al acabar la noche. {quien}, {difunta}, {recuerdos} y {hora}
+ * se rellenan solos.
+ */
+export const ENDINGS = {
+  dawnTitle: 'Amanece.',
+  dawn: '{difunta} se fue con la primera luz. Se llevó {recuerdos}.',
+  firstDawn: '{quien} ha visto amanecer. Carmela Souto, por fin, volvió a casa.',
+  laterDawn: 'Carmela Souto volvió a casa.',
+  tookTitle: 'Se la llevaron a las {hora}.',
+  outTitle: 'La vela se apagó a las {hora}.',
+  out: 'La Compaña pasó por delante del velatorio con una luz más.',
+  remembered: 'Esa noche recordó {recuerdos}.',
+  recordDawn: 'Amaneció'
+};
 
 export const CREATURES = {
   anima: {name: 'Ánima en pena', tag: 'Desde medianoche',
     lore: 'Almas que se perdieron por el camino. No quieren hacerte daño: quieren tu calor, y eso duele igual.'},
-  hermano: {name: 'Hermano de la Compaña', tag: 'Caminan en fila',
+  hermano: {name: 'Hermano de la Compaña', tag: 'Caminan en fila · Apagan los cirios',
     lore: 'Van en procesión, con un cirio en la mano y la capucha calada. Si cuentas las velas, siempre sobra una.'},
   urco: {name: 'El Urco', tag: 'Desde la una · Embiste',
     lore: 'Un perro negro que sube del mar arrastrando cadenas. Antes de saltar se queda quieto y gruñe: ese es el momento de apartarse.'},
@@ -154,6 +213,18 @@ export const CREATURES = {
     lore: 'Lo hizo Ramón, el marido de Amparo, con su chaqueta de los domingos. Cuarenta años vigilando el maizal. Esta noche ha bajado al camposanto.'},
   guia: {name: 'La Guía', tag: 'A las cinco',
     lore: 'Quien encabeza la Compaña lleva la cruz hasta que otro la coja. Carmela Souto la lleva desde 1963. Esta noche viene a por Amparo.'}
+};
+
+/*
+ * Los difuntos con nombre: aparece uno cada hora. Aguantan mucho más que los
+ * demás y, al irse, dejan caer su recordatorio.
+ */
+export const ELITES = {
+  peto: {name: 'El ánima del peto', epitaph: 'Cien años esperando una limosna que nadie echa.'},
+  urco: {name: 'El Urco viejo', epitaph: 'Ya subía del mar cuando Julián era un chaval.'},
+  lema: {name: 'El hijo de los Lema', epitaph: 'Se lo llevó el mar en el setenta y dos. Esta noche lo devuelve.'},
+  curuxa: {name: 'La curuxa del tejado', epitaph: 'Cantó tres noches en el tejado de Amparo.'},
+  sobra: {name: 'El que sobra', epitaph: 'Si cuentas las velas de la Compaña, siempre sobra una. Es la suya.'}
 };
 
 export const BOSS = {
@@ -178,6 +249,7 @@ export const AMPARO = {
     '—Esa puerta, que se cierra sola.'
   ],
   lowHp: '—Duérmete un poco, que ya velo yo.',
+  revive: ['—Trae, que te alumbro yo.', '—Arriba, que todavía no es de día.', '—Anda, levanta. Que no se diga.'],
   dawn: '—Y apaga la luz al salir.'
 };
 
@@ -215,7 +287,10 @@ export const BARKS = {
     memory_fotos: 'En todas salgo de espaldas. Ahora entiendo por qué.',
     memory_radio: 'Todavía me sé la sintonía del parte.',
     memory_gafas: 'Llevo tus gafas en el bolso. No sé por qué las cogí.',
-    memory_farol: 'Nunca subí al faro contigo. Siempre había algo más importante.'
+    memory_farol: 'Nunca subí al faro contigo. Siempre había algo más importante.',
+    cirio_out: '¡El cirio! No, no. Eso sí que no.',
+    all_out: 'Están todos apagados. Aguanta, abuela, que voy.',
+    arrullo: 'Me la cantabas tú a mí. Ahora te la canto yo.'
   },
   julian: {
     start: [
@@ -245,7 +320,10 @@ export const BARKS = {
     memory_manos: 'Manos frías, corazón caliente. Me las ponía en la nuca para fastidiarme.',
     memory_mecedora: 'La mecedora se la arreglé yo. Tres veces.',
     memory_caldo: 'Cuando lo de mi Pilar me trajo caldo. Sin decir nada. Solo caldo.',
-    memory_sal: 'Sal del economato. Lo mejor contra lo que no tiene cuerpo.'
+    memory_sal: 'Sal del economato. Lo mejor contra lo que no tiene cuerpo.',
+    cirio_out: 'Me han apagado un cirio. A mí, en mi camposanto.',
+    all_out: 'A oscuras no te dejo, Amparo. Ya voy.',
+    arrullo: 'No me la sé entera. La tarareo y ya está.'
   },
   matilde: {
     start: [
@@ -275,7 +353,10 @@ export const BARKS = {
     memory_fotos: 'En todas sale con los ojos cerrados. Decía que era para rezar.',
     memory_risa: 'Se reía en misa. En misa, Amparo.',
     memory_gafas: 'Las gafas en la cabeza. Mil veces te lo dije: mírate en el espejo.',
-    memory_campana: 'La del martes fue ella. El cura todavía no lo sabe.'
+    memory_campana: 'La del martes fue ella. El cura todavía no lo sabe.',
+    cirio_out: '¡Ese cirio lo encendí yo! ¡Sinvergüenzas!',
+    all_out: 'Sin luz no hay quien rece. Aguanta, Amparo.',
+    arrullo: 'Esa nana se la cantó a sus hijos. Y a los de media parroquia.'
   }
 };
 
@@ -283,8 +364,12 @@ export const HELP = [
   ['Moverte', 'WASD o las flechas. En el móvil, arrastra el dedo sobre la pantalla.'],
   ['Atacar', 'Es automático: tus armas buscan solas lo que tengas más cerca.'],
   ['Esquivar', 'Espacio. Durante el salto nada te toca. Tiene unos segundos de recarga.'],
-  ['Recordar', 'Recoge la luz que dejan las criaturas. Cada recuerdo de Amparo es una mejora: elige uno de tres.'],
-  ['La luz', 'Si estás herido, tu luz se encoge. Junto al ataúd de Amparo te recuperas.'],
+  ['Arrullar', 'E. Tarareas la nana de Amparo: lo que te rodea se amansa, las lágrimas se deshacen y los cirios cercanos prenden. Tarda en volver.'],
+  ['Los cirios', 'La Compaña viene en procesión a apagarlos. Para encender uno, quédate a su lado un momento. Si se apagan los cuatro, se llevan a Amparo.'],
+  ['Caer', 'Si tu vela se apaga y queda algún cirio encendido, su luz te levanta. A cambio, ese cirio se apaga.'],
+  ['Recordar', 'Recoge la luz que dejan las criaturas. Cada recuerdo de Amparo es una mejora: elige uno de tres. En una noche caben cuatro armas y cinco recuerdos.'],
+  ['Los rincones', 'Algunos recuerdos van juntos: su cocina, su alcoba, su banco en la iglesia, el faro. Reúne los de un rincón y vuelve algo más.'],
+  ['La luz', 'Si estás herido, tu luz se encoge. Junto al ataúd te recuperas, más cuantos más cirios ardan.'],
   ['Las cinco', 'Llega la Guía y va directa al ataúd. No dejes que se la lleve.'],
   ['Pausa', 'P o Esc.']
 ];
