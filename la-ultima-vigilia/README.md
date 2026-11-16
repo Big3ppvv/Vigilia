@@ -1,13 +1,13 @@
 # La última vigilia
 
-Ha muerto Amparo. Según la costumbre, alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve. Esta noche te toca a ti.
+Ha muerto Amparo. Alguien tiene que velarla hasta que amanezca para que la Santa Compaña no se la lleve.
 
-Juego de supervivencia para navegador, con ataques automáticos, hordas y mejoras, ambientado en la Noche de Difuntos en un camposanto junto al mar. Una partida dura diez minutos, de medianoche a las seis.
+Juego de supervivencia para navegador con ataques automáticos, hordas y recuerdos que mejoran tus armas. La noche va de medianoche a las seis: cien segundos de juego por hora. A las cinco llega la Guía; si el reloj se detiene, tendrás que resolver su amenaza para ver amanecer.
 
 ## Jugar
 
-- **Sin instalar nada:** abre `la-ultima-vigilia.html` con doble clic. Funciona sin conexión; con conexión carga además la tipografía Alegreya.
-- **Versión modular:** desde esta carpeta, `python3 -m http.server 8000` y abre <http://localhost:8000>.
+- Abre `la-ultima-vigilia.html` con doble clic. Funciona sin conexión; la tipografía Alegreya se carga cuando hay conexión y tiene alternativas del sistema.
+- Para trabajar con los módulos, ejecuta `npm run dev` desde la raíz del repositorio y abre <http://localhost:8000>. También puedes ejecutar `python3 -m http.server 8000` desde esta carpeta.
 
 ## Controles
 
@@ -20,9 +20,9 @@ Juego de supervivencia para navegador, con ataques automáticos, hordas y mejora
 | Pausa | P o Esc | botón de pausa | Start |
 | Ayuda | ? | «Cómo se vela» | — |
 
-Las armas atacan solas a lo que tengas más cerca.
+Las armas buscan solas la amenaza más cercana. La esquiva protege durante el salto; ambas acciones muestran su recarga y están disponibles también con botones.
 
-## Qué pasa durante la noche
+## Cómo afrontar la noche
 
 - **Los cuatro cirios.** Arden alrededor del ataúd y son lo que protege a Amparo. La Compaña entra en procesión por la ermita, la cancela, el portillo y la escalera del mar para apagarlos: cada hermano apaga uno y se va con la llama. Para encender un cirio basta con quedarse a su lado un momento. Si se apagan los cuatro, empiezan a llevársela.
 - **Caer.** Si tu vela se apaga y queda algún cirio encendido, su luz te levanta. A cambio, ese cirio se apaga.
@@ -41,9 +41,34 @@ El lugar es siempre el mismo: el Camposanto del Carmen, un recinto con muro. La 
 
 Todo el arte y el sonido se generan con código: pixel art animado, iluminación, orballo, viento, mar, grillos, la campana, la música de cada hora y la nana tocada con una cuerda pulsada.
 
-## Archivos
+**Decide cuándo encender un farol.** Hay tres: en la cancela, el cruceiro y el camino del mar. Son opcionales. Permanece quieto a su lado durante 3,6 segundos; moverte o alejarte hace decaer el progreso y recibir daño lo interrumpe. Cada farol se recompensa una sola vez: cura, entrega luz para recordar y reduce la recarga de la habilidad. Su zona iluminada frena criaturas, pero no impide que te alcancen.
 
-| Archivo | Contenido |
+**Usa el mapa.** Señala tu posición, el ataúd de Amparo, los faroles y la Guía. Las flechas del borde ayudan a encontrar los objetivos que quedan fuera de la pantalla. Las señales direccionales anuncian embestidas y otros ataques antes de que lleguen.
+
+**Recoge recuerdos y protege a Amparo.** La luz que dejan las criaturas permite elegir una mejora entre tres. Junto al ataúd recuperas vida; cuando estás herido, tu luz se encoge. A las tres llegan más ánimas y a las cinco la Guía busca el ataúd. El final recoge lo que más recordaste de Amparo.
+
+Las noches, los recuerdos descubiertos, las criaturas y los ajustes se guardan en este navegador. El juego también puede ejecutarse si el almacenamiento está desactivado; en ese caso no conservará esos datos al cerrar.
+
+## Sonido y accesibilidad
+
+En Ajustes puedes regular volumen general, música, ambiente y efectos por separado. Cada canal controla también su reverberación. El sonido comienza después de un gesto del jugador, según las reglas del navegador.
+
+La nana de Amparo cambia con el peligro y la proximidad del refugio. El mar queda hacia el este, los pasos acompañan al movimiento y las armas, los faroles y las tres habilidades tienen señales distintas.
+
+Puedes desactivar temblor de pantalla y destellos, suavizar la oscuridad o mostrar números de daño. La preferencia de movimiento reducido del sistema inicializa temblor y destellos apagados. Al reducir efectos se mantienen las formas que identifican proyectiles, círculos de sal y avisos de peligro. La pausa y la selección de recuerdos mantienen el foco de teclado dentro de su panel.
+
+## Desarrollar y verificar
+
+Desde la raíz del repositorio, con Node.js 22 o posterior:
+
+```sh
+npm ci
+npx playwright install chromium
+npm run build
+npm test
+```
+
+| Comando | Comprobación |
 |---|---|
 | `story.js` | **Todo el texto**: Amparo, quién la vela, los recuerdos y sus rincones, lo que dice cada uno, las criaturas, los difuntos con nombre, los letreros y los finales. Es el archivo que hay que reescribir para que el juego cuente tu historia. |
 | `balance.js` | **Todos los números**: criaturas, lo que pasa a cada hora, procesiones, difuntos, huecos, el velatorio y el tamaño del camposanto. Es el archivo que hay que tocar para cambiar el equilibrio. |
@@ -63,7 +88,7 @@ Todo el arte y el sonido se generan con código: pixel art animado, iluminación
 
 Los módulos solo usan `import { a, b } from './archivo.js';` y `export const|function|class`: es lo que `build.mjs` sabe empaquetar.
 
-## Herramientas de prueba
+Las pruebas de navegador usan el HTML autónomo sin conexión. Si ya tienes un Chromium compatible, puedes indicar su ruta con `PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH`; en caso contrario se usa el instalado por Playwright.
 
 Todas trabajan sobre `la-ultima-vigilia.html` y requieren Playwright y Chromium.
 
@@ -82,7 +107,7 @@ Parámetros de la URL:
 - `&bot=1` juega solo con buenos reflejos y cuida los cirios; `&bot=2` imita a alguien que juega por primera vez.
 - `&god=1`: no recibe daño. A Amparo se la pueden llevar igual.
 - `&speed=8`: acelera la simulación.
-- `&t=495`: salta a un momento de la noche, en segundos (100 = una hora).
+- `&t=495`: salta a un momento de la noche, en segundos.
 
 Por ejemplo, `la-ultima-vigilia.html?debug&autostart=1&bot=2&speed=8&char=matilde` juega una noche entera en poco más de un minuto. Al acabar, `vigilia.debugStats()` resume cuántos cirios se apagaron y encendieron, las veces que se levantó, los rincones reunidos y cuándo cayó la Guía.
 

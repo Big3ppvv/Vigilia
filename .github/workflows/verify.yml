@@ -28,16 +28,10 @@ jobs:
         with:
           node-version: 22
 
-      - name: Comprobar la sintaxis
-        run: for f in *.js build.mjs tools/*.mjs; do node --check "$f"; done
+      - name: Comprobar sintaxis y archivo autónomo
+        working-directory: .
+        run: npm run check
 
-      - name: Comprobar que la-ultima-vigilia.html está al día
-        run: |
-          node build.mjs
-          if ! git diff --quiet -- la-ultima-vigilia.html; then
-            echo "::error file=la-ultima-vigilia/la-ultima-vigilia.html::No coincide con el código. Ejecuta 'node build.mjs' en la-ultima-vigilia/ y sube el resultado."
-            exit 1
-          fi
 
   noche:
     name: Una noche entera con cada personaje
@@ -53,7 +47,7 @@ jobs:
 
       - name: Instalar Playwright y Chromium
         run: |
-          npm install --no-save --no-package-lock playwright@1.63.0
+          npm ci
           npx playwright install --with-deps chromium
 
       - name: Velar con el piloto automático

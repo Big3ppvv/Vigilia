@@ -1,6 +1,7 @@
+import { syncScreens, bindOverlayKeyboard } from './interface.js';
 import { VigilGame } from './game.js';
 import { drawPortrait, drawSprite, sprite } from './art.js';
-import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP, ROOMS, ELITES, VIGIL_TEXT, ENDINGS } from './story.js';
+import { WORLD, CHARACTERS, MEMORIES, CREATURES, BOSS, AMPARO, HELP, ABILITIES, ROOMS, ELITES, VIGIL_TEXT, ENDINGS } from './story.js';
 
 const $ = id => document.getElementById(id);
 const MEMORY = Object.fromEntries(MEMORIES.map(m => [m.id, m]));
@@ -95,6 +96,8 @@ function selectCharacter(id) {
   const ch = CHARACTERS[id];
   $('castDetail').textContent = `${ch.age}. ${ch.blurb}`;
   $('castPerk').textContent = ch.perk;
+  $('castAbility').textContent = `${ABILITIES[id].name} · ${ABILITIES[id].description}`;
+  for (const el of castEl.children) el.tabIndex = el.dataset.character === id ? 0 : -1;
 }
 
 function updateNightCount() {
@@ -132,7 +135,8 @@ $('otherButton').addEventListener('click', () => { game.backToTitle(); selectCha
 $('quitButton').addEventListener('click', () => { game.backToTitle(); selectCharacter(selected); });
 $('resumeButton').addEventListener('click', () => game.resume());
 $('pauseButton').addEventListener('click', () => game.state === 'paused' ? game.resume() : game.pause());
-$('dashButton').addEventListener('click', () => game.dash());
+$('dashButton').addEventListener('click', () => { game.dash(); $('game').focus({preventScroll: true}); });
+$('abilityButton').addEventListener('click', () => { game.ability(); $('game').focus({preventScroll: true}); });
 $('lullButton').addEventListener('click', () => game.arrullo());
 
 /* ---------- durante la noche ---------- */
@@ -183,6 +187,7 @@ function onStats(s) {
     $('bossBar').style.width = `${s.boss.hp / s.boss.maxHp * 100}%`;
     $('bossBox').classList.toggle('danger', s.soul > 0.5);
   }
+  updateRitualHud(s);
   $('pauseClock').textContent = `${s.clock} · ${s.mood}`;
   const sig = s.order.map(id => id + s.mem[id]).join('|');
   if (sig !== memSignature) {
@@ -190,6 +195,28 @@ function onStats(s) {
     memSignature = sig;
     renderHudMemories(s, before);
   }
+}
+
+function updateRitualHud(s) {
+  const ability = s.ability;
+  if (ability) {
+    $('abilityName').textContent = ability.name;
+    $('abilityKey').textContent = ability.ready ? 'R' : `${Math.ceil(ability.cd)} s`;
+    $('abilityFill').style.width = `${ability.ready ? 100 : Math.max(0, 1 - ability.cd / ability.max) * 100}%`;
+    $('abilityButton').disabled = !ability.ready || s.state !== 'running';
+    $('abilityButton').title = `${ability.description} (R)`;
+    $('abilityButton').setAttribute('aria-label', `${ability.name}${ability.ready ? ', disponible' : `, ${Math.ceil(ability.cd)} segundos`}`);
+  }
+  const ritual = s.ritual;
+  if (!ritual) return;
+  $('ritualCount').textContent = `${ritual.lit} / ${ritual.total}`;
+  const active = ritual.active;
+  const hint = active ? `Encendiendo ${active.label}…` : ritual.lit === ritual.total ? 'Los tres faroles protegen la vigilia.' : 'Acércate a un farol y permanece junto a él.';
+  $('ritualHint').textContent = hint;
+  $('ritualPanel').classList.toggle('channeling', !!active);
+  $('ritualProgress').style.width = `${(active?.progress || 0) * 100}%`;
+  $('ritualMeter').setAttribute('aria-valuenow', String(Math.round((active?.progress || 0) * 100)));
+  $('dashButton').disabled = s.dashCd > 0 || s.state !== 'running';
 }
 
 function renderHudMemories(s, before) {
@@ -212,6 +239,7 @@ function renderHudMemories(s, before) {
 }
 
 function onState(state) {
+  syncScreens(state);
   const playing = ['running', 'paused', 'upgrade', 'dying', 'dawn'].includes(state);
   document.body.classList.toggle('playing', playing);
   $('title').classList.toggle('hidden', state !== 'ready');
@@ -455,7 +483,7 @@ function renderRecords() {
   const dawns = nights.filter(r => r.victory).length;
   const latest = nights.filter(r => !r.victory).reduce((best, r) => (r.clock > best ? r.clock : best), '00:00');
   const sum = $('recordSummary');
-  sum.innerHTML = '';
+  sum.replaceChildren();
   for (const [v, l] of [[nights.length, 'noches veladas'], [dawns, dawns === 1 ? 'amanecer' : 'amaneceres'], [dawns ? '06:00' : latest, 'la hora más tardía']]) {
     const d = document.createElement('div');
     const b = document.createElement('b'); b.textContent = v;
@@ -514,6 +542,7 @@ for (const [id, key] of [['optShake', 'shake'], ['optFlashes', 'flashes'], ['opt
   $(id).addEventListener('change', e => { settings[key] = e.target.checked; saveSettings(); });
 }
 syncSoundButton();
+bindOverlayKeyboard();
 
 const help = $('helpList');
 for (const [term, text] of HELP) {
@@ -539,6 +568,9 @@ function openDialog(id) {
   if (id === 'albumDialog') renderAlbum();
   if (id === 'recordsDialog') renderRecords();
   d.showModal();
+  d.addEventListener('close', () => {
+    if (game.state === 'paused') $('resumeButton').focus({preventScroll: true});
+  }, {once: true});
 }
 document.querySelectorAll('[data-open]').forEach(el => el.addEventListener('click', () => openDialog(el.dataset.open)));
 document.querySelectorAll('dialog').forEach(d => {
@@ -571,7 +603,7 @@ document.addEventListener('click', e => { if (pressable(e.target)) game.audio.sf
 
 const order = Object.keys(CHARACTERS);
 addEventListener('keydown', e => {
-  if (document.querySelector('dialog[open]')) return;
+  if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey || /INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || document.querySelector('dialog[open]')) return;
   if (e.key === '?') { e.preventDefault(); openDialog('helpDialog'); return; }
   if (game.state === 'upgrade' && ['Digit1', 'Digit2', 'Digit3', 'Numpad1', 'Numpad2', 'Numpad3'].includes(e.code)) {
     e.preventDefault();
@@ -581,8 +613,10 @@ addEventListener('keydown', e => {
   }
   if (game.state === 'ready') {
     if (['Digit1', 'Digit2', 'Digit3'].includes(e.code)) { selectCharacter(order[Number(e.code.at(-1)) - 1]); return; }
-    if (e.code === 'ArrowRight' || e.code === 'ArrowLeft') {
-      const i = order.indexOf(selected), next = order[(i + (e.code === 'ArrowRight' ? 1 : order.length - 1)) % order.length];
+    if (['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown', 'Home', 'End'].includes(e.code) && castEl.contains(document.activeElement)) {
+      e.preventDefault();
+      const i = order.indexOf(selected), forward = ['ArrowRight', 'ArrowDown'].includes(e.code);
+      const next = e.code === 'Home' ? order[0] : e.code === 'End' ? order.at(-1) : order[(i + (forward ? 1 : order.length - 1)) % order.length];
       selectCharacter(next);
       castEl.querySelector(`[data-character="${next}"]`)?.focus({preventScroll: true});
       return;

@@ -2,6 +2,7 @@
  * Lo que se ve un instante y se va: partículas, anillos, números y la manera
  * de deshacerse de cada criatura. Aquí nada hiere ni cura.
  */
+import { SceneEffects } from './scene-fx.js';
 import { TAU, rand } from './util.js';
 import { surfaceAt } from './world.js';
 
@@ -19,6 +20,8 @@ export const fxMethods = {
   },
 
   updateFx(dt) {
+    if (!this.sceneFx) this.sceneFx = new SceneEffects();
+    this.sceneFx.update(dt, this);
     this.combatFx.update(dt);
     this.ambient.update(dt);
     if (this.player.attack) this.player.attack.life = Math.max(0, this.player.attack.life - dt);

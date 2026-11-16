@@ -58,5 +58,11 @@ swap('<link rel="icon" href="icon.svg" type="image/svg+xml">', `<link rel="icon"
 swap('<link rel="stylesheet" href="style.css">', `<style>\n${read('style.css')}</style>`);
 swap('<script type="module" src="app.js"></script>', `<script type="module">\n${bundle}</script>`);
 
-writeFileSync(new URL('la-ultima-vigilia.html', dir), html);
+const destination = new URL('la-ultima-vigilia.html', dir);
+if (process.argv.includes('--check')) {
+  if (readFileSync(destination, 'utf8') !== html) {
+    console.error('El HTML autónomo está desactualizado. Ejecuta npm run build.');
+    process.exit(1);
+  }
+} else writeFileSync(destination, html);
 console.log(`la-ultima-vigilia.html · ${order.length} módulos · ${(html.length / 1024).toFixed(0)} KB`);

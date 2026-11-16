@@ -360,10 +360,26 @@ export const BARKS = {
   }
 };
 
+export const ABILITIES = {
+  lucia: {id: 'lumbre', name: 'Lumbre', description: 'Aparta a las criaturas con una ráfaga de fuego y atrae la luz cercana.'},
+  julian: {id: 'cerco', name: 'Cerco de sal', description: 'Aparta a las criaturas y deja un cerco que las frena y las hiere durante unos segundos.'},
+  matilde: {id: 'responso', name: 'Responso', description: 'Recupera vida, aparta a las criaturas y retrasa a la Guía si está cerca.'}
+};
+
+export const RITES = {
+  labels: {oeste: 'Farol de la cancela', norte: 'Farol del cruceiro', este: 'Farol del mar'},
+  mapTitle: 'El velatorio', mapCount: 'Faroles', pointer: 'Farol',
+  introduction: {title: 'Tres faroles contra la noche', sub: 'Detente junto a un farol para encenderlo. Alza tu luz con E.'},
+  completed: 'Su luz te protege; tu habilidad vuelve antes.',
+  allLit: {title: 'El camino sigue encendido', sub: 'Tres luces acompañan la vigilia de Amparo.'}
+};
+
 export const HELP = [
   ['Moverte', 'WASD o las flechas. En el móvil, arrastra el dedo sobre la pantalla.'],
   ['Atacar', 'Es automático: tus armas buscan solas lo que tengas más cerca.'],
   ['Esquivar', 'Espacio. Durante el salto nada te toca. Tiene unos segundos de recarga.'],
+  ['Alzar la luz', 'R o el botón de habilidad: Lumbre, Cerco de sal o Responso según quien vela.'],
+  ['Los tres faroles', 'Detente junto a un farol para encenderlo. Recibir daño interrumpe el proceso. Curan, devuelven luz y reducen la recarga de tu habilidad.'],
   ['Arrullar', 'E. Tarareas la nana de Amparo: lo que te rodea se amansa, las lágrimas se deshacen y los cirios cercanos prenden. Tarda en volver.'],
   ['Los cirios', 'La Compaña viene en procesión a apagarlos. Para encender uno, quédate a su lado un momento. Si se apagan los cuatro, se llevan a Amparo.'],
   ['Caer', 'Si tu vela se apaga y queda algún cirio encendido, su luz te levanta. A cambio, ese cirio se apaga.'],

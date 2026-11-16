@@ -5,6 +5,8 @@ import { TAU, clamp, rand, lerp } from './util.js';
 import { NIGHT, COFFIN, ENEMIES, WORLD, LIGHTHOUSE } from './balance.js';
 import { drawSprite, drawShadow, sprite } from './art.js';
 import { drawFlames, drawFog } from './world.js';
+import { SceneEffects } from './scene-fx.js';
+import { RITES } from './story.js';
 import { ELITES, VIGIL_TEXT, BOSS } from './story.js';
 
 const STEPS = [undefined, 'step1', undefined, 'step2'];
@@ -54,12 +56,13 @@ export const renderMethods = {
   /* El faro da una vuelta cada quince segundos. */
   beamAngle() { return this.clock * 0.42; },
 
-  render() {
+  render(dt = 1 / 60) {
     const ctx = this.ctx, w = this.width, h = this.height, p = this.player;
+    if (!this.sceneFx) this.sceneFx = new SceneEffects();
     const title = this.state === 'ready';
     const target = title ? this.titleFocus : p;
     if (title) { this.cam.x = target.x; this.cam.y = target.y; }
-    else { const k = 1 - Math.exp(-0.016 * 12); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
+    else { const k = 1 - Math.exp(-clamp(dt, 0, 0.05) * 12); this.cam.x = lerp(this.cam.x, target.x, k); this.cam.y = lerp(this.cam.y, target.y, k); }
     this.clampCamera();
     const camX = Math.round(this.cam.x - w / 2), camY = Math.round(this.cam.y - h / 2);
     const look = this.nightLook();
@@ -69,9 +72,19 @@ export const renderMethods = {
     if (this.shake > 0.2 && this.options.shake) ctx.translate(Math.round(rand(-1, 1) * this.shake), Math.round(rand(-1, 1) * this.shake));
     this.cemetery.ground(ctx, camX, camY, w, h);
     this.cemetery.sea(ctx, camX, camY, w, h, this.clock);
+    this.sceneFx ||= new SceneEffects();
+    this.sceneFx.ground(ctx, this, camX, camY);
     this.drawPools(ctx, camX, camY);
     this.ambient.drawDecals(ctx, camX, camY, w, h);
     this.cemetery.collect(ctx, camX, camY, w, h, this.clock, wake, items, flames, lights);
+    if (!title) for (const ritual of this.rituals || []) {
+      const x = ritual.x - camX, y = ritual.y - camY;
+      if (x < -150 || x > w + 150 || y < -150 || y > h + 150) continue;
+      this.sceneFx.ritualGround(ctx, ritual, camX, camY);
+      items.push({kind: 'ritual', ritual, x, y, sortY: y + 6});
+      lights.push({x, y: y - 24, r: ritual.lit ? 185 : 50 + ritual.progress * 90,
+        i: ritual.lit ? 0.9 : 0.35 + ritual.progress * 0.5, c: ritual.lit ? 'warm' : 'pale', g: ritual.lit ? 0.65 : 0.18});
+    }
     if (this.mem.farol && !title && this.state !== 'ended') this.combatFx.drawLanternAura(ctx, p, this.lightRadius() * 0.7, this.clock, camX, camY, this.options.flashes);
 
     // Café en el suelo
@@ -193,6 +206,7 @@ export const renderMethods = {
       this.combatFx.drawRosary(ctx, p, this.mem.rosario, this.clock, camX, camY, this.options.flashes);
     }
     this.combatFx.render(ctx, camX, camY, this.options.flashes);
+    if (!title) this.sceneFx.signals(ctx, this, camX, camY);
     // Partículas con luz
     for (const q of this.particles) {
       if (!q.glow) continue;
@@ -232,6 +246,7 @@ export const renderMethods = {
     }
     if (!title && ['running', 'paused', 'upgrade'].includes(this.state)) this.drawPointers(ctx, camX, camY);
     this.drawOverlays(ctx, look);
+    this.sceneFx.minimap(ctx, this);
     if (this.pointer) {
       ctx.strokeStyle = 'rgba(241,232,210,.25)'; ctx.fillStyle = 'rgba(241,232,210,.06)'; ctx.lineWidth = 1;
       ctx.beginPath(); ctx.arc(this.pointer.start.x, this.pointer.start.y, 40, 0, TAU); ctx.fill(); ctx.stroke();
@@ -271,6 +286,10 @@ export const renderMethods = {
 
   drawItem(ctx, it, lights, layer) {
     const t = this.clock;
+    if (it.kind === 'ritual') {
+      this.sceneFx.ritual(ctx, it.ritual, it.x, it.y, layer, t, this.options.flashes);
+      return;
+    }
     if (it.kind === 'prop') {
       if (layer === 'base') this.cemetery.drawProp(ctx, it, this.wakeLook());
       return;
@@ -375,20 +394,39 @@ export const renderMethods = {
   drawTelegraphs(ctx, camX, camY) {
     const t = this.clock;
     ctx.save();
+    const charge = (x, y, angle, length, width, rgb, progress) => {
+      ctx.save(); ctx.translate(x, y); ctx.rotate(angle);
+      // La banda muestra el ancho de la embestida; las muescas apuntan al peligro.
+      ctx.fillStyle = `rgba(${rgb},.09)`; ctx.fillRect(0, -width, length, width * 2);
+      ctx.strokeStyle = `rgba(${rgb},.7)`; ctx.lineWidth = 1; ctx.setLineDash([4, 5]);
+      ctx.beginPath(); ctx.moveTo(0, -width); ctx.lineTo(length, -width); ctx.moveTo(0, width); ctx.lineTo(length, width); ctx.stroke(); ctx.setLineDash([]);
+      ctx.lineWidth = 2; ctx.strokeStyle = `rgba(${rgb},.9)`;
+      for (let i = 1; i <= 3; i++) {
+        const d = length * i / 4;
+        ctx.beginPath(); ctx.moveTo(d - 5, -5); ctx.lineTo(d, 0); ctx.lineTo(d - 5, 5); ctx.stroke();
+      }
+      ctx.beginPath(); ctx.arc(0, 0, width + 5, -Math.PI / 2, -Math.PI / 2 + TAU * clamp(progress, 0, 1)); ctx.stroke();
+      ctx.restore();
+    };
     for (const e of this.enemies) {
       if (e.hp <= 0 || e.dissolve) continue;
       const x = e.x - camX, y = e.y - camY;
+      if (x < -220 || x > this.width + 220 || y < -220 || y > this.height + 220) continue;
       if (e.type === 'urco' && e.mode === 'windup') {
-        ctx.strokeStyle = `rgba(255,78,58,${0.45 + Math.sin(t * 20) * 0.2})`; ctx.lineWidth = 2; ctx.setLineDash([6, 6]);
         const L = e.speed * 4.4 * 0.42;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(e.lock) * L, y + Math.sin(e.lock) * L); ctx.stroke();
-        ctx.setLineDash([]);
+        charge(x, y, e.lock, L, e.r + 3, '255,112,83', 1 - e.modeT / 0.72);
       }
       if (e.type === 'curuxa' && e.mode === 'windup') {
-        ctx.strokeStyle = `rgba(255,212,71,${0.4 + Math.sin(t * 24) * 0.2})`; ctx.lineWidth = 1; ctx.setLineDash([3, 5]);
         const L = e.speed * 3.8 * 0.55;
-        ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x + Math.cos(e.lock) * L, y + Math.sin(e.lock) * L); ctx.stroke();
-        ctx.setLineDash([]);
+        charge(x, y, e.lock, L, e.r + 2, '255,212,111', 1 - e.modeT / 0.5);
+      }
+      if (e.type === 'planidera' && e.mode === 'cry') {
+        const a = Math.atan2(this.player.y - e.y, this.player.x - e.x), k = clamp(1 - e.modeT / 0.65, 0, 1);
+        ctx.save(); ctx.translate(x, y - 10); ctx.rotate(a);
+        ctx.fillStyle = 'rgba(190,224,242,.07)';
+        ctx.beginPath(); ctx.moveTo(0, 0); ctx.arc(0, 0, 88, -0.24, 0.24); ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = 'rgba(190,224,242,.8)'; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.arc(0, 0, 19 + k * 13, -1.1, 1.1); ctx.stroke(); ctx.restore();
       }
       if (e.type === 'espantajo' && e.mode === 'swing') {
         const k = 1 - e.modeT / 0.85;

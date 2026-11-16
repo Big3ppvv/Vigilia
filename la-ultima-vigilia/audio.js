@@ -4,6 +4,7 @@
  * noche (viento, mar, orballo, grillos, la lechuza). Los efectos están en
  * sfx.js y la música, en music.js.
  */
+import { cueMethods } from './audio-cues.js';
 import { SFX } from './sfx.js';
 import { Score, NANA, NANA_BASS } from './music.js';
 
@@ -486,6 +487,13 @@ export class AudioEngine {
     if (!this.live) return;
     const play = SFX[name];
     if (play) play(this, {...opts, pan: clamp(opts.pan || 0, -1, 1)});
+    else cueMethods.sfx.call(this, name, opts);
+  }
+
+  destroy() {
+    clearTimeout(this.muteTimer);
+    if (this.ctx && !this.offline) this.ctx.close?.().catch(() => {});
+    this.ready = false; this.ctx = null; this.plucks.clear();
   }
 
   /* La campana de la torre da la hora. */

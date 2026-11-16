@@ -257,6 +257,7 @@ export const weaponMethods = {
     if (p.inv > 0 || this.dashTime > 0 || this.god || this.state !== 'running') return;
     const dmg = Math.max(1, Math.round(amount * (1 - this.st.armor)));
     p.hp -= dmg;
+    this.interruptRitual();
     this.damageTaken = (this.damageTaken || 0) + dmg;
     this.minHp = Math.min(this.minHp ?? Infinity, p.hp);
     p.inv = 0.75;

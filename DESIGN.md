@@ -80,7 +80,7 @@ Los sprites, las partículas, las huellas y el suelo mantienen bordes de píxel.
 
 ### Weapon effects
 
-Un ataque comunica salida, recorrido y contacto con su propia forma y una duración breve. Las luces y partículas tienen límites de cantidad y se eliminan al terminar. Los efectos visuales no crean daño ni alteran colisiones.
+Un ataque comunica salida, recorrido y contacto con su propia forma y una duración breve. Las luces y partículas tienen límites de cantidad y se eliminan al terminar. Los efectos visuales no crean daño ni alteran colisiones. `ritual.js` es el único responsable del daño de las habilidades y del progreso de los faroles; `scene-fx.js` solo los representa.
 
 ### Lighting
 

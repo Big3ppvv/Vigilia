@@ -5,6 +5,9 @@
 import { TAU, clamp, rand, lerp } from './util.js';
 import { ENEMIES, MAX_ENEMIES, VIGIL, SCALING } from './balance.js';
 
+// Equivale a resolver un 25 % del solape a 60 Hz, sin depender de la pantalla.
+const SEPARATION_RATE = -Math.log(0.75) * 60;
+
 export const enemyMethods = {
   /* force: tipo concreto. at: dónde. always: aparece aunque la noche esté llena. */
   spawn(force, at, always = false) {
@@ -80,7 +83,7 @@ export const enemyMethods = {
       }
       // El arrullo amansa a lo que alcanza.
       e.lulled = this.lull > 0 && len < this.lullR;
-      const slow = (e.hit > 0 ? 0.45 : 1) * (e.lulled ? (e.type === 'guia' ? VIGIL.lullBossSlow : VIGIL.lullSlow) : 1);
+      const slow = this.enemySlow(e) * (e.hit > 0 ? 0.45 : 1) * (e.lulled ? (e.type === 'guia' ? VIGIL.lullBossSlow : VIGIL.lullSlow) : 1);
       this.behave(e, dx, dy, len, dt, slow);
       e.x += e.kx * dt; e.y += e.ky * dt;
       const damp = Math.exp(-dt * 9);
@@ -96,7 +99,7 @@ export const enemyMethods = {
         if (o === e || o.hp <= 0) continue;
         const dx = e.x - o.x, dy = e.y - o.y, min = (e.r + o.r) * 0.82, d2 = dx * dx + dy * dy;
         if (d2 > 0.01 && d2 < min * min) {
-          const d = Math.sqrt(d2), push = (min - d) * 0.25;
+          const d = Math.sqrt(d2), push = (min - d) * (1 - Math.exp(-dt * SEPARATION_RATE));
           e.x += dx / d * push; e.y += dy / d * push;
         }
       }
@@ -112,6 +115,8 @@ export const enemyMethods = {
       }
     }
     this.enemies = this.enemies.filter(e => e.hp > 0);
+    // Los proyectiles se comprueban después de movimiento, separación y reciclaje.
+    this.buildGrid();
   },
 
   /*

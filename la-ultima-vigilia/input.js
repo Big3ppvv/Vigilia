@@ -3,7 +3,7 @@
  */
 import { rand } from './util.js';
 
-const KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Escape', 'KeyP', 'KeyE', 'KeyQ'];
+const KEYS = ['KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Space', 'Escape', 'KeyP', 'KeyE', 'KeyQ', 'KeyR'];
 
 export const inputMethods = {
   listen(target, type, fn, opts) { target.addEventListener(type, fn, opts); this.handlers.push(() => target.removeEventListener(type, fn, opts)); },
@@ -11,12 +11,15 @@ export const inputMethods = {
   bindInput() {
     this.pad = {x: 0, y: 0, held: new Set()};
     this.listen(window, 'keydown', e => {
+      if (e.isComposing || e.metaKey || e.ctrlKey || e.altKey) return;
       if (/INPUT|TEXTAREA|SELECT/.test(e.target?.tagName) || e.target?.isContentEditable || document.querySelector('dialog[open]')) return;
       if (!KEYS.includes(e.code)) return;
+      if (e.target?.closest?.('button, a, [role="radio"]') && !['Escape', 'KeyP'].includes(e.code)) return;
       if (['running', 'paused'].includes(this.state)) e.preventDefault();
-      if (e.repeat && ['Escape', 'KeyP', 'Space', 'KeyE', 'KeyQ'].includes(e.code)) return;
+      if (e.repeat && ['Escape', 'KeyP', 'Space', 'KeyE', 'KeyQ', 'KeyR'].includes(e.code)) return;
       if (e.code === 'Escape' || e.code === 'KeyP') { if (this.state === 'running') this.pause(); else if (this.state === 'paused') this.resume(); }
       else if (e.code === 'Space') { if (this.state === 'running') this.dash(); }
+      else if (e.code === 'KeyR') { if (this.state === 'running') this.ability(); }
       else if (e.code === 'KeyE' || e.code === 'KeyQ') { if (this.state === 'running') this.arrullo(); }
       else this.keys.add(e.code);
     });
@@ -26,6 +29,7 @@ export const inputMethods = {
     const pos = e => { const r = this.canvas.getBoundingClientRect(), z = this.zoom || 1; return {x: (e.clientX - r.left) / z, y: (e.clientY - r.top) / z}; };
     this.listen(this.canvas, 'pointerdown', e => {
       if (this.state !== 'running' || e.button > 0) return;
+      if (this.pointer && this.pointer.id !== e.pointerId) return;
       e.preventDefault();
       const p = pos(e);
       this.pointer = {id: e.pointerId, start: p, current: p};
@@ -35,6 +39,7 @@ export const inputMethods = {
     const end = e => { if (this.pointer?.id === e.pointerId) this.pointer = null; };
     this.listen(this.canvas, 'pointerup', end);
     this.listen(this.canvas, 'pointercancel', end);
+    this.listen(this.canvas, 'lostpointercapture', end);
   },
 
   /* Mando: palanca izquierda o cruceta para moverse, A esquiva, X o B arrulla, Start pausa. */

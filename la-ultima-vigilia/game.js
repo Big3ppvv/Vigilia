@@ -6,7 +6,7 @@
 import { TAU, clamp, rand, pick } from './util.js';
 import { NIGHT, HOUR, BOSS_AT, ELITE_PLAN, fmtClock } from './balance.js';
 import { Lighting } from './art.js';
-import { Cemetery } from './world.js';
+import { Cemetery, surfaceAt } from './world.js';
 import { AudioEngine } from './audio.js';
 import { CombatEffects } from './combat-fx.js';
 import { Ambient } from './ambient.js';
@@ -21,6 +21,7 @@ import { fxMethods } from './fx.js';
 import { botMethods } from './bot.js';
 import { vigilMethods } from './vigil.js';
 import { renderMethods } from './render.js';
+import { ritualMethods } from './ritual.js';
 
 export class VigilGame {
   constructor(canvas, hooks = {}) {
@@ -91,6 +92,7 @@ export class VigilGame {
     this.choices = []; this.choiceFree = false; this.enemyId = 0;
     this.cards = 0; this.cardPending = false; this.elitesDown = 0; this.lightGot = 0; this.flare = 0;
     this.ellaCd = 0; this.dashHit = new Set(); this.soulMax = 0; this.freedAt = null;
+    this.grid.clear(); this.botMemo = null; this.resetRituals();
     this.keys.clear(); this.pointer = null;
   }
 
@@ -129,7 +131,7 @@ export class VigilGame {
   setVolume(v) { this.audio.setVolume(v); }
   setOptions(o) { Object.assign(this.options, o); this.ambient.enabled = this.options.weather !== false; }
   backToTitle() { this.reset(); this.setState('ready'); this.hooks.onSubtitle?.(null); this.emitStats(); }
-  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); }
+  destroy() { cancelAnimationFrame(this.raf); this.handlers.forEach(fn => fn()); this.resizeObserver.disconnect(); this.audio.destroy?.(); }
 
   resize() {
     const rect = this.canvas.getBoundingClientRect();
@@ -230,6 +232,7 @@ export class VigilGame {
     this.updateVigil(dt);
     if (this.state !== 'running') return;
     this.soulMax = Math.max(this.soulMax, this.soul);
+    this.buildGrid();
     this.weapons(dt);
     this.spawning(dt);
     this.updatePools(dt);
@@ -238,6 +241,7 @@ export class VigilGame {
     this.updateShots(dt);
     this.updateHazards(dt);
     if (this.state !== 'running') return;
+    this.updateRituals(dt);
     this.updatePickups(dt);
     this.updateFx(dt);
     if (this.cardPending) { this.cardPending = false; this.levelUp(true); return; }
@@ -279,7 +283,7 @@ export class VigilGame {
     this.enemyShots = []; this.hazards = []; this.marks = []; this.pools = [];
     // Amanece con los cuatro cirios ardiendo.
     for (const c of this.cirios) this.lightCirio(c, true, false);
-    this.soul = 0;
+    this.soul = 0; this.wards = []; this.abilityTime = 0;
     this.audio.sfx('hora', {count: 6, gap: 1.6});
     this.audio.sfx('alba');
     this.banner(HOURS[6].name, HOURS[6].mood, 'dawn');
@@ -317,6 +321,7 @@ export class VigilGame {
     this.lastVictory = victory;
     const result = {victory, cause: victory ? 'dawn' : this.cause, time: this.time, clock: victory ? '06:00' : this.deathClock || fmtClock(this.time),
       kills: this.kills, level: this.level, character: this.character, memories: {...this.mem}, order: [...this.order],
+      ritualsLit: this.litRituals(), abilitiesUsed: this.abilitiesUsed,
       rooms: [...this.rooms], relit: this.relit, revives: this.revives, elites: this.elitesDown,
       freed: !!(this.boss && this.boss.hp <= 0)};
     this.setState('ended');
@@ -375,6 +380,7 @@ export class VigilGame {
       kills: this.kills, level: this.level, xp: this.xp, xpNext: this.xpNext,
       hp: this.player.hp, maxHp: this.st.maxHp, dashCd: this.dashCd, dashMax: this.st.dashCd,
       character: this.character, mem: {...this.mem}, order: [...this.order],
+      ability: this.abilitySnapshot(), ritual: this.ritualSnapshot(),
       cirios: this.cirios.map(c => c.lit ? 1 : c.relight > 0 ? 0.5 : 0), soul: this.soul,
       lullCd: this.lullCd, lullMax: this.st.lullCd, lull: this.lull, rooms: [...this.rooms],
       elite: this.eliteAlive && this.eliteAlive.hp > 0 ? {id: this.eliteAlive.elite, hp: this.eliteAlive.hp, maxHp: this.eliteAlive.maxHp} : null,
@@ -385,4 +391,4 @@ export class VigilGame {
   emitStats() { this.hooks.onStats?.(this.getSnapshot()); }
 }
 
-Object.assign(VigilGame.prototype, inputMethods, directorMethods, vigilMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods);
+Object.assign(VigilGame.prototype, inputMethods, directorMethods, vigilMethods, weaponMethods, memoryMethods, enemyMethods, bossMethods, fxMethods, botMethods, renderMethods, ritualMethods);
