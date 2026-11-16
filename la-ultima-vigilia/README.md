@@ -28,7 +28,7 @@ Las armas buscan solas la amenaza más cercana. La esquiva protege durante el sa
 - **Caer.** Si tu vela se apaga y queda algún cirio encendido, su luz te levanta. A cambio, ese cirio se apaga.
 - **El arrullo.** Quien vela tararea la nana de Amparo: lo que le rodea se amansa y recibe más daño, las lágrimas se deshacen y los cirios cercanos prenden. Tarda en volver.
 - **Quién la vela.** Lucía (la nieta), Julián (el sepulturero) y Matilde (la rezadora). Cada uno empieza con otra arma y vela a su manera: la luz y el arrullo de Lucía llegan más lejos, a Julián los cirios le duran el doble y Matilde los enciende en la mitad de tiempo. Hablan de Amparo cada uno a su modo. A veces se contradicen.
-- **Los recuerdos son las mejoras.** Catorce cosas concretas de Amparo: el pan de los jueves, el rosario al que le faltaba una cuenta, el farol del faro… En una noche caben cuatro armas y cinco recuerdos. Cada recuerdo toca el siguiente trozo de su nana.
+- **Los recuerdos son las mejoras.** Catorce recuerdos clásicos y 500 objetos repartidos en veinte colecciones: el pan de los jueves, el rosario al que le faltaba una cuenta, el farol del faro… En una noche caben cuatro armas y cinco recuerdos. Cada recuerdo toca el siguiente trozo de su nana.
 - **Sus rincones.** Algunos recuerdos van juntos: su cocina, su alcoba, su banco en la iglesia, el faro de su padre. Al reunir los de un rincón cambia una regla: el haz del faro quema lo que barre, la campana suelta una corona de chispas, la esquiva atraviesa y hiere…
 - **Las horas.** Cada hora es distinta. A la una salen las procesiones. A las dos sube la marea: charcos que frenan y de los que salen ahogados. A las tres, la hora de las ánimas, una racha de viento apaga cirios. A las cuatro la luz alcanza menos. A las cinco aparece la Guía.
 - **Los difuntos con nombre.** Cada hora viene uno, con más aguante y su propia manía. Al irse deja su recordatorio: un recuerdo que se elige sin gastar luz.
@@ -116,3 +116,24 @@ Por ejemplo, `la-ultima-vigilia.html?debug&autostart=1&bot=2&speed=8&char=matild
 Volumen general y por grupos (música, efectos, ambiente); temblor de pantalla; destellos; orballo y hojas; penumbra suave y números de daño. Con «reducir movimiento» activado en el sistema, el temblor, los destellos y el orballo empiezan apagados.
 
 Los ataques iluminan el terreno próximo: fuego ámbar para las chispas, sal fría y nácar dorado para el rosario de Matilde. La campana dibuja varios ecos y el farol marca el alcance de su calor. Al apagar «Destellos» se conservan los proyectiles y las formas de los golpes, se atenúan las estelas y se suprimen las ráfagas de luz y los flashes de pantalla. «Temblor de pantalla» también controla el retroceso visual al disparar. Nada de lo que es solo adorno cambia el daño ni las reglas.
+
+## Los 500 objetos
+
+`objects.js` contiene 20 colecciones de 25 objetos con nombres e identificadores únicos.
+Cada pieza ocupa un hueco de recuerdo, admite los mismos niveles que los recuerdos clásicos
+y mejora vida, regeneración, daño, recogida de luz o probabilidad de golpe certero.
+Dos objetos **distintos** de una colección activan su sinergia una sola vez: daño, cadencia,
+regeneración, vida, recogida, protección, luz, experiencia, velocidad o recarga del arrullo.
+Cualquier pareja de una colección sirve (6.000 parejas posibles en total).
+El nivel de un objeto no cuenta como una segunda pieza. Se mantienen cuatro armas y cinco recuerdos.
+
+Las cartas siguen ofreciendo recuerdos clásicos para poder conseguir armas. Cuando falta
+una pieza para activar una sinergia, hay un 45 % de probabilidad de priorizar una compañera.
+El álbum, el HUD y el final usan los mismos objetos; sus descubrimientos se guardan como los recuerdos clásicos.
+Los iconos reutilizan los símbolos existentes de sus efectos.
+
+Prueba sin dependencias: `node tools/objects-check.mjs`.
+
+### Integración de ramas
+
+Se mantienen el arrullo con **E** (o Q), los cirios, los rincones y las reglas recientes del velatorio. Las habilidades de personaje se activan con **R** o su botón; los tres faroles son opcionales. Se incluyen 500 objetos y 20 sinergias de colección.

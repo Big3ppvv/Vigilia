@@ -5,11 +5,11 @@
 import assert from 'node:assert/strict';
 import { launchBrowser } from './browser.mjs';
 
-const file = new URL('../la-ultima-vigilia.html', import.meta.url).href;
+const file = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
 const browser = await launchBrowser();
 
 async function openGame(character = 'lucia', options = {}) {
-  const context = await browser.newContext({viewport: {width: 1280, height: 800}, offline: true, ...options});
+  const context = await browser.newContext({viewport: {width: 1280, height: 800}, offline: !process.env.VIGILIA_TEST_URL, ...options});
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));
@@ -189,8 +189,8 @@ try {
 
   {
     const {context, page, errors} = await openGame('julian');
-    await page.keyboard.press('e');
-    assert.equal(await page.evaluate(() => window.vigilia.abilitiesUsed), 1, 'E no activa la habilidad');
+    await page.keyboard.press('r');
+    assert.equal(await page.evaluate(() => window.vigilia.abilitiesUsed), 1, 'R no activa la habilidad');
     assert(await page.locator('#abilityButton').isDisabled(), 'La habilidad en recarga sigue habilitada');
     assert.match(await page.locator('#abilityName').textContent(), /Cerco de sal/);
     await page.keyboard.press('p');
@@ -203,10 +203,10 @@ try {
     }
     await page.locator('#pause [data-open="settingsDialog"]').click();
     assert(await page.locator('#settingsDialog').evaluate(dialog => dialog.open));
-    for (const [id, value] of [['optMusic', 25], ['optAmbience', 40], ['optEffects', 65]]) {
+    for (const [id, value] of [['optMusic', 25], ['optAmb', 40], ['optSfx', 65]]) {
       await page.locator(`#${id}`).evaluate((range, value) => { range.value = value; range.dispatchEvent(new Event('input', {bubbles: true})); }, value);
     }
-    assert.deepEqual(await page.evaluate(() => ({...window.vigilia.audio.mix})), {music: 0.25, ambience: 0.4, effects: 0.65});
+    assert.deepEqual(await page.evaluate(() => ({...window.vigilia.audio.mix})), {music: 0.25, amb: 0.4, sfx: 0.65});
     await page.keyboard.press('Escape');
     assert(!(await page.locator('#settingsDialog').evaluate(dialog => dialog.open)), 'Escape no cierra ajustes');
     assert.equal(await page.evaluate(() => window.vigilia.state), 'paused', 'Cerrar ajustes reanuda la noche sin pedirlo');
@@ -219,7 +219,7 @@ try {
     await page.reload();
     await page.waitForFunction(() => window.vigilia?.state === 'running');
     await page.evaluate(() => cancelAnimationFrame(window.vigilia.raf));
-    assert.deepEqual(await page.evaluate(() => ({...window.vigilia.audio.mix})), {music: 0.25, ambience: 0.4, effects: 0.65}, 'La mezcla no se conserva al recargar');
+    assert.deepEqual(await page.evaluate(() => ({...window.vigilia.audio.mix})), {music: 0.25, amb: 0.4, sfx: 0.65}, 'La mezcla no se conserva al recargar');
     assert.deepEqual(errors, [], 'Interfaz: errores de JavaScript');
     console.log('✓ teclado, recarga visible, foco de pausa, ajustes y mezcla persistente');
     await context.close();

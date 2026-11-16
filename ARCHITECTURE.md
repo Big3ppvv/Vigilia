@@ -9,13 +9,13 @@ Las rutas siguientes son relativas a `la-ultima-vigilia/`, salvo que se indique 
 ```text
 index.html + style.css
         ↓
-app.js ──→ storage.js / settings.js / interface.js
+app.js ──→ interface.js (ajustes y persistencia en app.js)
         ↓ acciones y hooks
 VigilGame (game.js)
         ├── entrada: input.js / bot.js
-        ├── simulación: director / enemies / boss / weapons / memories / ritual
+        ├── simulación: director / vigil / enemies / boss / weapons / memories / objects / ritual
         ├── dibujo: render / world / art / sprites / combat-fx / scene-fx
-        └── sonido: audio / audio-synth / audio-score / audio-cues
+        └── sonido: audio / sfx / music / audio-cues
 ```
 
 `VigilGame` posee el estado de la partida, el reloj y el ciclo de vida. Los sistemas de reglas aportan métodos a su prototipo; la composición ocurre al final de `game.js`. El bucle avanza la simulación, dibuja y entrega un estado resumido al motor de audio.
@@ -37,7 +37,7 @@ La interfaz recibe `getSnapshot()` mediante `onStats` y eventos como `onState`, 
 | Mundo y dibujo | `world.js`, `art.js`, `sprites.js`, `render.js` | Terreno, obstáculos, sprites, luz, cámara y orden de dibujo |
 | Efectos | `fx.js`, `combat-fx.js`, `scene-fx.js` | Caducidad de partículas, señales de combate, faroles, huellas, reflejos y minimapa |
 | Sonido | `audio.js` | Ciclo de vida, mezcla, ambiente y respuesta al estado del juego |
-| Síntesis | `audio-synth.js` | Fuentes, envolventes, cuerda pulsada, reverberación y limpieza de voces |
+| Síntesis | `audio.js` | Fuentes, envolventes, cuerda pulsada y reverberación |
 | Música | `audio-score.js` | Nana, motivos de recuerdo y frases que responden al peligro |
 | Señales sonoras | `audio-cues.js` | Armas, habilidades, pasos, campanas y eventos |
 | Interfaz | `app.js`, `index.html`, `style.css` | Arranque, selección, HUD, cartas, álbum y recordatorio final |
@@ -89,3 +89,7 @@ El empaquetador admite importaciones nombradas locales en una línea y exportaci
 `npm run build` actualiza el HTML autónomo. `npm run check` valida sintaxis y compara el resultado esperado con el archivo distribuido, sin modificarlo. `npm test` añade pruebas de habilidades y faroles, mezcla sonora, efectos de combate y noches completas con los tres personajes.
 
 Las pruebas de gameplay, audio y efectos usan el HTML distribuido en Chromium sin conexión. La prueba de noche completa omite la fuente web opcional para que no dependa de Google Fonts. El piloto automático comprueba continuidad y final de partida; para ajustar dificultad y legibilidad también hace falta jugar a velocidad normal. El servidor modular facilita investigar errores mediante `?debug` y `window.vigilia`.
+
+## Prioridad al integrar
+
+Se conserva el motor de audio reciente de `main` (`audio.js`, `sfx.js`, `music.js`) y se añaden las recetas exclusivas de habilidades y faroles desde `audio-cues.js`. `audio-synth.js` aporta las funciones auxiliares de esas recetas. Las versiones alternativas de ajustes y almacenamiento permanecen en el historial; `app.js` mantiene la persistencia reciente, incluidos rincones, élites y tiempo atmosférico. Arrullar usa E/Q y la habilidad adicional usa R.

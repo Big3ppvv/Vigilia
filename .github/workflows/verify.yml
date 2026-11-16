@@ -32,6 +32,8 @@ jobs:
         working-directory: .
         run: npm run check
 
+      - name: Comprobar objetos y sinergias
+        run: node tools/objects-check.mjs
 
   noche:
     name: Una noche entera con cada personaje
@@ -49,6 +51,12 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium
+
+      - name: Comprobar habilidades y faroles
+        run: npm run test:gameplay
+
+      - name: Comprobar sonidos de habilidades y faroles
+        run: node la-ultima-vigilia/tools/audio.mjs
 
       - name: Velar con el piloto automático
         run: node la-ultima-vigilia/tools/smoke.mjs

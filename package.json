@@ -8,9 +8,9 @@
     "dev": "python3 -m http.server 8000 --directory la-ultima-vigilia",
     "build": "node la-ultima-vigilia/build.mjs",
     "check": "node la-ultima-vigilia/tools/check.mjs && node la-ultima-vigilia/build.mjs --check",
-    "test": "npm run check && npm run test:gameplay && npm run test:audio && npm run test:vfx && npm run test:night",
+    "test": "npm run check && node la-ultima-vigilia/tools/objects-check.mjs && npm run test:gameplay && npm run test:audio && npm run test:vfx && node la-ultima-vigilia/tools/vigil-check.mjs && node la-ultima-vigilia/tools/ui-check.mjs && npm run test:night",
     "test:gameplay": "node la-ultima-vigilia/tools/gameplay.mjs",
-    "test:audio": "node la-ultima-vigilia/tools/audio.mjs",
+    "test:audio": "node la-ultima-vigilia/tools/audio.mjs && node la-ultima-vigilia/tools/audio-check.mjs",
     "test:vfx": "node la-ultima-vigilia/tools/combat-vfx.mjs",
     "test:night": "node la-ultima-vigilia/tools/smoke.mjs"
   },

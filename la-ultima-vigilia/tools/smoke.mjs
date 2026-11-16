@@ -9,7 +9,7 @@
 import { launchBrowser } from './browser.mjs';
 
 
-const file = new URL('../la-ultima-vigilia.html', import.meta.url).href;
+const file = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
 const characters = process.argv.length > 2 ? process.argv.slice(2) : ['lucia', 'julian', 'matilde'];
 
 const browser = await launchBrowser();

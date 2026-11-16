@@ -11,11 +11,12 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const file = new URL('../la-ultima-vigilia.html', import.meta.url).href;
-const browser = await chromium.launch();
+const launchOptions = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {};
+const file = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
+const browser = await chromium.launch(launchOptions);
 
 try {
-  const context = await browser.newContext({viewport: {width: 1100, height: 720}, offline: true});
+  const context = await browser.newContext({viewport: {width: 1100, height: 720}, offline: !process.env.VIGILIA_TEST_URL});
   const page = await context.newPage();
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));

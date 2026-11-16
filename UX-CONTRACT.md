@@ -30,7 +30,7 @@ La disponibilidad de habilidad y esquiva se comunica con texto de recarga y boto
 | Scrollbar | `style.css`, reglas globales y `--scroll-*` | `DESIGN.md` | Paneles y pantalla de título; colores del sistema en contraste forzado | Inspección móvil y escritorio |
 | Toast | `toast()` en `app.js`, región `role=status` | `index.html` y `style.css` | Información de sonido/pantalla completa | Pruebas de interfaz |
 
-`interface.js` posee el aislamiento de capas y el ciclo de Tab; `settings.js` adapta ajustes a motores; `storage.js` posee lectura/escritura y valores de respaldo. No se duplican reglas de habilidad o progreso en la interfaz.
+`interface.js` posee el aislamiento de capas y el ciclo de Tab; `app.js` conserva los ajustes y la persistencia más recientes, incluidos rincones y élites. Arrullar usa E/Q y la habilidad de personaje usa R. No se duplican reglas de habilidad o progreso en la interfaz.
 
 ## Sonido, persistencia y movimiento
 

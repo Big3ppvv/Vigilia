@@ -1,3 +1,4 @@
+import { OBJECTS, OBJECT_COLLECTIONS } from './objects.js';
 /*
  * Todo el texto del juego vive aquí: quién es Amparo, quién la vela,
  * qué se recuerda de ella y qué viene a por ella.
@@ -69,6 +70,7 @@ export const CHARACTERS = {
  * fragment se usa para escribir el amanecer con los recuerdos que más elegiste.
  */
 export const MEMORIES = [
+  ...OBJECTS,
   {id: 'chispas', kind: 'arma', name: 'Chispas del cirio',
     effect: 'Lanza chispas a lo más cercano. Cada nivel: una chispa más y +15 % de daño.',
     line: 'Encendía el cirio con un solo fósforo. Decía que la segunda cerilla es para los que dudan.',
@@ -142,6 +144,7 @@ export const FALLBACK_CHOICES = [
  * vuelve algo más. En una noche no caben todos: hay que elegir.
  */
 export const ROOMS = [
+  ...OBJECT_COLLECTIONS,
   {id: 'cocina', name: 'La cocina', members: ['pan', 'radio', 'caldo'],
     effect: 'Todo lo que te cura, cura la mitad más. Aparece el doble de café.',
     line: '—Siéntate, que la mesa ya está puesta.'},

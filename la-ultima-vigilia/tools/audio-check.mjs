@@ -12,12 +12,14 @@ import { writeFileSync } from 'node:fs';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const file = new URL('../la-ultima-vigilia.html', import.meta.url).href;
+const launchOptions = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {};
+const file = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
 const wavPath = process.argv[2];
 
-const browser = await chromium.launch();
+const browser = await chromium.launch(launchOptions);
 try {
   const page = await browser.newPage();
+  await page.route('https://fonts.googleapis.com/**', route => route.fulfill({contentType: 'text/css', body: ''}));
   const errors = [];
   page.on('pageerror', error => errors.push(String(error)));
   page.on('console', message => { if (message.type() === 'error') errors.push(message.text()); });

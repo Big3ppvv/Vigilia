@@ -1,26 +1,20 @@
-# Verificación de la revisión 2.1
+# Verificación de la integración de ramas
 
-Base: `c85888fb8847763b88311a14f1b62f0a5b6116de`. Verificación ejecutada en Chromium de Playwright 1.58.2, sobre el HTML autónomo generado; también se inspeccionaron capturas a 1280×800 y 390×844.
+Se combina `main` (`2ad22af`) con `feat/vigilia-gameplay-overhaul` (`dc82e8c`) y `codex/500-objetos-sinergias` (`683b895`). Las otras seis ramas ya eran antecesoras de `main`.
 
-## Comandos ejecutados
+Se conserva la implementación reciente del velatorio, arrullo, rincones, élites y motor de audio. Se añaden habilidades con R, faroles, efectos de escena, 500 objetos y 20 sinergias. El HTML autónomo se regenera desde los módulos.
 
-| Comando | Resultado |
-|---|---|
-| `npm run build` | HTML autónomo de 27 módulos, aproximadamente 309 KB |
-| `npm run check` | Sintaxis de 34 archivos y comparación exacta del HTML generado |
-| `npm run test:gameplay` | Habilidades, alcances, recargas, estados, faroles, recompensas únicas, reinicios, colisiones, foco, mezcla persistente y móvil aprobados |
-| `npm run test:audio` | PCM finito sin saturación, habilidades diferenciadas, canales y reverberación aislados, limpieza y límite de 128 grupos aprobados |
-| `npm run test:vfx` | Daño y cadencia iniciales conservados; horda de 240 criaturas, límites de efectos y movimiento reducido aprobados |
-| `npm run test:night` | Lucía, Julián y Matilde alcanzan las 06:00 y muestran «Amanece.» |
-| `git diff --check` | Sin errores de espacios |
-| `designmd lint DESIGN.md` | 0 errores; advertencias de tokens descriptivos sin referencias de componentes en frontmatter |
+## Validación
 
-La suite completa se ejecutó con `PLAYWRIGHT_BROWSERS_PATH` apuntando al Chromium instalado en el entorno. En una instalación normal basta con `npx playwright install chromium` y `npm test`.
+- Sintaxis de 43 archivos y HTML generado de 29 módulos al día.
+- 500 objetos, 20 colecciones, bonus, huecos y 550 elecciones.
+- Habilidades de los tres personajes, faroles, recargas, interrupciones, recompensas únicas, reinicios y colisiones.
+- Teclado, ratón, pausa, ajustes persistentes y controles táctiles a 390 × 844.
+- Reglas del velatorio: cirios, procesión, alma, levantarse, arrullo, rincones, difuntos, marea y Guía.
+- Combate, daño, horda, límites de efectos y movimiento reducido.
+- Sonidos de habilidades y faroles audibles, distintos, finitos y sin saturación.
+- Noche sonora resumida: 41 efectos, ocho escenas, sin errores ni saturación.
 
-## Cobertura y límites
+En este entorno Chromium bloquea `file://`, por lo que las pruebas locales usan el HTML generado mediante un servidor local y `VIGILIA_TEST_URL`. La ejecución por defecto conserva las pruebas del archivo autónomo sin conexión. La fuente remota opcional se sustituye por una hoja vacía en las pruebas que comprueban errores de consola.
 
-- Gameplay, audio y efectos se comprueban sin conexión, sobre el archivo que recibe el jugador. La prueba de noche completa sustituye la hoja opcional de Google Fonts para evitar dependencia de red/certificados.
-- Las noches completas usan piloto automático e invulnerabilidad: comprueban continuidad, progresión y final, y no equivalen a validar la dificultad con jugadores humanos.
-- El render conserva las reglas durante el dibujo. Se comprueban caducidad y limpieza de huellas, máximos de partículas/luces y restablecimiento de estado gráfico.
-- Se revisó el móvil con la Guía: su barra, objetivos y botones quedan separados. Se comprobaron teclado, contención/restauración del foco, ajustes y movimiento reducido. No se realizó una auditoría completa de lectores de pantalla ni una matriz de dispositivos físicos.
-- El auditor estático genérico de interfaces se ejecutó en modo estricto. Señala 42 supuestos botones sin acción en el HTML fuente y el empaquetado porque solo reconoce manejadores inline: este proyecto conecta eventos con `addEventListener` en módulos. Se revisaron esos manejadores y se verificaron las interacciones con Chromium; ese informe estático no se presenta como aprobado.
+Las noches completas con cada personaje usan piloto automático e invulnerabilidad: validan continuidad, progresión y desenlace, sin medir dificultad para jugadores humanos.

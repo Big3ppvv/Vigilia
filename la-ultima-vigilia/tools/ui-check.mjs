@@ -10,8 +10,9 @@ import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
 const { chromium } = require('playwright');
-const html = new URL('../la-ultima-vigilia.html', import.meta.url).href;
-const browser = await chromium.launch({args: ['--autoplay-policy=no-user-gesture-required']});
+const launchOptions = process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? {executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH} : {};
+const html = process.env.VIGILIA_TEST_URL || new URL('../la-ultima-vigilia.html', import.meta.url).href;
+const browser = await chromium.launch({...launchOptions, args: ['--autoplay-policy=no-user-gesture-required']});
 const page = await browser.newPage({viewport: {width: 1280, height: 800}});
 const errors = [];
 page.on('pageerror', e => errors.push('pageerror: ' + String(e)));
