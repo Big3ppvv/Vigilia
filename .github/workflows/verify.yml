@@ -67,3 +67,6 @@ jobs:
 
       - name: Comprobar que el sonido no falla ni satura
         run: node la-ultima-vigilia/tools/audio-check.mjs
+
+      - name: Recorrer la interfaz con teclado y ratón
+        run: node la-ultima-vigilia/tools/ui-check.mjs

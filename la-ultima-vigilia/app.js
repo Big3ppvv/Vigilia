@@ -553,7 +553,8 @@ document.querySelectorAll('dialog').forEach(d => {
 
 /* ---------- sonidos de la interfaz ---------- */
 
-const pressable = el => el?.closest?.('button, .card, .cast-card');
+// Los botones de la noche (esquivar, arrullar, pausa) ya tienen su propio sonido en el juego.
+const pressable = el => { const hit = el?.closest?.('button, .card, .cast-card'); return hit && !hit.closest('#hud') ? hit : null; };
 let lastFocus = null;
 const focusSound = e => {
   const el = pressable(e.target);

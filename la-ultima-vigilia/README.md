@@ -72,6 +72,7 @@ Todas trabajan sobre `la-ultima-vigilia.html` y requieren Playwright y Chromium.
 | `tools/smoke.mjs` | El piloto automático vela una noche entera con cada personaje. |
 | `tools/vigil-check.mjs` | Las reglas del velatorio, una por una: recinto, cirios, procesión, alma, levantarse, arrullo, huecos, rincones, difuntos, marea y la Guía. |
 | `tools/combat-vfx.mjs` | El combate sin conexión: daño, impactos, límites de efectos en hordas y movimiento reducido. |
+| `tools/ui-check.mjs` | La interfaz con teclado y ratón de verdad: diálogos y ajustes, moverse, esquivar, arrullar, los cirios en el HUD, las cartas, la pausa y el final. |
 | `tools/audio-check.mjs` | El sonido sin altavoces: toca una noche resumida, comprueba que ninguna receta falla y que la mezcla no satura. Con una ruta, además guarda el WAV: `node tools/audio-check.mjs noche.wav`. |
 
 Parámetros de la URL:
